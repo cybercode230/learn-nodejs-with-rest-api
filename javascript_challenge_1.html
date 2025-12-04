@@ -1,0 +1,300 @@
+<!-- 
+    Author: Cyuzuzo Josue
+    Title: JavaScript Fundamentals Assignment
+-->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>JavaScript Assignment</title>
+    <style>
+        #colorDiv { width: 150px; height: 80px; background: lightgray; margin-bottom: 10px; }
+        #todoList li { margin: 4px 0; }
+    </style>
+</head>
+
+<body>
+
+    <h1 id="heading">Hello</h1>
+
+    <!-- Elements used across multiple tasks -->
+    <div id="colorDiv"></div>
+    <p id="displayInput"></p>
+    <p id="resizePara">This text will be resized.</p>
+    <p id="togglePara">This paragraph can be shown or hidden.</p>
+    <p id="dateTime"></p>
+    <p id="pressedKey"></p>
+    <ul id="nameList"></ul>
+    <ul id="todoList"></ul>
+    <img id="pokemonImage" width="150"/><br>
+
+    <script>
+/* 
+===============================================================
+1. Show alert “Hello JavaScript!”
+===============================================================
+*/
+    function showAlert() {
+        alert("Hello JavaScript!");
+        // Logic: Alert displays a popup message when button is clicked
+    }
+
+/* 
+===============================================================
+2. Show input text inside <p> when button is clicked
+===============================================================
+*/
+    function showInputText() {
+        const value = document.getElementById("textInput").value;
+        document.getElementById("displayInput").textContent = value;
+        // Logic: Read the input value and place it inside a paragraph
+    }
+
+/* 
+===============================================================
+3. Change background color of a div on mouse enter
+===============================================================
+*/
+    document.getElementById("colorDiv").addEventListener("mouseenter", () => {
+        document.getElementById("colorDiv").style.background = "orange";
+        // Logic: Event triggers when mouse enters the div, then color changes
+    });
+
+/* 
+===============================================================
+4. Print numbers 1 to 10 in the console
+===============================================================
+*/
+    function printNumbers() {
+        for (let i = 1; i <= 10; i++) console.log(i);
+        // Logic: Loop counts from 1 to 10 and logs each number
+    }
+
+/* 
+===============================================================
+5. Promise resolves after 2 seconds with “Done!”
+===============================================================
+*/
+    function delayPromise() {
+        return new Promise(resolve => {
+            setTimeout(() => resolve("Done!"), 2000);
+        });
+    }
+
+    // Usage example:
+    delayPromise().then(console.log);
+
+/* 
+===============================================================
+6. Hide an element when button is clicked
+===============================================================
+*/
+    function hideElement() {
+        document.getElementById("heading").style.display = "none";
+        // Logic: Modify CSS display property to hide the element
+    }
+
+/* 
+===============================================================
+7. Display array of names using a loop
+===============================================================
+*/
+    const names = ["Josue", "Aline", "Kevin", "Moses"];
+    const list = document.getElementById("nameList");
+
+    names.forEach(n => {
+        const li = document.createElement("li");
+        li.textContent = n;
+        list.appendChild(li);
+        // Logic: For each name, create a list item and add to the page
+    });
+
+/* 
+===============================================================
+8. Button changes heading text
+===============================================================
+*/
+    function changeHeading() {
+        document.getElementById("heading").textContent = "Welcome";
+        // Logic: Replace the existing text content of the heading
+    }
+
+/* 
+===============================================================
+9. Fetch a random joke using async/await
+===============================================================
+*/
+    async function getJoke() {
+        const res = await fetch("https://official-joke-api.appspot.com/random_joke");
+        const data = await res.json();
+        console.log("Joke:", data.setup, "-", data.punchline);
+        // Logic: Fetch API returns a joke object, log it to console
+    }
+
+/* 
+===============================================================
+10. Button makes paragraph text larger
+===============================================================
+*/
+    function enlargeText() {
+        document.getElementById("resizePara").style.fontSize = "24px";
+        // Logic: Modify CSS to increase font size
+    }
+
+/* 
+===============================================================
+11. Simple counter (Increase/Decrease)
+===============================================================
+*/
+    let count = 0;
+    function increase() {
+        count++;
+        console.log("Counter:", count);
+        // Logic: Increment the counter variable and display
+    }
+    function decrease() {
+        count--;
+        console.log("Counter:", count);
+        // Logic: Decrement the counter variable and display
+    }
+
+/* 
+===============================================================
+12. Change page background to random color
+===============================================================
+*/
+    function randomBackground() {
+        const random = "#" + Math.floor(Math.random() * 16777215).toString(16);
+        document.body.style.background = random;
+        // Logic: Generate random hex color and apply it
+    }
+
+/* 
+===============================================================
+13. Promise resolves “Success” if number > 10
+===============================================================
+*/
+    function checkNumber(num) {
+        return new Promise((resolve, reject) => {
+            if (num > 10) resolve("Success");
+            else reject("Number is too small");
+        });
+    }
+
+/* 
+===============================================================
+14. Simple To-Do List
+===============================================================
+*/
+    function addTodo() {
+        const text = document.getElementById("todoInput").value;
+        const li = document.createElement("li");
+        li.textContent = text;
+        document.getElementById("todoList").appendChild(li);
+        // Logic: Read user input, create list item, add to list
+    }
+
+/* 
+===============================================================
+15. Select all <li> and change color to blue
+===============================================================
+*/
+    function colorAllLis() {
+        document.querySelectorAll("li").forEach(li => li.style.color = "blue");
+        // Logic: Select all list items and change their CSS color
+    }
+
+/* 
+===============================================================
+16. Display current date and time
+===============================================================
+*/
+    document.getElementById("dateTime").textContent = new Date();
+    // Logic: Use Date() to get current local date/time
+
+/* 
+===============================================================
+17. Toggle paragraph (show/hide)
+===============================================================
+*/
+    function toggleParagraph() {
+        const p = document.getElementById("togglePara");
+        p.style.display = (p.style.display === "none") ? "block" : "none";
+        // Logic: Check current state and flip display property
+    }
+
+/* 
+===============================================================
+18. Fetch Pokémon data and display name
+===============================================================
+*/
+    async function getPokemon() {
+        const res = await fetch("https://pokeapi.co/api/v2/pokemon/pikachu");
+        const data = await res.json();
+        console.log("Pokemon:", data.name);
+        document.getElementById("pokemonImage").src = data.sprites.front_default;
+        // Logic: Fetch Pokémon info, show name in console and picture on page
+    }
+
+/* 
+===============================================================
+19. Create an image element using JS
+===============================================================
+*/
+    function addImage() {
+        const img = document.createElement("img");
+        img.src = "https://picsum.photos/200";
+        document.body.appendChild(img);
+        // Logic: Create <img>, set source, append to body
+    }
+
+/* 
+===============================================================
+20. Display key pressed by user
+===============================================================
+*/
+    document.addEventListener("keydown", (event) => {
+        document.getElementById("pressedKey").textContent = "You pressed: " + event.key;
+        // Logic: Detect keydown event and show pressed key
+    });
+
+    </script>
+
+    <br><br>
+    <!-- Buttons and inputs for testing each task -->
+    <button onclick="showAlert()">1. Show Alert</button><br><br>
+
+    <input id="textInput" placeholder="Enter text">
+    <button onclick="showInputText()">2. Show Input Text</button><br><br>
+
+    <button onclick="printNumbers()">4. Print 1–10</button><br><br>
+
+    <button onclick="hideElement()">6. Hide Heading</button><br><br>
+
+    <button onclick="changeHeading()">8. Change Heading Text</button><br><br>
+
+    <button onclick="getJoke()">9. Fetch Joke</button><br><br>
+
+    <button onclick="enlargeText()">10. Enlarge Text</button><br><br>
+
+    <button onclick="increase()">Increase</button>
+    <button onclick="decrease()">Decrease</button><br><br>
+
+    <button onclick="randomBackground()">12. Random Background</button><br><br>
+
+    <button onclick="checkNumber(15).then(console.log).catch(console.error)">13. Test Number</button><br><br>
+
+    <input id="todoInput" placeholder="Add To-Do">
+    <button onclick="addTodo()">14. Add To-Do</button><br><br>
+
+    <button onclick="colorAllLis()">15. Color All <li></button><br><br>
+
+    <button onclick="toggleParagraph()">17. Toggle Paragraph</button><br><br>
+
+    <button onclick="getPokemon()">18. Load Pokémon</button><br><br>
+
+    <button onclick="addImage()">19. Add Random Image</button><br><br>
+
+</body>
+</html>
