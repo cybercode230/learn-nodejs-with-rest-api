@@ -1,55 +1,16 @@
 import type { Request, Response } from "express";
-import { users, type User } from "../models/user.model.js";
+import { UserService } from "../services/user.service.js";
+import { Prisma } from "../generated/prisma/index.js";
 
 /**
  * @swagger
- * components:
- *   schemas:
- *     User:
- *       type: object
- *       required:
- *         - name
- *         - email
- *         - username
- *         - phone
- *         - role
- *       properties:
- *         id:
- *           type: number
- *           description: The auto-generated id of the user
- *         name:
- *           type: string
- *           description: The user's name
- *         email:
- *           type: string
- *           description: The user's email
- *         username:
- *           type: string
- *           description: The user's username
- *         phone:
- *           type: string
- *           description: The user's phone number
- *         role:
- *           type: string
- *           enum: [host, guest]
- *           description: The user's role
- *         avatar:
- *           type: string
- *           description: The user's avatar URL
- *         bio:
- *           type: string
- *           description: The user's bio
- */
-
-/**
- * @swagger
- * /users:
+ * /airbnb/api/v1/users:
  *   get:
- *     summary: Returns the list of all users
+ *     summary: Get all users
  *     tags: [Users]
  *     responses:
  *       200:
- *         description: The list of users
+ *         description: List of users
  *         content:
  *           application/json:
  *             schema:
@@ -57,45 +18,53 @@ import { users, type User } from "../models/user.model.js";
  *               items:
  *                 $ref: '#/components/schemas/User'
  */
-export const getAllUsers = (req: Request, res: Response) => {
-  res.json(users);
+export const getAllUsers = async (req: Request, res: Response) => {
+  try {
+    const users = await UserService.getAllUsers();
+    res.json(users);
+  } catch (error) {
+    console.error("Error fetching users:", error);
+    res.status(500).json({ message: "Something went wrong" });
+  }
 };
 
 /**
  * @swagger
- * /users/{id}:
+ * /airbnb/api/v1/users/{id}:
  *   get:
- *     summary: Get user by ID
+ *     summary: Get user by ID with listings and bookings
  *     tags: [Users]
  *     parameters:
  *       - in: path
  *         name: id
- *         schema:
- *           type: integer
  *         required: true
- *         description: The user id
+ *         schema:
+ *           type: string
  *     responses:
  *       200:
- *         description: The user description by id
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/User'
+ *         description: User details
  *       404:
  *         description: User not found
  */
-export const getUserById = (req: Request, res: Response) => {
-  const id = parseInt(req.params["id"] as string);
-  const user = users.find((u) => u.id === id);
-  if (!user) {
-    return res.status(404).json({ message: "User not found" });
+export const getUserById = async (req: Request, res: Response) => {
+  try {
+    const id = req.params["id"] as string;
+    const user = await UserService.getUserById(id);
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    res.json(user);
+  } catch (error) {
+    console.error("Error fetching user:", error);
+    res.status(500).json({ message: "Something went wrong" });
   }
-  res.json(user);
 };
 
 /**
  * @swagger
- * /users:
+ * /airbnb/api/v1/users:
  *   post:
  *     summary: Create a new user
  *     tags: [Users]
@@ -104,104 +73,180 @@ export const getUserById = (req: Request, res: Response) => {
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/User'
+ *             type: object
+ *             required: [name, email, username, phone]
+ *             properties:
+ *               name: { type: string, example: "Emmanuel Nsabimana" }
+ *               email: { type: string, example: "emma.nsabi@example.rw" }
+ *               username: { type: string, example: "emma_kgl" }
+ *               phone: { type: string, example: "+250780000000" }
+ *               role: { type: string, enum: [HOST, GUEST], example: "GUEST" }
+ *               avatar: { type: string, example: "https://avatar.iran.liara.run/public/boy" }
+ *               bio: { type: string, example: "Software developer from Kigali, eager to explore the country." }
  *     responses:
  *       201:
- *         description: The user was successfully created
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/User'
- *       400:
- *         description: Missing required fields
+ *         description: User created
+ *       409:
+ *         description: Duplicate email or username
  */
-export const createUser = (req: Request, res: Response) => {
-  const { name, email, username, phone, role, avatar, bio } = req.body;
+export const createUser = async (req: Request, res: Response) => {
+  try {
+    const { name, email, username, phone, role, avatar, bio } = req.body;
 
-  if (!name || !email || !username || !phone || !role) {
-    return res.status(400).json({ message: "Missing required fields" });
+    if (!name || !email || !username || !phone) {
+      return res.status(400).json({ message: "Missing required fields" });
+    }
+
+    const newUser = await UserService.createUser({
+      name,
+      email,
+      username,
+      phone,
+      role,
+      avatar,
+      bio
+    });
+
+    res.status(201).json(newUser);
+  } catch (error: any) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError) {
+      if (error.code === "P2002") {
+        return res.status(409).json({ message: "Email or username already exists" });
+      }
+    }
+    console.error("Error creating user:", error);
+    res.status(500).json({ message: "Something went wrong" });
   }
-
-  const newUser: User = {
-    id: users.length > 0 ? Math.max(...users.map((u) => u.id)) + 1 : 1,
-    name,
-    email,
-    username,
-    phone,
-    role,
-    avatar,
-    bio
-  };
-
-  users.push(newUser);
-  res.status(201).json(newUser);
 };
 
 /**
  * @swagger
- * /users/{id}:
+ * /airbnb/api/v1/users/{id}:
  *   put:
- *     summary: Update an existing user
+ *     summary: Update user by ID
  *     tags: [Users]
  *     parameters:
  *       - in: path
  *         name: id
- *         schema:
- *           type: integer
  *         required: true
- *         description: The user id
+ *         schema:
+ *           type: string
  *     requestBody:
- *       required: true
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/User'
+ *             type: object
+ *             properties:
+ *               name: { type: string, example: "John Updated" }
+ *               phone: { type: string, example: "+1987654321" }
  *     responses:
  *       200:
- *         description: The user was updated
+ *         description: User updated
  *       404:
  *         description: User not found
  */
-export const updateUser = (req: Request, res: Response) => {
-  const id = parseInt(req.params["id"] as string);
-  const userIndex = users.findIndex((u) => u.id === id);
+export const updateUser = async (req: Request, res: Response) => {
+  try {
+    const id = req.params["id"] as string;
+    
+    const existingUser = await UserService.getUserById(id);
+    if (!existingUser) {
+      return res.status(404).json({ message: "User not found" });
+    }
 
-  if (userIndex === -1) {
-    return res.status(404).json({ message: "User not found" });
+    const updatedUser = await UserService.updateUser(id, req.body);
+    res.json(updatedUser);
+  } catch (error) {
+    console.error("Error updating user:", error);
+    res.status(500).json({ message: "Something went wrong" });
   }
-
-  const updatedUser = { ...users[userIndex], ...req.body, id };
-  users[userIndex] = updatedUser as User;
-  res.json(updatedUser);
 };
 
 /**
  * @swagger
- * /users/{id}:
+ * /airbnb/api/v1/users/{id}:
  *   delete:
- *     summary: Delete a user
+ *     summary: Delete user by ID
  *     tags: [Users]
  *     parameters:
  *       - in: path
  *         name: id
- *         schema:
- *           type: integer
  *         required: true
- *         description: The user id
+ *         schema:
+ *           type: string
  *     responses:
  *       204:
- *         description: User deleted successfully
+ *         description: User deleted
  *       404:
  *         description: User not found
  */
-export const deleteUser = (req: Request, res: Response) => {
-  const id = parseInt(req.params["id"] as string);
-  const userIndex = users.findIndex((u) => u.id === id);
+export const deleteUser = async (req: Request, res: Response) => {
+  try {
+    const id = req.params["id"] as string;
 
-  if (userIndex === -1) {
-    return res.status(404).json({ message: "User not found" });
+    const existingUser = await UserService.getUserById(id);
+    if (!existingUser) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    await UserService.deleteUser(id);
+    res.status(204).send();
+  } catch (error) {
+    console.error("Error deleting user:", error);
+    res.status(500).json({ message: "Something went wrong" });
   }
+};
 
-  users.splice(userIndex, 1);
-  res.status(204).send();
+/**
+ * @swagger
+ * /airbnb/api/v1/users/{id}/listings:
+ *   get:
+ *     summary: Get all listings by host ID
+ *     tags: [Users]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: List of host's listings
+ */
+export const getListingsByHost = async (req: Request, res: Response) => {
+  try {
+    const id = req.params["id"] as string;
+    const listings = await UserService.getListingsByHost(id);
+    res.json(listings);
+  } catch (error) {
+    console.error("Error fetching host listings:", error);
+    res.status(500).json({ message: "Something went wrong" });
+  }
+};
+
+/**
+ * @swagger
+ * /airbnb/api/v1/users/{id}/bookings:
+ *   get:
+ *     summary: Get all bookings by guest ID
+ *     tags: [Users]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: List of guest's bookings
+ */
+export const getBookingsByGuest = async (req: Request, res: Response) => {
+  try {
+    const id = req.params["id"] as string;
+    const bookings = await UserService.getBookingsByGuest(id);
+    res.json(bookings);
+  } catch (error) {
+    console.error("Error fetching guest bookings:", error);
+    res.status(500).json({ message: "Something went wrong" });
+  }
 };
