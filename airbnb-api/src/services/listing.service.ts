@@ -1,6 +1,8 @@
 import prisma from "../config/prisma.js";
 import { generateId } from "../utils/idGenerator.js";
 import { ListingType, Prisma } from "../generated/prisma/index.js";
+import { createListingSchema, updateListingSchema } from "../dtos/index.js";
+import { cleanObject } from "../utils/cleanObject.js";
 
 export class ListingService {
   static async getAllListings(filters: {
@@ -60,34 +62,29 @@ export class ListingService {
     });
   }
 
-  static async createListing(data: {
-    title: string;
-    description: string;
-    location: string;
-    pricePerNight: number;
-    guests: number;
-    type: ListingType;
-    amenities: string[];
-    hostId: string;
-  }) {
+  static async createListing(rawData: any) {
+    const validatedData = createListingSchema.parse(rawData);
+
     // Verify host exists
-    const host = await prisma.user.findUnique({ where: { id: data.hostId } });
+    const host = await prisma.user.findUnique({ where: { id: validatedData.hostId } });
     if (!host) {
       throw new Error("HOST_NOT_FOUND");
     }
 
     return prisma.listing.create({
-      data: {
-        ...data,
+      data: cleanObject({
+        ...validatedData,
         id: generateId()
-      }
+      })
     });
   }
 
-  static async updateListing(id: string, data: any) {
+  static async updateListing(id: string, rawData: any) {
+    const validatedData = updateListingSchema.parse(rawData);
+
     return prisma.listing.update({
       where: { id },
-      data
+      data: cleanObject(validatedData)
     });
   }
 

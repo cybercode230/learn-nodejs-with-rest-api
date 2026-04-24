@@ -2,9 +2,11 @@ import "dotenv/config";
 import express, { type Request, type Response, type NextFunction } from "express";
 import { connectDB } from "./config/prisma.js";
 import { swaggerDocs } from "./config/swagger.js";
-import usersRoutes from "./routes/users.routes.js";
-import listingsRoutes from "./routes/listings.routes.js";
-import bookingsRoutes from "./routes/bookings.routes.js";
+import router from "./routes/index.routes.js";
+import swaggerUi from "swagger-ui-express";
+import { errorHandler } from "./middlewares/errorHandler.js";
+import { logger } from "./utils/logger.js";
+
 
 const app = express();
 const PORT = process.env["PORT"] || 3000;
@@ -12,15 +14,12 @@ const PORT = process.env["PORT"] || 3000;
 // Middleware
 app.use(express.json());
 
-import swaggerUi from "swagger-ui-express";
 
 // Swagger documentation
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocs));
 
 // Routes
-app.use("/airbnb/api/v1/users", usersRoutes);
-app.use("/airbnb/api/v1/listings", listingsRoutes);
-app.use("/airbnb/api/v1/bookings", bookingsRoutes);
+app.use("/airbnb/api/v1", router);
 
 // Welcome route
 app.get("/", (req: Request, res: Response) => {
@@ -36,17 +35,18 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 });
 
 // Global Error handler
-app.use((err: any, req: Request, res: Response, next: NextFunction) => {
-  console.error(err.stack);
-  res.status(500).json({ message: "Something went wrong!" });
-});
+app.use(errorHandler);
 
-const startServer = async () => {
+export const startServer = async () => {
   await connectDB();
-  app.listen(PORT, () => {
-    console.log(`🚀 Server is running on http://localhost:${PORT}`);
-    console.log(`📖 Swagger docs available at http://localhost:${PORT}/api-docs`);
+  return app.listen(PORT, () => {
+    logger.info(`🚀 Server is running on http://localhost:${PORT}`);
+    logger.info(`📖 Swagger docs available at http://localhost:${PORT}/api-docs`);
   });
 };
 
-startServer();
+if (process.env["NODE_ENV"] !== "test") {
+  startServer();
+}
+
+export default app;

@@ -1,6 +1,7 @@
-import type { Request, Response } from "express";
+import type { Request, Response, NextFunction } from "express";
 import { ListingService } from "../services/listing.service.js";
 import { ListingType } from "../generated/prisma/index.js";
+import { createListingSchema, updateListingSchema } from "../dtos/index.js";
 
 /**
  * @swagger
@@ -31,7 +32,7 @@ import { ListingType } from "../generated/prisma/index.js";
  *       200:
  *         description: List of properties
  */
-export const getAllListings = async (req: Request, res: Response) => {
+export const getAllListings = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { location, type, maxPrice, page, limit } = req.query;
 
@@ -52,8 +53,7 @@ export const getAllListings = async (req: Request, res: Response) => {
 
     res.json(listings);
   } catch (error) {
-    console.error("Error fetching listings:", error);
-    res.status(500).json({ message: "Something went wrong" });
+    next(error);
   }
 };
 
@@ -74,7 +74,7 @@ export const getAllListings = async (req: Request, res: Response) => {
  *       404:
  *         description: Listing not found
  */
-export const getListingById = async (req: Request, res: Response) => {
+export const getListingById = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const id = req.params["id"] as string;
     const listing = await ListingService.getListingById(id);
@@ -85,8 +85,7 @@ export const getListingById = async (req: Request, res: Response) => {
 
     res.json(listing);
   } catch (error) {
-    console.error("Error fetching listing:", error);
-    res.status(500).json({ message: "Something went wrong" });
+    next(error);
   }
 };
 
@@ -101,49 +100,21 @@ export const getListingById = async (req: Request, res: Response) => {
  *       content:
  *         application/json:
  *           schema:
- *             type: object
- *             required: [title, description, location, pricePerNight, guests, type, amenities, hostId]
- *             properties:
- *               title: { type: string, example: "Serene Lake House in Gisenyi" }
- *               description: { type: string, example: "Enjoy a private getaway with a direct view of Lake Kivu. Includes private beach access." }
- *               location: { type: string, example: "Gisenyi, Rwanda" }
- *               pricePerNight: { type: number, example: 120 }
- *               guests: { type: integer, example: 4 }
- *               type: { type: string, enum: [APARTMENT, HOUSE, VILLA, CABIN], example: "HOUSE" }
- *               amenities: { type: array, items: { type: string }, example: ["WiFi", "Lake View", "Fireplace", "Garden"] }
- *               hostId: { type: string, example: "usr_789abc" }
+ *             $ref: '#/components/schemas/CreateListingDTO'
  *     responses:
  *       201:
  *         description: Listing created
+ *       400:
+ *         description: Validation error
  *       404:
  *         description: Host not found
  */
-export const createListing = async (req: Request, res: Response) => {
+export const createListing = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { title, description, location, pricePerNight, guests, type, amenities, hostId } = req.body;
-
-    if (!title || !description || !location || !pricePerNight || !guests || !type || !amenities || !hostId) {
-      return res.status(400).json({ message: "Missing required fields" });
-    }
-
-    const newListing = await ListingService.createListing({
-      title,
-      description,
-      location,
-      pricePerNight,
-      guests,
-      type,
-      amenities,
-      hostId
-    });
-
+    const newListing = await ListingService.createListing(req.body);
     res.status(201).json(newListing);
-  } catch (error: any) {
-    if (error.message === "HOST_NOT_FOUND") {
-      return res.status(404).json({ message: "Host not found" });
-    }
-    console.error("Error creating listing:", error);
-    res.status(500).json({ message: "Something went wrong" });
+  } catch (error) {
+    next(error);
   }
 };
 
@@ -162,30 +133,20 @@ export const createListing = async (req: Request, res: Response) => {
  *       content:
  *         application/json:
  *           schema:
- *             type: object
- *             properties:
- *               title: { type: string, example: "Updated Villa Title" }
- *               pricePerNight: { type: number, example: 400 }
+ *             $ref: '#/components/schemas/UpdateListingDTO'
  *     responses:
  *       200:
  *         description: Listing updated
  *       404:
  *         description: Listing not found
  */
-export const updateListing = async (req: Request, res: Response) => {
+export const updateListing = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const id = req.params["id"] as string;
-
-    const existingListing = await ListingService.getListingById(id);
-    if (!existingListing) {
-      return res.status(404).json({ message: "Listing not found" });
-    }
-
     const updatedListing = await ListingService.updateListing(id, req.body);
     res.json(updatedListing);
   } catch (error) {
-    console.error("Error updating listing:", error);
-    res.status(500).json({ message: "Something went wrong" });
+    next(error);
   }
 };
 
@@ -206,19 +167,12 @@ export const updateListing = async (req: Request, res: Response) => {
  *       404:
  *         description: Listing not found
  */
-export const deleteListing = async (req: Request, res: Response) => {
+export const deleteListing = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const id = req.params["id"] as string;
-
-    const existingListing = await ListingService.getListingById(id);
-    if (!existingListing) {
-      return res.status(404).json({ message: "Listing not found" });
-    }
-
     await ListingService.deleteListing(id);
     res.status(204).send();
   } catch (error) {
-    console.error("Error deleting listing:", error);
-    res.status(500).json({ message: "Something went wrong" });
+    next(error);
   }
 };

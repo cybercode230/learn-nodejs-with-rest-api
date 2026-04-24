@@ -35,12 +35,23 @@ model User {
   email     String    @unique
   username  String    @unique
   phone     String
+  password  String    @default("password123") // Added for Lesson 2C
   role      Role      @default(GUEST)
   avatar    String?
   bio       String?
   createdAt DateTime  @default(now())
+  profile   Profile?
   listings  Listing[] @relation("HostListings")
   bookings  Booking[] @relation("GuestBookings")
+}
+
+model Profile {
+  id          String   @id
+  bio         String?
+  phoneNumber String?
+  address     String?
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId      String   @unique
 }
 
 model Listing {
@@ -58,6 +69,13 @@ model Listing {
   host          User        @relation("HostListings", fields: [hostId], references: [id], onDelete: Cascade)
   hostId        String
   bookings      Booking[]
+  tags          Tag[]
+}
+
+model Tag {
+  id       String    @id
+  name     String    @unique
+  listings Listing[]
 }
 
 model Booking {

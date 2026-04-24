@@ -1,6 +1,7 @@
 import prisma from "../config/prisma.js";
 import { generateId } from "../utils/idGenerator.js";
-import { Prisma } from "../generated/prisma/index.js";
+import { createUserSchema, updateUserSchema, type CreateUserDTO, type UpdateUserDTO } from "../dtos/index.js";
+import { cleanObject } from "../utils/cleanObject.js";
 
 export class UserService {
   static async getAllUsers() {
@@ -25,28 +26,24 @@ export class UserService {
     });
   }
 
-  static async createUser(data: {
-    name: string;
-    email: string;
-    username: string;
-    phone: string;
-    role?: "HOST" | "GUEST";
-    avatar?: string;
-    bio?: string;
-  }) {
+  static async createUser(rawData: any) {
+    const validatedData = createUserSchema.parse(rawData);
+    
     return prisma.user.create({
-      data: {
-        ...data,
+      data: cleanObject({
+        ...validatedData,
         id: generateId(),
-        role: data.role || "GUEST"
-      }
+        role: validatedData.role || "GUEST"
+      })
     });
   }
 
-  static async updateUser(id: string, data: any) {
+  static async updateUser(id: string, rawData: any) {
+    const validatedData = updateUserSchema.parse(rawData);
+    
     return prisma.user.update({
       where: { id },
-      data
+      data: cleanObject(validatedData)
     });
   }
 
