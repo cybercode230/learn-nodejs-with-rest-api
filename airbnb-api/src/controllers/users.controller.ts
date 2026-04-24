@@ -1,6 +1,8 @@
 import type { Request, Response, NextFunction } from "express";
 import { UserService } from "../services/user.service.js";
 import { createUserSchema, updateUserSchema } from "../dtos/index.js";
+import type { AuthRequest } from "../middlewares/auth.middleware.js";
+import { Role } from "../generated/prisma/index.js";
 
 /**
  * @swagger
@@ -8,11 +10,13 @@ import { createUserSchema, updateUserSchema } from "../dtos/index.js";
  *   get:
  *     summary: Get all users
  *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
  *     responses:
  *       200:
  *         description: List of users
  */
-export const getAllUsers = async (req: Request, res: Response, next: NextFunction) => {
+export const getAllUsers = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const users = await UserService.getAllUsers();
     res.json(users);
@@ -27,6 +31,8 @@ export const getAllUsers = async (req: Request, res: Response, next: NextFunctio
  *   get:
  *     summary: Get user by ID with listings and bookings
  *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -39,7 +45,7 @@ export const getAllUsers = async (req: Request, res: Response, next: NextFunctio
  *       404:
  *         description: User not found
  */
-export const getUserById = async (req: Request, res: Response, next: NextFunction) => {
+export const getUserById = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const id = req.params["id"] as string;
     const user = await UserService.getUserById(id);
@@ -58,8 +64,10 @@ export const getUserById = async (req: Request, res: Response, next: NextFunctio
  * @swagger
  * /airbnb/api/v1/users:
  *   post:
- *     summary: Create a new user
+ *     summary: Create a new user (Admin only)
  *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -74,7 +82,7 @@ export const getUserById = async (req: Request, res: Response, next: NextFunctio
  *       409:
  *         description: Duplicate email or username
  */
-export const createUser = async (req: Request, res: Response, next: NextFunction) => {
+export const createUser = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const newUser = await UserService.createUser(req.body);
     res.status(201).json(newUser);
@@ -89,6 +97,8 @@ export const createUser = async (req: Request, res: Response, next: NextFunction
  *   put:
  *     summary: Update user by ID
  *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -103,12 +113,19 @@ export const createUser = async (req: Request, res: Response, next: NextFunction
  *     responses:
  *       200:
  *         description: User updated
+ *       403:
+ *         description: Forbidden (Not the owner)
  *       404:
  *         description: User not found
  */
-export const updateUser = async (req: Request, res: Response, next: NextFunction) => {
+export const updateUser = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const id = req.params["id"] as string;
+
+    if (id !== req.userId && req.role !== Role.ADMIN) {
+      return res.status(403).json({ message: "Forbidden: You can only update your own profile" });
+    }
+
     const updatedUser = await UserService.updateUser(id, req.body);
     res.json(updatedUser);
   } catch (error) {
@@ -120,8 +137,10 @@ export const updateUser = async (req: Request, res: Response, next: NextFunction
  * @swagger
  * /airbnb/api/v1/users/{id}:
  *   delete:
- *     summary: Delete user by ID
+ *     summary: Delete user by ID (Admin only)
  *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -134,7 +153,7 @@ export const updateUser = async (req: Request, res: Response, next: NextFunction
  *       404:
  *         description: User not found
  */
-export const deleteUser = async (req: Request, res: Response, next: NextFunction) => {
+export const deleteUser = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const id = req.params["id"] as string;
     await UserService.deleteUser(id);
@@ -160,7 +179,7 @@ export const deleteUser = async (req: Request, res: Response, next: NextFunction
  *       200:
  *         description: List of host's listings
  */
-export const getListingsByHost = async (req: Request, res: Response, next: NextFunction) => {
+export const getListingsByHost = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const id = req.params["id"] as string;
     const listings = await UserService.getListingsByHost(id);
@@ -176,6 +195,8 @@ export const getListingsByHost = async (req: Request, res: Response, next: NextF
  *   get:
  *     summary: Get all bookings by guest ID
  *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -185,10 +206,17 @@ export const getListingsByHost = async (req: Request, res: Response, next: NextF
  *     responses:
  *       200:
  *         description: List of guest's bookings
+ *       403:
+ *         description: Forbidden (Not the owner)
  */
-export const getBookingsByGuest = async (req: Request, res: Response, next: NextFunction) => {
+export const getBookingsByGuest = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const id = req.params["id"] as string;
+
+    if (id !== req.userId && req.role !== Role.ADMIN) {
+      return res.status(403).json({ message: "Forbidden: You can only view your own bookings" });
+    }
+
     const bookings = await UserService.getBookingsByGuest(id);
     res.json(bookings);
   } catch (error) {

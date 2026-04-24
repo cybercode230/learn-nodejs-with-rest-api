@@ -1,7 +1,8 @@
 import type { Request, Response, NextFunction } from "express";
 import { ListingService } from "../services/listing.service.js";
-import { ListingType } from "../generated/prisma/index.js";
+import { ListingType, Role } from "../generated/prisma/index.js";
 import { createListingSchema, updateListingSchema } from "../dtos/index.js";
+import type { AuthRequest } from "../middlewares/auth.middleware.js";
 
 /**
  * @swagger
@@ -95,6 +96,8 @@ export const getListingById = async (req: Request, res: Response, next: NextFunc
  *   post:
  *     summary: Create a new property listing
  *     tags: [Listings]
+ *     security:
+ *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -106,12 +109,15 @@ export const getListingById = async (req: Request, res: Response, next: NextFunc
  *         description: Listing created
  *       400:
  *         description: Validation error
- *       404:
- *         description: Host not found
+ *       401:
+ *         description: Unauthorized
  */
-export const createListing = async (req: Request, res: Response, next: NextFunction) => {
+export const createListing = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const newListing = await ListingService.createListing(req.body);
+    const newListing = await ListingService.createListing({
+      ...req.body,
+      hostId: req.userId
+    });
     res.status(201).json(newListing);
   } catch (error) {
     next(error);
@@ -124,6 +130,8 @@ export const createListing = async (req: Request, res: Response, next: NextFunct
  *   put:
  *     summary: Update listing details
  *     tags: [Listings]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -137,12 +145,23 @@ export const createListing = async (req: Request, res: Response, next: NextFunct
  *     responses:
  *       200:
  *         description: Listing updated
+ *       403:
+ *         description: Forbidden (Not the owner)
  *       404:
  *         description: Listing not found
  */
-export const updateListing = async (req: Request, res: Response, next: NextFunction) => {
+export const updateListing = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const id = req.params["id"] as string;
+    
+    // Ownership check
+    const listing = await ListingService.getListingById(id);
+    if (!listing) return res.status(404).json({ message: "Listing not found" });
+
+    if (listing.hostId !== req.userId && req.role !== Role.ADMIN) {
+      return res.status(403).json({ message: "Forbidden: You can only update your own listings" });
+    }
+
     const updatedListing = await ListingService.updateListing(id, req.body);
     res.json(updatedListing);
   } catch (error) {
@@ -156,6 +175,8 @@ export const updateListing = async (req: Request, res: Response, next: NextFunct
  *   delete:
  *     summary: Delete listing by ID
  *     tags: [Listings]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -164,12 +185,23 @@ export const updateListing = async (req: Request, res: Response, next: NextFunct
  *     responses:
  *       204:
  *         description: Listing deleted
+ *       403:
+ *         description: Forbidden (Not the owner)
  *       404:
  *         description: Listing not found
  */
-export const deleteListing = async (req: Request, res: Response, next: NextFunction) => {
+export const deleteListing = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const id = req.params["id"] as string;
+
+    // Ownership check
+    const listing = await ListingService.getListingById(id);
+    if (!listing) return res.status(404).json({ message: "Listing not found" });
+
+    if (listing.hostId !== req.userId && req.role !== Role.ADMIN) {
+      return res.status(403).json({ message: "Forbidden: You can only delete your own listings" });
+    }
+
     await ListingService.deleteListing(id);
     res.status(204).send();
   } catch (error) {

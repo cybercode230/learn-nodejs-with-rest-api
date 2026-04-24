@@ -22,8 +22,22 @@ async function main() {
 
   const hashedPassword = await bcrypt.hash("password123", 10);
 
-  // 2. Create users (2 hosts, 3 guests)
+  // 2. Create users (1 admin, 2 hosts, 3 guests)
   console.log("👤 Creating users...");
+  
+  const admin = await prisma.user.create({
+    data: {
+      id: "usr_admin",
+      name: "Super Admin",
+      email: "admin@airbnb.rw",
+      username: "admin",
+      phone: "+250780000000",
+      password: hashedPassword,
+      role: "ADMIN",
+      bio: "Global system administrator.",
+    },
+  });
+
   const host1 = await prisma.user.create({
     data: {
       id: "usr_host1",

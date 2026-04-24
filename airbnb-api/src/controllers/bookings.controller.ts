@@ -1,7 +1,9 @@
-import type { Request, Response, NextFunction } from "express";
+import type { Response, NextFunction } from "express";
 import { BookingService } from "../services/booking.service.js";
-import { BookingStatus } from "../generated/prisma/index.js";
+import { BookingStatus, Role } from "../generated/prisma/index.js";
 import { createBookingSchema } from "../dtos/index.js";
+import type { AuthRequest } from "../middlewares/auth.middleware.js";
+import prisma from "../config/prisma.js";
 
 /**
  * @swagger
@@ -9,11 +11,13 @@ import { createBookingSchema } from "../dtos/index.js";
  *   get:
  *     summary: Get all bookings
  *     tags: [Bookings]
+ *     security:
+ *       - bearerAuth: []
  *     responses:
  *       200:
  *         description: List of bookings
  */
-export const getAllBookings = async (req: Request, res: Response, next: NextFunction) => {
+export const getAllBookings = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const bookings = await BookingService.getAllBookings();
     res.json(bookings);
@@ -28,6 +32,8 @@ export const getAllBookings = async (req: Request, res: Response, next: NextFunc
  *   get:
  *     summary: Get booking details by ID
  *     tags: [Bookings]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -36,16 +42,23 @@ export const getAllBookings = async (req: Request, res: Response, next: NextFunc
  *     responses:
  *       200:
  *         description: Booking details
+ *       403:
+ *         description: Forbidden (Not the owner)
  *       404:
  *         description: Booking not found
  */
-export const getBookingById = async (req: Request, res: Response, next: NextFunction) => {
+export const getBookingById = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const id = req.params["id"] as string;
     const booking = await BookingService.getBookingById(id);
 
     if (!booking) {
       return res.status(404).json({ message: "Booking not found" });
+    }
+
+    // Ownership check
+    if (booking.guestId !== req.userId && req.role !== Role.ADMIN) {
+      return res.status(403).json({ message: "Forbidden: You can only view your own bookings" });
     }
 
     res.json(booking);
@@ -61,6 +74,8 @@ export const getBookingById = async (req: Request, res: Response, next: NextFunc
  *     summary: Create a new booking
  *     description: Calculates total price based on dates and property price
  *     tags: [Bookings]
+ *     security:
+ *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -72,12 +87,17 @@ export const getBookingById = async (req: Request, res: Response, next: NextFunc
  *         description: Booking created
  *       400:
  *         description: Validation error or invalid dates
+ *       401:
+ *         description: Unauthorized
  *       404:
- *         description: Guest or Listing not found
+ *         description: Listing not found
  */
-export const createBooking = async (req: Request, res: Response, next: NextFunction) => {
+export const createBooking = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const newBooking = await BookingService.createBooking(req.body);
+    const newBooking = await BookingService.createBooking({
+      ...req.body,
+      guestId: req.userId
+    });
     res.status(201).json(newBooking);
   } catch (error) {
     next(error);
@@ -90,6 +110,8 @@ export const createBooking = async (req: Request, res: Response, next: NextFunct
  *   patch:
  *     summary: Update booking status
  *     tags: [Bookings]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -107,13 +129,28 @@ export const createBooking = async (req: Request, res: Response, next: NextFunct
  *     responses:
  *       200:
  *         description: Status updated
+ *       403:
+ *         description: Forbidden (Not the owner/host/admin)
  *       404:
  *         description: Booking not found
  */
-export const updateBookingStatus = async (req: Request, res: Response, next: NextFunction) => {
+export const updateBookingStatus = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const id = req.params["id"] as string;
     const { status } = req.body;
+
+    const booking = await BookingService.getBookingById(id);
+    if (!booking) return res.status(404).json({ message: "Booking not found" });
+
+    // Status update permission: Guest (only CANCELLED), Host (any), Admin (any)
+    // For simplicity, let's allow owner (Guest) or Host/Admin
+    if (booking.guestId !== req.userId && req.role !== Role.ADMIN) {
+        // Check if user is the host of the property
+        const listing = await prisma.listing.findUnique({ where: { id: booking.listingId } });
+        if (listing?.hostId !== req.userId) {
+            return res.status(403).json({ message: "Forbidden: You cannot update this booking status" });
+        }
+    }
 
     if (!status || !Object.values(BookingStatus).includes(status)) {
       return res.status(400).json({ message: "Invalid status" });
@@ -132,6 +169,8 @@ export const updateBookingStatus = async (req: Request, res: Response, next: Nex
  *   delete:
  *     summary: Cancel/Delete a booking
  *     tags: [Bookings]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -140,12 +179,22 @@ export const updateBookingStatus = async (req: Request, res: Response, next: Nex
  *     responses:
  *       204:
  *         description: Booking deleted
+ *       403:
+ *         description: Forbidden (Not the owner/admin)
  *       404:
  *         description: Booking not found
  */
-export const deleteBooking = async (req: Request, res: Response, next: NextFunction) => {
+export const deleteBooking = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const id = req.params["id"] as string;
+
+    const booking = await BookingService.getBookingById(id);
+    if (!booking) return res.status(404).json({ message: "Booking not found" });
+
+    if (booking.guestId !== req.userId && req.role !== Role.ADMIN) {
+        return res.status(403).json({ message: "Forbidden: You can only delete your own bookings" });
+    }
+
     await BookingService.deleteBooking(id);
     res.status(204).send();
   } catch (error) {

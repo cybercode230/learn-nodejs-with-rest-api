@@ -6,13 +6,14 @@ import {
   updateBookingStatus,
   deleteBooking
 } from "../controllers/bookings.controller.js";
+import { authenticate, requireGuest, requireAdmin } from "../middlewares/auth.middleware.js";
 
 const router = Router();
 
-router.get("/", getAllBookings);
-router.get("/:id", getBookingById);
-router.post("/", createBooking);
-router.patch("/:id/status", updateBookingStatus);
-router.delete("/:id", deleteBooking);
+router.get("/", authenticate, requireAdmin, getAllBookings);
+router.get("/:id", authenticate, getBookingById);
+router.post("/", authenticate, requireGuest, createBooking);
+router.patch("/:id/status", authenticate, updateBookingStatus);
+router.delete("/:id", authenticate, requireAdmin, deleteBooking);
 
 export default router;

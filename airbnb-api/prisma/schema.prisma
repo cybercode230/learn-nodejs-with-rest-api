@@ -1,19 +1,83 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider        = "prisma-client-js"
-  previewFeatures = ["driverAdapters"]
   output          = "../src/generated/prisma"
+  previewFeatures = ["driverAdapters"]
 }
 
 datasource db {
   provider = "postgresql"
 }
 
+model User {
+  id               String    @id
+  name             String
+  email            String    @unique
+  username         String    @unique
+  phone            String
+  role             Role      @default(GUEST)
+  avatar           String?
+  bio              String?
+  createdAt        DateTime  @default(now())
+  password         String
+  resetToken       String?
+  resetTokenExpiry DateTime?
+  updatedAt        DateTime  @default(now()) @updatedAt
+  bookings         Booking[] @relation("GuestBookings")
+  listings         Listing[] @relation("HostListings")
+  profile          Profile?
+}
+
+model Profile {
+  id          String  @id
+  bio         String?
+  phoneNumber String?
+  address     String?
+  userId      String  @unique
+  user        User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Listing {
+  id            String      @id
+  title         String
+  description   String
+  location      String
+  pricePerNight Float
+  guests        Int
+  amenities     String[]
+  rating        Float?
+  createdAt     DateTime    @default(now())
+  hostId        String
+  updatedAt     DateTime    @updatedAt
+  type          ListingType
+  bookings      Booking[]
+  host          User        @relation("HostListings", fields: [hostId], references: [id], onDelete: Cascade)
+  tags          Tag[]       @relation("ListingToTag")
+}
+
+model Tag {
+  id       String    @id
+  name     String    @unique
+  listings Listing[] @relation("ListingToTag")
+}
+
+model Booking {
+  id         String        @id
+  checkIn    DateTime
+  checkOut   DateTime
+  totalPrice Float
+  status     BookingStatus @default(PENDING)
+  createdAt  DateTime      @default(now())
+  guestId    String
+  listingId  String
+  guest      User          @relation("GuestBookings", fields: [guestId], references: [id], onDelete: Cascade)
+  listing    Listing       @relation(fields: [listingId], references: [id], onDelete: Cascade)
+}
+
+
 enum Role {
   HOST
   GUEST
+  ADMIN
 }
 
 enum ListingType {
@@ -27,66 +91,4 @@ enum BookingStatus {
   PENDING
   CONFIRMED
   CANCELLED
-}
-
-model User {
-  id        String    @id
-  name      String
-  email     String    @unique
-  username  String    @unique
-  phone     String
-  password  String    @default("password123") // Added for Lesson 2C
-  role      Role      @default(GUEST)
-  avatar    String?
-  bio       String?
-  createdAt DateTime  @default(now())
-  profile   Profile?
-  listings  Listing[] @relation("HostListings")
-  bookings  Booking[] @relation("GuestBookings")
-}
-
-model Profile {
-  id          String   @id
-  bio         String?
-  phoneNumber String?
-  address     String?
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId      String   @unique
-}
-
-model Listing {
-  id            String      @id
-  title         String
-  description   String
-  location      String
-  pricePerNight Float
-  guests        Int
-  type          ListingType
-  amenities     String[]
-  rating        Float?
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
-  host          User        @relation("HostListings", fields: [hostId], references: [id], onDelete: Cascade)
-  hostId        String
-  bookings      Booking[]
-  tags          Tag[]
-}
-
-model Tag {
-  id       String    @id
-  name     String    @unique
-  listings Listing[]
-}
-
-model Booking {
-  id         String        @id
-  checkIn    DateTime
-  checkOut   DateTime
-  totalPrice Float
-  status     BookingStatus @default(PENDING)
-  createdAt  DateTime      @default(now())
-  guest      User          @relation("GuestBookings", fields: [guestId], references: [id], onDelete: Cascade)
-  guestId    String
-  listing    Listing       @relation(fields: [listingId], references: [id], onDelete: Cascade)
-  listingId  String
 }

@@ -9,9 +9,7 @@ const pool = new pg.Pool({ connectionString });
 const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter });
 
-/**
- * Connects to the PostgreSQL database and logs the status.
- */
+
 export const connectDB = async () => {
   try {
     await prisma.$connect();

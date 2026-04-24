@@ -27,10 +27,30 @@ const swaggerOptions = {
             email: { type: "string", example: "jane.smith@example.com" },
             username: { type: "string", example: "janesmith_traveler" },
             phone: { type: "string", example: "+250788123456" },
-            role: { type: "string", enum: ["HOST", "GUEST"], example: "HOST" },
+            role: { type: "string", enum: ["HOST", "GUEST", "ADMIN"], example: "HOST" },
             avatar: { type: "string", example: "https://ui-avatars.com/api/?name=Jane+Smith" },
             bio: { type: "string", example: "Passionate host with 5 beautiful properties in Kigali." },
             createdAt: { type: "string", format: "date-time", readOnly: true, example: "2024-04-23T10:00:00Z" },
+          },
+        },
+        CreateUserDTO: {
+          type: "object",
+          required: ["name", "email", "username", "phone", "password"],
+          properties: {
+            name: { type: "string", example: "Jane Smith" },
+            email: { type: "string", example: "jane.smith@example.com" },
+            username: { type: "string", example: "janesmith_traveler" },
+            phone: { type: "string", example: "+250788123456" },
+            password: { type: "string", example: "secret123" },
+            role: { type: "string", enum: ["HOST", "GUEST"], example: "HOST" },
+          },
+        },
+        LoginDTO: {
+          type: "object",
+          required: ["email", "password"],
+          properties: {
+            email: { type: "string", example: "jane.smith@example.com" },
+            password: { type: "string", example: "secret123" },
           },
         },
         Listing: {
@@ -65,7 +85,19 @@ const swaggerOptions = {
           },
         },
       },
+      securitySchemes: {
+        bearerAuth: {
+          type: "http",
+          scheme: "bearer",
+          bearerFormat: "JWT",
+        },
+      },
     },
+    security: [
+      {
+        bearerAuth: [],
+      },
+    ],
   },
   apis: ["./src/controllers/*.ts"],
 };
