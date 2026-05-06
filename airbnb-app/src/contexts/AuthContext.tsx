@@ -1,50 +1,77 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import type { User } from '../types';
-import api from '../api/axios';
+import type { User } from '../shared/types';
+import { encrypt, decrypt } from '../shared/utils/encryption';
 
 interface AuthContextType {
   user: User | null;
-  loading: boolean;
-  login: (token: string, userData: User) => void;
+  token: string | null;
+  login: (token: string, user: User) => void;
   logout: () => void;
+  isAuthenticated: boolean;
+  isLoading: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [token, setToken] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
+  // Initialize Auth: Check localStorage and verify with backend
   useEffect(() => {
-    const checkAuth = async () => {
-      const token = localStorage.getItem('token');
-      if (token) {
+    const initAuth = async () => {
+      const encryptedToken = localStorage.getItem('token');
+      const encryptedUser = localStorage.getItem('user');
+
+      if (encryptedToken && encryptedUser) {
         try {
-          const response = await api.get('/auth/me');
-          setUser(response.data.user);
+          const decryptedToken = decrypt(encryptedToken);
+          const decryptedUser = decrypt(encryptedUser);
+          
+          if (decryptedToken && decryptedUser) {
+            const parsedUser = JSON.parse(decryptedUser);
+            setToken(decryptedToken);
+            setUser(parsedUser);
+          }
         } catch (error) {
-          localStorage.removeItem('token');
-          setUser(null);
+          console.error('Failed to restore auth session:', error);
+          logout();
         }
       }
-      setLoading(false);
+      setIsLoading(false);
     };
 
-    checkAuth();
+    initAuth();
   }, []);
 
-  const login = (token: string, userData: User) => {
-    localStorage.setItem('token', token);
-    setUser(userData);
+  const login = (newToken: string, newUser: User) => {
+    const encryptedToken = encrypt(newToken);
+    const encryptedUser = encrypt(JSON.stringify(newUser));
+    
+    setToken(newToken);
+    setUser(newUser);
+    
+    localStorage.setItem('token', encryptedToken);
+    localStorage.setItem('user', encryptedUser);
   };
 
   const logout = () => {
-    localStorage.removeItem('token');
+    setToken(null);
     setUser(null);
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout }}>
+    <AuthContext.Provider value={{ 
+      user, 
+      token, 
+      login, 
+      logout, 
+      isAuthenticated: !!token, 
+      isLoading 
+    }}>
       {children}
     </AuthContext.Provider>
   );

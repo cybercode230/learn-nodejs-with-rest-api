@@ -1,7 +1,8 @@
 import axios from 'axios';
+import { ENV } from '../config/env';
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'https://learn-nodejs-with-rest-api.onrender.com/api/v1',
+  baseURL: ENV.API_URL,
   headers: {
     'Content-Type': 'application/json',
   },

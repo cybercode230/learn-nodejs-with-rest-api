@@ -76,7 +76,7 @@ export class AuthService {
     // Generate the welcome email content
     const welcomeEmail = welcomeEmailTemplate({
       name: user.name,
-      loginUrl: `${APP_URL}/airbnb/api/v1/auth/login`,
+      loginUrl: `${APP_URL}/login`,
     });
 
     // Asynchronously send the welcome email (non-blocking)
@@ -150,7 +150,7 @@ export class AuthService {
 
       // Persist the hashed token and expiry to the user record
       await prisma.user.update({
-        where: { id: user.id },
+        where: { id: user.id }, 
         data: {
           resetToken: hashedToken,
           resetTokenExpiry,
