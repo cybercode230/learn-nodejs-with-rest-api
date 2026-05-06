@@ -1,0 +1,142 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id               String    @id
+  name             String
+  email            String    @unique
+  username         String    @unique
+  phone            String
+  role             Role      @default(GUEST)
+  avatar           String?
+  avatarPublicId   String?   // Cloudinary public_id — needed to delete old avatar before uploading a new one
+  password         String
+  resetToken       String?
+  resetTokenExpiry DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @default(now()) @updatedAt
+  bookings         Booking[] @relation("GuestBookings")
+  listings         Listing[] @relation("HostListings")
+  reviews          Review[]  @relation("GuestReviews")
+  profile          Profile?
+
+  @@index([name])
+  @@index([email])
+  @@index([role])
+}
+
+model Profile {
+  id          String  @id
+  bio         String?
+  phoneNumber String?
+  address     String?
+  userId      String  @unique
+  user        User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([id])
+  @@index([userId])
+}
+
+model Listing {
+  id            String         @id
+  title         String
+  description   String
+  location      String
+  pricePerNight Float
+  guests        Int
+  amenities     String[]
+  rating        Float?
+  createdAt     DateTime       @default(now())
+  hostId        String
+  updatedAt     DateTime       @updatedAt
+  type          ListingType
+  bookings      Booking[]
+  // When a listing is deleted, cascade-delete all its photos and reviews
+  photos        ListingPhoto[] @relation("ListingPhotos")
+  reviews       Review[]       @relation("ListingReviews")
+  host          User           @relation("HostListings", fields: [hostId], references: [id], onDelete: Cascade)
+  tags          Tag[]          @relation("ListingToTag")
+
+  @@index([id])
+  @@index([hostId])
+  @@index([type])
+  @@index([location])
+  @@index([pricePerNight])
+}
+
+// Stores individual photos for a listing (up to 5 per listing)
+// onDelete: Cascade — when the parent listing is deleted, delete all its photos automatically
+model ListingPhoto {
+  id        String  @id
+  url       String  // Cloudinary secure URL
+  publicId  String  // Cloudinary public_id — required to delete the file from CDN
+  listingId String
+  listing   Listing @relation("ListingPhotos", fields: [listingId], references: [id], onDelete: Cascade)
+
+  @@index([listingId])
+}
+
+model Tag {
+  id       String    @id
+  name     String    @unique
+  listings Listing[] @relation("ListingToTag")
+}
+
+model Booking {
+  id         String        @id
+  checkIn    DateTime
+  checkOut   DateTime
+  totalPrice Float
+  status     BookingStatus @default(PENDING)
+  createdAt  DateTime      @default(now())
+  guestId    String
+  listingId  String
+  guest      User          @relation("GuestBookings", fields: [guestId], references: [id], onDelete: Cascade)
+  listing    Listing       @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  @@index([status])
+  @@index([guestId])
+  @@index([listingId])
+  @@index([totalPrice])
+}
+
+// Stores guest reviews for listings
+// onDelete: Cascade — when listing or user is deleted, remove their reviews
+model Review {
+  id        String   @id
+  rating    Int      // Must be between 1 and 5 (enforced at service level)
+  comment   String
+  guestId   String
+  listingId String
+  createdAt DateTime @default(now())
+  guest     User     @relation("GuestReviews", fields: [guestId], references: [id], onDelete: Cascade)
+  listing   Listing  @relation("ListingReviews", fields: [listingId], references: [id], onDelete: Cascade)
+
+  @@index([guestId])
+  @@index([listingId])
+  @@index([rating])
+}
+
+enum Role {
+  HOST
+  GUEST
+  ADMIN
+}
+
+enum ListingType {
+  APARTMENT
+  HOUSE
+  VILLA
+  CABIN
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+}

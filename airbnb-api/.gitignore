@@ -1,0 +1,9 @@
+node_modules/
+.env
+*.log
+dist/
+
+/src/generated/prisma
+.env.test
+prisma/seed.js
+
