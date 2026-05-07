@@ -233,3 +233,46 @@ export const deleteListing = async (req: AuthRequest, res: Response, next: NextF
     res.status(204).send();
   } catch (error) { next(error); }
 };
+
+/**
+ * @swagger
+ * /api/v1/listings/history:
+ *   post:
+ *     summary: Save a search query to user history
+ *     tags: [Listings]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               location: { type: string }
+ *               type: { type: string }
+ *               minPrice: { type: number }
+ *               maxPrice: { type: number }
+ *               guests: { type: integer }
+ *     responses:
+ *       201: { description: History saved }
+ *   get:
+ *     summary: Get current user's search history
+ *     tags: [Listings]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200: { description: List of search history items }
+ */
+export const saveSearchHistory = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    await ListingService.saveSearchHistory(req.userId!, req.body);
+    res.status(201).send();
+  } catch (error) { next(error); }
+};
+
+export const getSearchHistory = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const history = await ListingService.getUserSearchHistory(req.userId!);
+    res.json(history);
+  } catch (error) { next(error); }
+};

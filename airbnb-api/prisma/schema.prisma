@@ -24,10 +24,25 @@ model User {
   listings         Listing[] @relation("HostListings")
   reviews          Review[]  @relation("GuestReviews")
   profile          Profile?
+  searchHistory    SearchHistory[] @relation("UserSearchHistory")
 
   @@index([name])
   @@index([email])
   @@index([role])
+}
+
+model SearchHistory {
+  id        String   @id
+  location  String?
+  type      String?
+  minPrice  Float?
+  maxPrice  Float?
+  guests    Int?
+  userId    String
+  user      User     @relation("UserSearchHistory", fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@index([userId])
 }
 
 model Profile {

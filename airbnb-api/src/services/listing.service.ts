@@ -230,4 +230,48 @@ export class ListingService {
       byType
     };
   }
+
+  // --- SEARCH HISTORY LOGIC ---
+
+  static async saveSearchHistory(userId: string, filters: any) {
+    const { location, type, minPrice, maxPrice, guests } = filters;
+    
+    // Check if a similar search already exists to prevent clutter
+    const existing = await prisma.searchHistory.findFirst({
+      where: {
+        userId,
+        location: location || null,
+        type: type || null,
+        guests: guests ? parseInt(guests) : null
+      }
+    });
+
+    if (existing) {
+      // Update timestamp to bring it to top of recent searches
+      return prisma.searchHistory.update({
+        where: { id: existing.id },
+        data: { createdAt: new Date() }
+      });
+    }
+
+    return prisma.searchHistory.create({
+      data: {
+        id: generateId(),
+        userId,
+        location: location || null,
+        type: type || null,
+        minPrice: minPrice ? parseFloat(minPrice) : null,
+        maxPrice: maxPrice ? parseFloat(maxPrice) : null,
+        guests: guests ? parseInt(guests) : null
+      }
+    });
+  }
+
+  static async getUserSearchHistory(userId: string) {
+    return prisma.searchHistory.findMany({
+      where: { userId },
+      orderBy: { createdAt: "desc" },
+      take: 10
+    });
+  }
 }

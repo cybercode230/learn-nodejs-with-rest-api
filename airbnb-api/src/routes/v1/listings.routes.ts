@@ -12,7 +12,9 @@ import {
   updateListing,
   deleteListing,
   searchListings,
-  getListingStats
+  getListingStats,
+  saveSearchHistory,
+  getSearchHistory
 } from "../../controllers/listings.controller.js";
 import { authenticate, requireHost } from "../../middlewares/auth.middleware.js";
 import { cacheResponse } from "../../middlewares/cache.middleware.js";
@@ -27,6 +29,10 @@ router.get("/search", searchListings);
 
 // Platform-wide listing statistics (total, avg price, by location, by type)
 router.get("/stats", authenticate, getListingStats);
+
+// Search history logic — allows users to see their past queries
+router.post("/history", authenticate, saveSearchHistory);
+router.get("/history", authenticate, getSearchHistory);
 
 // Public route to view all listings (supports filters), cached for 60 seconds
 router.get("/", cacheResponse(60), getAllListings);
