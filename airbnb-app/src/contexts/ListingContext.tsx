@@ -22,6 +22,8 @@ interface ListingContextType {
   refreshListings: () => Promise<void>;
   searchListings: (queryFilters: Partial<Filters>) => Promise<void>;
   aiSearchListings: (query: string) => Promise<void>;
+  searchHistory: Filters[];
+  clearSearchHistory: () => void;
 }
 
 const ListingContext = createContext<ListingContextType | undefined>(undefined);
@@ -38,6 +40,7 @@ export const ListingProvider: React.FC<{ children: React.ReactNode }> = ({ child
     maxPrice: '',
     guests: '1',
   });
+  const [searchHistory, setSearchHistory] = useState<Filters[]>([]);
 
   const fetchListings = useCallback(async () => {
     setLoading(true);
@@ -58,6 +61,31 @@ export const ListingProvider: React.FC<{ children: React.ReactNode }> = ({ child
     const saved = localStorage.getItem('savedListings');
     if (saved) {
       setSavedListings(JSON.parse(saved));
+    }
+    
+    // Load history from localStorage initially
+    const history = localStorage.getItem('searchHistory');
+    if (history) {
+      setSearchHistory(JSON.parse(history));
+    }
+
+    // If authenticated, sync history from server
+    const syncHistory = async () => {
+      try {
+        const response = await api.get(ENDPOINTS.LISTINGS.SEARCH + '/history');
+        if (response.data && response.data.length > 0) {
+          // Merge or replace with server history
+          setSearchHistory(response.data);
+          localStorage.setItem('searchHistory', JSON.stringify(response.data));
+        }
+      } catch (error) {
+        console.error('Failed to sync search history:', error);
+      }
+    };
+
+    // We check for token in localStorage or context (assuming useAuth is available or we check api defaults)
+    if (localStorage.getItem('token')) {
+      syncHistory();
     }
   }, [fetchListings]);
 
@@ -88,6 +116,9 @@ export const ListingProvider: React.FC<{ children: React.ReactNode }> = ({ child
       const response = await api.get(`${ENDPOINTS.LISTINGS.SEARCH}?${params.toString()}`);
       // The backend returns { data: [...], meta: {...} }
       setFilteredListings(response.data.data || []);
+      
+      // Save to discovery history
+      saveSearchToHistory(newFilters);
     } catch (error) {
       console.error('Search failed:', error);
       // Local fallback
@@ -131,6 +162,35 @@ export const ListingProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
   }, []);
 
+  /**
+   * Orchestrates the persistence of search filters to local storage
+   * and prepares for server-side synchronization.
+   */
+  const saveSearchToHistory = useCallback(async (newFilters: Filters) => {
+    // 1. Update local state immediately
+    setSearchHistory(prev => {
+      const exists = prev.find(h => 
+        h.location === newFilters.location && 
+        h.guests === newFilters.guests &&
+        h.type === newFilters.type
+      );
+      if (exists) return prev;
+      
+      const updated = [newFilters, ...prev].slice(0, 5);
+      localStorage.setItem('searchHistory', JSON.stringify(updated));
+      return updated;
+    });
+
+    // 2. Sync to server if logged in
+    if (localStorage.getItem('token')) {
+      try {
+        await api.post(ENDPOINTS.LISTINGS.SEARCH + '/history', newFilters);
+      } catch (error) {
+        console.warn('Failed to persist search history to server:', error);
+      }
+    }
+  }, []);
+
   return (
     <ListingContext.Provider value={{
       listings,
@@ -142,7 +202,12 @@ export const ListingProvider: React.FC<{ children: React.ReactNode }> = ({ child
       toggleSaved,
       refreshListings: fetchListings,
       searchListings,
-      aiSearchListings
+      aiSearchListings,
+      searchHistory,
+      clearSearchHistory: () => {
+        setSearchHistory([]);
+        localStorage.removeItem('searchHistory');
+      }
     }}>
       {children}
     </ListingContext.Provider>

@@ -1,5 +1,6 @@
 import React from 'react';
 import Navbar from '../shared/components/Navbar/Navbar';
+import { Footer } from '../shared/components';
 import { Outlet } from 'react-router-dom';
 
 const MainLayout: React.FC = () => {
@@ -9,7 +10,7 @@ const MainLayout: React.FC = () => {
       <main className="flex-grow">
         <Outlet />
       </main>
-      {/* Footer can be added here later */}
+      <Footer />
     </div>
   );
 };

@@ -90,3 +90,53 @@ body {
 .animate-slide-in {
   animation: slideIn 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
+
+/* Dashboard Premium Styles */
+.glass-card {
+  background: rgba(255, 255, 255, 0.4);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
+}
+
+.glass-dark {
+  background: rgba(15, 15, 15, 0.6);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.dashboard-gradient {
+  background: linear-gradient(135deg, #fdfcfb 0%, #e2d1c3 100%);
+  background-attachment: fixed;
+}
+
+.text-gradient {
+  background: linear-gradient(to right, #ff385c, #e31c5f);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Add to your global CSS file for better image quality */
+img {
+  image-rendering: crisp-edges;
+  image-rendering: -moz-crisp-edges;
+  image-rendering: crisp-edges;
+}
+
+/* For high-quality images */
+.quality-image {
+  image-rendering: auto;
+  image-rendering: crisp-edges;
+  image-rendering: optimize-quality;
+}

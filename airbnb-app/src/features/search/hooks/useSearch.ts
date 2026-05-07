@@ -9,15 +9,14 @@
  * regardless of the entry point for the search.
  */
 
-import { useState, useCallback } from 'react';
+import { useCallback } from 'react';
 import { useListings } from '../../../contexts/ListingContext';
+import { useSearchState, type SearchMode } from '../../../contexts/SearchContext';
 import { useNavigate } from 'react-router-dom';
-
-export type SearchMode = 'AI' | 'NORMAL' | 'MAP';
 
 export const useSearch = () => {
   const { searchListings, aiSearchListings, loading, filters } = useListings();
-  const [mode, setMode] = useState<SearchMode>('NORMAL');
+  const { mode, setMode } = useSearchState();
   const navigate = useNavigate();
 
   /**
@@ -56,7 +55,7 @@ export const useSearch = () => {
    */
   const switchMode = useCallback((newMode: SearchMode) => {
     setMode(newMode);
-  }, []);
+  }, [setMode]);
 
   return {
     // State

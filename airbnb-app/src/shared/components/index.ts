@@ -6,4 +6,5 @@ export { default as ImageGalleryModal } from './models/ImageGalleryModal';
 export { default as Dropdown } from "./Dropdown/Dropdown";
 export { default as Input } from './Input/Input';
 export { default as Label } from './Label/Label';
+export { default as Footer } from './Footer/Footer';
 export { default as ProtectedRoute } from './ProtectedRoute';

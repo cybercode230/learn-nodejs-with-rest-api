@@ -4,6 +4,7 @@ import dayjs from 'dayjs';
 import { SearchContainer } from '../../search';
 import { useListings } from '../../../contexts/ListingContext';
 import ListingSection from '../components/ListingSection';
+import ContinueSearching from '../components/ContinueSearching';
 import { Button } from '../../../shared/components';
 import { ChevronDown, Sparkles } from 'lucide-react';
 
@@ -76,6 +77,9 @@ const HomePage: React.FC = () => {
       <div className="container mx-auto px-4 md:px-8 lg:px-12 pb-32">
         <div className="max-w-[1600px] mx-auto space-y-4">
           
+          {/* SECTION: Continue Searching */}
+          <ContinueSearching />
+
           {/* SECTION: New Arrivals */}
           {newArrivals.length > 0 && (
             <div className="relative">

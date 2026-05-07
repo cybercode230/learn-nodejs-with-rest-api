@@ -4,7 +4,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import AISearch from './AISearch';
 import NormalSearch from './NormalSearch';
 import MapSearch from './MapSearch';
-import { useSearch, type SearchMode } from '../hooks/useSearch';
+import { useSearch } from '../hooks/useSearch';
+import { type SearchMode } from '../../../contexts/SearchContext';
 
 const MODE_TEXTS: Record<SearchMode, string> = {
   AI: "Search with AI made simple",
@@ -12,7 +13,11 @@ const MODE_TEXTS: Record<SearchMode, string> = {
   MAP: "Explore unique homes worldwide on the map"
 };
 
-const SearchContainer: React.FC = () => {
+interface SearchContainerProps {
+  onClose?: () => void;
+}
+
+const SearchContainer: React.FC<SearchContainerProps> = ({ onClose }) => {
   const { mode, switchMode, isAiMode, isNormalMode, isMapMode } = useSearch();
 
   return (
@@ -70,12 +75,15 @@ const SearchContainer: React.FC = () => {
             exit={{ opacity: 0, scale: 0.98 }}
             transition={{ duration: 0.4, ease: "easeOut" }}
           >
-            {isAiMode && <AISearch onClose={() => {}} />}
-            {isNormalMode && <NormalSearch onClose={() => {}} />}
+            {isAiMode && <AISearch onClose={onClose} />}
+            {isNormalMode && <NormalSearch onClose={onClose} />}
             {isMapMode && (
               <div className="w-full mx-auto px-2">
                 <MapSearch 
-                  onClose={() => switchMode('NORMAL')} 
+                  onClose={() => {
+                    switchMode('NORMAL');
+                    if (onClose) onClose();
+                  }} 
                   height="h-[550px]" 
                   rounded="rounded-3xl"
                 />

@@ -15,6 +15,9 @@ export const ENDPOINTS = {
     BASE: '/listings',
     SEARCH: '/listings/search',
     DETAILS: (id: string) => `/listings/${id}`,
+    PHOTOS: (id: string) => `/listings/${id}/photos`,
+    PHOTO: (listingId: string, photoId: string) => `/listings/${listingId}/photos/${photoId}`,
+    REVIEWS: (id: string) => `/listings/${id}/reviews`,
   },
   AI: {
     SEARCH: '/ai/search',
@@ -22,6 +25,8 @@ export const ENDPOINTS = {
   BOOKINGS: {
     BASE: '/bookings',
     BY_ID: (id: string) => `/bookings/${id}`,
+    STATUS: (id: string) => `/bookings/${id}/status`,
+    BY_LISTING: (listingId: string) => `/bookings/listing/${listingId}`,
   },
   USERS: {
     BASE: '/users',
