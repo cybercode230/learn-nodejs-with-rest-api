@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import dayjs from 'dayjs';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../../../api/axios';
+import { ENDPOINTS } from '../../../api/endpoints';
 import { 
   Star, Share, Heart, Wifi, Car, Home, 
   Bath,Check, ChevronRight, Info,
@@ -21,7 +22,7 @@ const BookingModal: React.FC<{
   guests: any;
   pricePerNight: number;
   total: number;
-}> = ({ isOpen, onClose, listing, dates, guests, pricePerNight, total }) => {
+}> = ({ isOpen, onClose, listing, dates, guests, total }) => {
   const [step, setStep] = useState<'summary' | 'confirm' | 'message' | 'payment' | 'done'>('summary');
   const [message, setMessage] = useState('');
   const [cardData, setCardData] = useState({ number: '', expiry: '', cvv: '' });
@@ -445,13 +446,13 @@ const ListingDetailsPage: React.FC = () => {
                 </div>
 
                 {/* DATE & GUEST PICKERS */}
-                <div className="border border-gray-400 rounded-xl overflow-hidden mb-4 relative">
+                <div className="border border-gray-400 rounded-xl mb-4 relative">
                   <div className="grid grid-cols-2 divide-x divide-gray-400 border-b border-gray-400 relative">
-                    <button onClick={() => setShowCalendar(!showCalendar)} className="p-3 text-left hover:bg-gray-50">
+                    <button onClick={() => setShowCalendar(!showCalendar)} className="p-3 text-left hover:bg-gray-50 rounded-tl-xl transition-colors">
                       <p className="text-[9px] font-black uppercase">Check-in</p>
                       <p className="text-sm">{checkIn ? dayjs(checkIn).format('MM/DD/YYYY') : 'Add date'}</p>
                     </button>
-                    <button onClick={() => setShowCalendar(!showCalendar)} className="p-3 text-left hover:bg-gray-50">
+                    <button onClick={() => setShowCalendar(!showCalendar)} className="p-3 text-left hover:bg-gray-50 rounded-tr-xl transition-colors">
                       <p className="text-[9px] font-black uppercase">Checkout</p>
                       <p className="text-sm">{checkOut ? dayjs(checkOut).format('MM/DD/YYYY') : 'Add date'}</p>
                     </button>
@@ -511,7 +512,7 @@ const ListingDetailsPage: React.FC = () => {
                   
                   <button 
                     onClick={() => setShowGuestPicker(!showGuestPicker)}
-                    className="w-full p-3 text-left hover:bg-gray-50 relative"
+                    className="w-full p-3 text-left hover:bg-gray-50 relative rounded-b-xl transition-colors"
                   >
                     <p className="text-[9px] font-black uppercase">Guests</p>
                     <p className="text-sm">{totalGuests} guest{totalGuests > 1 ? 's' : ''}{guests.infants > 0 ? `, ${guests.infants} infant` : ''}{guests.pets > 0 ? `, ${guests.pets} pet` : ''}</p>

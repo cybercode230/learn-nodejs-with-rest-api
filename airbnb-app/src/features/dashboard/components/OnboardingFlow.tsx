@@ -4,7 +4,7 @@ import { useAuth } from '../../../contexts/AuthContext';
 import { useOnboarding } from '../hooks/useOnboarding';
 import {
   Home, CreditCard, Sparkles, ArrowRight,
-  CheckCircle, Shield, X, Star, Camera, Phone, MapPin, Layout, BarChart
+   Shield, X, Camera, Phone, MapPin, Layout, BarChart, User
 } from 'lucide-react';
 import { useProfile } from '../hooks/useProfile';
 import api from '../../../api/axios';
@@ -62,22 +62,21 @@ const StepProfile: React.FC<{ onNext: () => void; onSkip: () => void }> = ({ onN
     phoneNumber: user?.phone || '',
     address: ''
   });
-  const [avatar, setAvatar] = React.useState<string | null>(user?.avatar || null);
-  const [uploading, setUploading] = React.useState(false);
+  const [avatarPreview, setAvatarPreview] = React.useState<string | null>(user?.avatar || null);
+  const [avatarFile, setAvatarFile] = React.useState<File | null>(null);
 
-  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      setUploading(true);
-      const res = await uploadAvatar(file);
-      if (res.success) {
-        setAvatar(res.user.avatar);
-      }
-      setUploading(false);
+      setAvatarFile(file);
+      setAvatarPreview(URL.createObjectURL(file));
     }
   };
 
   const handleSubmit = async () => {
+    if (avatarFile) {
+      await uploadAvatar(avatarFile);
+    }
     await updateProfile(formData);
     onNext();
   };
@@ -85,16 +84,16 @@ const StepProfile: React.FC<{ onNext: () => void; onSkip: () => void }> = ({ onN
   return (
     <div className="flex flex-col items-center max-w-xl mx-auto">
       <div className="relative mb-8 group">
-        <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-white shadow-2xl bg-gray-100">
-          {avatar ? (
-            <img src={avatar} className="w-full h-full object-cover" alt="Profile" />
+        <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-white shadow-2xl bg-gray-100 flex items-center justify-center">
+          {avatarPreview ? (
+            <img src={avatarPreview} className="w-full h-full object-cover" alt="Profile" />
           ) : (
-            <User size={64} className="m-auto mt-6 text-gray-300" />
+            <User size={64} className="text-gray-300" />
           )}
         </div>
         <label className="absolute bottom-1 right-1 w-10 h-10 bg-airbnb text-white rounded-full flex items-center justify-center cursor-pointer hover:scale-110 transition-all shadow-lg border-2 border-white">
           <input type="file" className="hidden" accept="image/*" onChange={handleAvatarChange} />
-          {uploading ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Camera size={18} />}
+          <Camera size={18} />
         </label>
       </div>
 

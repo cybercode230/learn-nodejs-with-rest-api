@@ -2,7 +2,6 @@ import { useState, useCallback, useEffect } from 'react';
 import api from '../../../api/axios';
 import { ENDPOINTS } from '../../../api/endpoints';
 import { useAuth } from '../../../contexts/AuthContext';
-import type { User } from '../../../shared/types';
 
 interface ProfileData {
   name?: string;
@@ -63,7 +62,7 @@ export const useProfile = () => {
     setIsLoading(true);
     setError(null);
     const formData = new FormData();
-    formData.append('image', file);
+    formData.append('avatar', file);
 
     try {
       const response = await api.post(ENDPOINTS.USERS.AVATAR(user.id), formData, {
