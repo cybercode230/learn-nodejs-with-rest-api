@@ -232,3 +232,45 @@ export const getBookingsByGuest = async (req: AuthRequest, res: Response, next: 
     res.json({ data, meta: { total, page, limit, totalPages: Math.ceil(total / limit) } });
   } catch (error) { next(error); }
 };
+
+/**
+ * @swagger
+ * /api/v1/users/{id}/host-bookings:
+ *   get:
+ *     summary: Get all bookings for a host's listings (paginated)
+ *     description: Returns bookings for all listings owned by the host. Only the host themselves or an ADMIN can view.
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - { in: path, name: id, required: true, schema: { type: string } }
+ *       - { in: query, name: page, schema: { type: integer, default: 1 } }
+ *       - { in: query, name: limit, schema: { type: integer, default: 10 } }
+ *     responses:
+ *       200: { description: Paginated bookings for host's listings }
+ *       403: { description: You can only view bookings for your own listings }
+ *       404: { description: User not found }
+ */
+export const getBookingsForHost = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const id = req.params["id"] as string;
+    // Authorization check — only the host themselves or an ADMIN
+    if (id !== req.userId && req.role !== Role.ADMIN) {
+      return res.status(403).json({ message: "Forbidden: You can only view bookings for your own listings" });
+    }
+    
+    const userExists = await prisma.user.findUnique({ where: { id }, select: { role: true } });
+    if (!userExists) return res.status(404).json({ message: "User not found" });
+    if (userExists.role !== Role.HOST && req.role !== Role.ADMIN) {
+      return res.status(403).json({ message: "Forbidden: Only hosts can access this endpoint" });
+    }
+
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 10;
+    const skip = (page - 1) * limit;
+
+    const { data, total } = await UserService.getBookingsForHost(id, { skip, take: limit });
+    res.json({ data, meta: { total, page, limit, totalPages: Math.ceil(total / limit) } });
+  } catch (error) { next(error); }
+};
+

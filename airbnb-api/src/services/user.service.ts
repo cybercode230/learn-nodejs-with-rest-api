@@ -125,13 +125,38 @@ export class UserService {
       prisma.booking.findMany({
         where: { guestId },
         include: {
-          listing: { select: { title: true, location: true, type: true } }
+          listing: { select: { title: true, location: true, type: true, photos: true } },
+          guest: { select: { name: true, avatar: true } }
         },
         orderBy: { createdAt: "desc" },
         skip: options.skip,
         take: options.take
       }),
       prisma.booking.count({ where: { guestId } })
+    ]);
+    return { data: bookings, total };
+  }
+
+  static async getBookingsForHost(hostId: string, options: { skip?: number; take?: number } = {}) {
+    // Retrieve all bookings for listings owned by a specific host
+    const [bookings, total] = await Promise.all([
+      prisma.booking.findMany({
+        where: {
+          listing: { hostId }
+        },
+        include: {
+          listing: { select: { title: true, location: true, type: true, photos: true } },
+          guest: { select: { name: true, avatar: true, email: true, phone: true } }
+        },
+        orderBy: { createdAt: "desc" },
+        skip: options.skip,
+        take: options.take
+      }),
+      prisma.booking.count({
+        where: {
+          listing: { hostId }
+        }
+      })
     ]);
     return { data: bookings, total };
   }

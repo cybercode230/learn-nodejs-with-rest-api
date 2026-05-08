@@ -13,6 +13,7 @@ import {
   deleteUser,
   getListingsByHost,
   getBookingsByGuest,
+  getBookingsForHost,
   getUserStats
 } from "../../controllers/users.controller.js";
 import { authenticate, requireAdmin } from "../../middlewares/auth.middleware.js";
@@ -31,6 +32,7 @@ router.get("/:id", authenticate, getUserById);
 // Public/Protected routes for fetching related entity data
 router.get("/:id/listings", getListingsByHost);
 router.get("/:id/bookings", authenticate, getBookingsByGuest);
+router.get("/:id/host-bookings", authenticate, getBookingsForHost);
 
 // Admin-only route for creating users manually
 router.post("/", authenticate, requireAdmin, createUser);
