@@ -30,10 +30,12 @@ export const useLogin = () => {
     }
   };
 
+  const clearError = () => setError(null);
+
   return {
     handleLogin,
     isLoading,
     error,
-    setError
+    clearError
   };
 };

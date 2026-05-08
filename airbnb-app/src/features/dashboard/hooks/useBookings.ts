@@ -1,211 +1,97 @@
 // features/dashboard/hooks/useBookings.ts
-import { useState, useCallback, useEffect } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../../../api/axios';
 import { ENDPOINTS } from '../../../api/endpoints';
 import { useAuth } from '../../../contexts/AuthContext';
 import type { Booking, BookingStatus } from '../../../shared/types';
 
+/**
+ * File: useBookings.ts
+ * What it is doing: Manages booking data fetching and status updates.
+ * Responsibility: Connecting the dashboard to user-specific booking endpoints.
+ * Outcomes: Real-time booking lists for both guests and hosts (with backend support).
+ */
 export const useBookings = () => {
-  const { user, token } = useAuth();
-  const [bookings, setBookings] = useState<Booking[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isUpdating, setIsUpdating] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+  const role = user?.role || 'GUEST';
 
-  // Check if user has permission (HOST or ADMIN)
-  const hasPermission = user?.role === 'HOST' || user?.role === 'ADMIN';
-
-  // Fetch all bookings
-  const fetchBookings = useCallback(async () => {
-    if (!hasPermission) {
-      setError('You do not have permission to view bookings');
-      return { success: false, error: 'Permission denied' };
-    }
-
-    setIsLoading(true);
-    setError(null);
-    
-    try {
-      const response = await api.get(ENDPOINTS.BOOKINGS.BASE, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      const fetchedBookings = response.data.data || [];
-      setBookings(fetchedBookings);
-      return { success: true, data: fetchedBookings };
-    } catch (err: any) {
-      const errorMessage = err.response?.data?.message || 'Failed to fetch bookings';
-      setError(errorMessage);
-      return { success: false, error: errorMessage };
-    } finally {
-      setIsLoading(false);
-    }
-  }, [hasPermission, token]);
-
-  // Fetch bookings for a specific listing
-  const fetchBookingsByListing = useCallback(async (listingId: string) => {
-    if (!hasPermission) {
-      setError('You do not have permission to view bookings');
-      return { success: false, error: 'Permission denied' };
-    }
-
-    setIsLoading(true);
-    setError(null);
-    
-    try {
-      const response = await api.get(`${ENDPOINTS.BOOKINGS.BASE}/listing/${listingId}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      return { success: true, data: response.data.data || [] };
-    } catch (err: any) {
-      const errorMessage = err.response?.data?.message || 'Failed to fetch bookings for listing';
-      setError(errorMessage);
-      return { success: false, error: errorMessage };
-    } finally {
-      setIsLoading(false);
-    }
-  }, [hasPermission, token]);
-
-  // Update booking status
-  const updateBookingStatus = useCallback(async (bookingId: string, status: BookingStatus) => {
-    if (!hasPermission) {
-      setError('You do not have permission to update bookings');
-      return { success: false, error: 'Permission denied' };
-    }
-
-    setIsUpdating(true);
-    setError(null);
-    
-    try {
-      const response = await api.patch(
-        ENDPOINTS.BOOKINGS.STATUS(bookingId),
-        { status },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+  // Fetch bookings based on role
+  const { 
+    data: bookings = [], 
+    isLoading, 
+    error 
+  } = useQuery<Booking[]>({
+    queryKey: ['bookings', role, user?.id],
+    queryFn: async () => {
+      if (!user?.id) return [];
       
-      // Update local state
-      setBookings(prev => prev.map(booking => 
-        booking.id === bookingId 
-          ? { ...booking, status }
-          : booking
-      ));
+      let url = ENDPOINTS.USERS.BOOKINGS(user.id);
       
-      return { success: true, data: response.data };
-    } catch (err: any) {
-      const errorMessage = err.response?.data?.message || 'Failed to update booking status';
-      setError(errorMessage);
-      return { success: false, error: errorMessage };
-    } finally {
-      setIsUpdating(false);
-    }
-  }, [hasPermission, token]);
-
-  // Bulk update booking status
-  const bulkUpdateStatus = useCallback(async (bookingIds: string[], status: BookingStatus) => {
-    if (!hasPermission) {
-      setError('You do not have permission to update bookings');
-      return { success: false, error: 'Permission denied' };
-    }
-
-    setIsUpdating(true);
-    setError(null);
-    
-    const results = await Promise.allSettled(
-      bookingIds.map(id => updateBookingStatus(id, status))
-    );
-    
-    const succeeded = results.filter(r => r.status === 'fulfilled' && r.value.success).length;
-    const failed = results.length - succeeded;
-    
-    setIsUpdating(false);
-    
-    return { 
-      success: failed === 0, 
-      succeeded, 
-      failed,
-      message: `Updated ${succeeded} booking${succeeded !== 1 ? 's' : ''}${failed > 0 ? `, ${failed} failed` : ''}`
-    };
-  }, [hasPermission, updateBookingStatus]);
-
-  // Delete a booking
-  const deleteBooking = useCallback(async (bookingId: string) => {
-    if (!hasPermission) {
-      setError('You do not have permission to delete bookings');
-      return { success: false, error: 'Permission denied' };
-    }
-
-    setIsUpdating(true);
-    setError(null);
-    
-    try {
-      const response = await api.delete(ENDPOINTS.BOOKINGS.BY_ID(bookingId), {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      if (role === 'HOST') {
+        url = ENDPOINTS.USERS.HOST_BOOKINGS(user.id);
+      } else if (role === 'ADMIN') {
+        url = ENDPOINTS.BOOKINGS.BASE;
+      }
       
-      // Update local state
-      setBookings(prev => prev.filter(booking => booking.id !== bookingId));
-      
-      return { success: true, data: response.data };
-    } catch (err: any) {
-      const errorMessage = err.response?.data?.message || 'Failed to delete booking';
-      setError(errorMessage);
-      return { success: false, error: errorMessage };
-    } finally {
-      setIsUpdating(false);
-    }
-  }, [hasPermission, token]);
+      const response = await api.get(url);
+      // Backend returns { data: [...], meta: {...} } for paginated results
+      return response.data.data || response.data || [];
+    },
+    enabled: !!user,
+  });
 
-  // Get booking statistics
-  const getBookingStats = useCallback(() => {
+  // Update booking status mutation
+  const updateStatusMutation = useMutation({
+    mutationFn: async ({ id, status }: { id: string; status: BookingStatus }) => {
+      const response = await api.patch(ENDPOINTS.BOOKINGS.STATUS(id), { status });
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['bookings'] });
+    },
+  });
+
+  // Delete booking mutation (Soft cancel)
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const response = await api.delete(ENDPOINTS.BOOKINGS.BY_ID(id));
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['bookings'] });
+    },
+  });
+
+  const getBookingStats = () => {
     const total = bookings.length;
     const confirmed = bookings.filter(b => b.status === 'CONFIRMED').length;
     const pending = bookings.filter(b => b.status === 'PENDING').length;
     const cancelled = bookings.filter(b => b.status === 'CANCELLED').length;
-    const totalRevenue = bookings.reduce((sum, b) => sum + b.totalPrice, 0);
+    const completed = bookings.filter(b => b.status === 'COMPLETED').length;
+    const totalRevenue = bookings.reduce((sum, b) => sum + (b.totalPrice || 0), 0);
     
     return {
       total,
       confirmed,
       pending,
       cancelled,
+      completed,
       totalRevenue,
-      conversionRate: total > 0 ? (confirmed / total) * 100 : 0,
     };
-  }, [bookings]);
-
-  // Get bookings for current user (host) or all if admin
-  const getUserBookings = useCallback(() => {
-    if (!user) return [];
-    
-    if (user.role === 'ADMIN') {
-      return bookings;
-    }
-    
-    // For HOST, return bookings for their listings
-    return bookings;
-  }, [bookings, user]);
-
-  // Auto-fetch bookings on mount if user has permission
-  useEffect(() => {
-    if (hasPermission && token) {
-      fetchBookings();
-    }
-  }, [hasPermission, token, fetchBookings]);
+  };
 
   return {
-    // State
     bookings,
     isLoading,
-    isUpdating,
-    error,
-    hasPermission,
+    isUpdating: updateStatusMutation.isPending || deleteMutation.isPending,
+    error: error ? (error as any).message : null,
+    hasPermission: role === 'HOST' || role === 'ADMIN',
     
     // Methods
-    fetchBookings,
-    fetchBookingsByListing,
-    updateBookingStatus,
-    bulkUpdateStatus,
-    deleteBooking,
+    updateBookingStatus: (id: string, status: BookingStatus) => 
+      updateStatusMutation.mutateAsync({ id, status }),
+    deleteBooking: (id: string) => deleteMutation.mutateAsync(id),
     getBookingStats,
-    getUserBookings,
   };
 };

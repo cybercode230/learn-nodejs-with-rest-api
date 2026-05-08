@@ -30,10 +30,12 @@ export const useRegister = () => {
     }
   };
 
+  const clearError = () => setError(null);
+
   return {
     handleRegister,
     isLoading,
     error,
-    setError
+    clearError
   };
 };

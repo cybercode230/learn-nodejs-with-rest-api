@@ -58,6 +58,8 @@ export const usePasswordReset = () => {
     }
   };
 
+  const clearError = () => setError(null);
+
   return {
     forgotPassword,
     validateToken,
@@ -65,6 +67,6 @@ export const usePasswordReset = () => {
     isLoading,
     error,
     successMessage,
-    setError
+    clearError
   };
 };

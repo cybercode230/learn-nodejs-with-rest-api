@@ -2,12 +2,13 @@ import React, { useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { 
   Home, DollarSign, Star, CalendarCheck, 
-  ArrowUpRight, ChevronRight, Clock, CheckCircle, XCircle, AlertCircle
+  ArrowUpRight, ChevronRight, Clock, CheckCircle, XCircle, AlertCircle,
+  Users as UsersIcon, MapPin, Heart,MessageSquare
 } from 'lucide-react';
-import { useListings } from '../../../contexts/ListingContext';
 import { useAuth } from '../../../contexts/AuthContext';
 import { Link } from 'react-router-dom';
 import FeatureCard from '../components/FeatureCard/FeatureCard';
+import { useDashboardStats, useDashboardBookings } from '../hooks/useDashboardData';
 
 // --- Subcomponents ---
 
@@ -69,145 +70,147 @@ const SkeletonRow: React.FC = () => (
   </div>
 );
 
-// Feature configuration for the card
-const featureConfig = [
-  {
-    id: 'bookings',
-    title: 'Manage all your bookings',
-    description: 'View upcoming stays, handle check-ins, and respond to reservation requests — all from one clean dashboard.',
-    image: '/glass.png',
-    buttons: [
-      { text: 'Check Bookings', link: '/dashboard/bookings', variant: 'primary' as const }
-    ]
-  },
-  {
-    id: 'listings',
-    title: 'Your properties, beautifully organised',
-    description: 'Add new listings, update availability, and optimise pricing to attract more guests and grow your income.',
-    image: '/glass.png',
-    buttons: [
-      { text: 'Improve Listings', link: '/dashboard/listings', variant: 'primary' as const },
-      { text: 'Learn More', link: '/help', variant: 'outline' as const }
-    ]
-  },
-  {
-    id: 'messages',
-    title: 'Stay connected with your guests',
-    description: 'Fast replies build trust. Keep every guest conversation in one place and never miss an important message.',
-    image: '/glass.png',
-    buttons: [
-      { text: 'Go to Messages', link: '/dashboard/messages', variant: 'primary' as const }
-    ]
-  },
-  {
-    id: 'wallet',
-    ttitle: 'Track your earnings instantly',
-    description: 'See payouts, pending balances, and transaction history. Your money, clearly laid out whenever you need it.',
-    image: '/glass.png',
-    buttons: [
-      { text: 'View Wallet', link: '/dashboard/wallet', variant: 'primary' as const },
-      { text: 'Withdraw Now', link: '/dashboard/wallet', variant: 'outline' as const }
-    ]
-  },
-  {
-    id: 'map',
-    title: 'See all your properties on a map',
-    description: 'Visualise your entire portfolio geographically. Spot clusters, coverage gaps, and expansion opportunities at a glance.',
-    image: '/glass.png',
-    buttons: [
-      { text: 'Open Map', link: '/dashboard/map', variant: 'primary' as const }
-    ]
-  }
-];
-
 // --- Main Page ---
 
 const DashboardOverview: React.FC = () => {
   const { user } = useAuth();
-  const { listings, loading } = useListings();
+  const role = user?.role || 'GUEST';
 
-  // Derive host-specific listings
-  const hostListings = useMemo(
-    () => listings.filter(l => l.hostId === user?.id),
-    [listings, user?.id]
-  );
+  const { data: stats, isLoading: statsLoading } = useDashboardStats();
+  const { data: bookings, isLoading: bookingsLoading } = useDashboardBookings();
 
-  // Active listings count based on status
-  const activeListings = hostListings.filter(l => l.status === 'ACTIVE' || l.status === 'PUBLISHED').length;
+  const featureConfig = useMemo(() => {
+    const base = [
+      {
+        id: 'bookings',
+        title: role === 'GUEST' ? 'Your upcoming trips' : role === 'ADMIN' ? 'Platform Bookings' : 'Manage your bookings',
+        description: role === 'GUEST' 
+          ? 'Check your itineraries, message hosts, and manage your travel plans easily.' 
+          : role === 'ADMIN'
+          ? 'Monitor all platform reservations, track occupancy rates and handle escalations.'
+          : 'View upcoming stays, handle check-ins, and respond to reservation requests in real-time.',
+        image: '/glass.png',
+        ctaText: role === 'GUEST' ? 'View My Trips' : 'Check Bookings',
+        ctaLink: '/dashboard/bookings'
+      },
+      {
+        id: 'messages',
+        title: 'Unified Inbox',
+        description: 'Stay connected with everyone. Fast replies build trust and ensure a smooth experience for all.',
+        image: '/glass.png',
+        ctaText: 'Open Messages',
+        ctaLink: '/dashboard/messages'
+      }
+    ];
 
-  // Mock booking data until booking context is wired
-  const mockBookings = useMemo(() => [
-    { id: '1', listing: hostListings[0], guestName: 'Alice Martin',  checkIn: '2026-05-10', checkOut: '2026-05-14', amount: 480, status: 'CONFIRMED', method: 'Card' },
-    { id: '2', listing: hostListings[1], guestName: 'James Okonkwo', checkIn: '2026-05-15', checkOut: '2026-05-18', amount: 210, status: 'PENDING',   method: 'Wallet' },
-    { id: '3', listing: hostListings[0], guestName: 'Sofia Leclerc', checkIn: '2026-05-20', checkOut: '2026-05-25', amount: 600, status: 'CONFIRMED', method: 'Card' },
-  ].filter(b => b.listing), [hostListings]);
+    if (role === 'ADMIN' || role === 'HOST') {
+      base.push({
+        id: 'listings',
+        title: role === 'ADMIN' ? 'Platform Inventory' : 'Your properties',
+        description: role === 'ADMIN'
+          ? 'Review all listings on the platform, moderate content, and manage categories.'
+          : 'Add new listings, update availability, and optimise pricing to attract more guests.',
+        image: '/glass.png',
+        ctaText: 'Manage Listings',
+        ctaLink: '/dashboard/listings'
+      });
+    }
 
-  const totalIncome = mockBookings.filter(b => b.status === 'CONFIRMED').reduce((s, b) => s + b.amount, 0);
+    if (role === 'GUEST') {
+      base.push({
+        id: 'map',
+        title: 'Explore Destinations',
+        description: 'Find your next adventure on our interactive map. Discover unique stays around the world.',
+        image: '/glass.png',
+        ctaText: 'Explore Map',
+        ctaLink: '/dashboard/map'
+      });
+    }
+
+    if (role === 'ADMIN') {
+      base.push({
+        id: 'users',
+        title: 'User Management',
+        description: 'Oversee all platform users, manage roles, and ensure community guidelines are followed.',
+        image: '/glass.png',
+        ctaText: 'Manage Users',
+        ctaLink: '/dashboard/users'
+      });
+    }
+
+    return base;
+  }, [role]);
+
+  const renderStats = () => {
+    if (role === 'ADMIN') {
+      return (
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          <StatCard label="Total Users" value={stats?.totalUsers ?? '0'} icon={<UsersIcon size={18} className="text-blue-600" />} color="bg-blue-50" />
+          <StatCard label="Total Bookings" value={stats?.totalBookings ?? '0'} icon={<CalendarCheck size={18} className="text-purple-600" />} color="bg-purple-50" />
+          <StatCard label="Total Listings" value={stats?.totalListings ?? '0'} icon={<Home size={18} className="text-emerald-600" />} color="bg-emerald-50" />
+          <StatCard label="Platform Revenue" value={`$${stats?.revenue ?? '0'}`} icon={<DollarSign size={18} className="text-amber-500" />} color="bg-amber-50" />
+        </div>
+      );
+    }
+
+    if (role === 'HOST') {
+      return (
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          <StatCard label="Active Listings" value={stats?.activeListings ?? '0'} icon={<Home size={18} className="text-blue-600" />} color="bg-blue-50" />
+          <StatCard label="Recent Bookings" value={bookings?.length ?? '0'} icon={<CalendarCheck size={18} className="text-purple-600" />} color="bg-purple-50" />
+          <StatCard label="Total Earnings" value={`$${stats?.earnings ?? '0'}`} icon={<DollarSign size={18} className="text-emerald-600" />} color="bg-emerald-50" />
+          <StatCard label="Avg. Rating" value={stats?.avgRating ?? '4.9'} icon={<Star size={18} className="text-amber-500" />} color="bg-amber-50" />
+        </div>
+      );
+    }
+
+    // GUEST Stats
+    return (
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <StatCard label="Upcoming Trips" value={stats?.upcomingTrips ?? '0'} icon={<MapPin size={18} className="text-blue-600" />} color="bg-blue-50" />
+        <StatCard label="Past Bookings" value={stats?.pastBookings ?? '0'} icon={<CalendarCheck size={18} className="text-purple-600" />} color="bg-purple-50" />
+        <StatCard label="Saved Places" value={stats?.savedPlaces ?? '0'} icon={<Heart size={18} className="text-rose-500" />} color="bg-rose-50" />
+        <StatCard label="Unread Messages" value={stats?.unreadMessages ?? '0'} icon={<MessageSquare size={18} className="text-emerald-600" />} color="bg-emerald-50" />
+      </div>
+    );
+  };
 
   return (
     <div className="space-y-6 pb-12">
-      {/* Feature Card Component */}
       <FeatureCard features={featureConfig} autoRotate={true} rotateInterval={5000} />
 
-      {/* Stats Grid */}
       <section>
-        <h2 className="text-sm font-semibold text-gray-500 mb-3">Overview</h2>
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-          <StatCard 
-            label="Active Listings" 
-            value={activeListings} 
-            icon={<Home size={18} className="text-blue-600" />} 
-            color="bg-blue-50" 
-            trend={activeListings > 0 ? `+${activeListings} total` : undefined} 
-            trendUp={activeListings > 0} 
-          />
-          <StatCard 
-            label="Total Bookings" 
-            value={mockBookings.length} 
-            icon={<CalendarCheck size={18} className="text-purple-600" />} 
-            color="bg-purple-50" 
-            trend={mockBookings.length > 0 ? `${mockBookings.length} this month` : undefined} 
-            trendUp={mockBookings.length > 0} 
-          />
-          <StatCard 
-            label="Total Income" 
-            value={`$${totalIncome}`} 
-            icon={<DollarSign size={18} className="text-emerald-600" />} 
-            color="bg-emerald-50" 
-            trend={totalIncome > 0 ? "+12%" : undefined} 
-            trendUp={totalIncome > 0} 
-          />
-          <StatCard 
-            label="Avg. Rating" 
-            value="4.9" 
-            icon={<Star size={18} className="text-amber-500" />} 
-            color="bg-amber-50" 
-          />
-        </div>
+        <h2 className="text-sm font-semibold text-gray-500 mb-3">
+          {role === 'ADMIN' ? 'Platform Overview' : role === 'HOST' ? 'Host Performance' : 'Travel Overview'}
+        </h2>
+        {statsLoading ? (
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            {[1, 2, 3, 4].map(i => <div key={i} className="h-32 bg-gray-50 rounded-xl animate-pulse" />)}
+          </div>
+        ) : renderStats()}
       </section>   
 
-      {/* Reservations Table */}
       <section>
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-sm font-semibold text-gray-500">Recent Reservations</h2>
+          <h2 className="text-sm font-semibold text-gray-500">
+            {role === 'GUEST' ? 'Your Recent Trips' : 'Recent Reservations'}
+          </h2>
           <Link to="/dashboard/bookings" className="text-xs font-medium text-airbnb hover:underline flex items-center gap-1">
             View all <ArrowUpRight size={12} />
           </Link>
         </div>
 
         <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
-          {/* Table Header - Hidden on mobile */}
           <div className="hidden md:grid grid-cols-[2fr_1fr_1fr_1fr_1fr] gap-4 px-4 py-3 border-b border-gray-100 bg-gray-50/50">
-            {['Listing', 'Guest', 'Dates', 'Payment', 'Status'].map(h => (
+            {['Listing', role === 'GUEST' ? 'Host' : 'Guest', 'Dates', 'Payment', 'Status'].map(h => (
               <span key={h} className="text-xs font-semibold text-gray-500">{h}</span>
             ))}
           </div>
 
-          {/* Rows */}
-          {loading ? (
+          {bookingsLoading ? (
             Array.from({ length: 3 }).map((_, i) => <SkeletonRow key={i} />)
-          ) : mockBookings.length > 0 ? (
-            mockBookings.map((b, i) => (
+          ) : bookings && bookings.length > 0 ? (
+            bookings.slice(0, 5).map((b, i) => (
               <motion.div
                 key={b.id}
                 initial={{ opacity: 0, x: -10 }}
@@ -215,48 +218,36 @@ const DashboardOverview: React.FC = () => {
                 transition={{ delay: i * 0.08 }}
                 className="block md:grid md:grid-cols-[2fr_1fr_1fr_1fr_1fr] gap-4 px-4 py-4 border-b border-gray-100 last:border-0 hover:bg-gray-50/50 transition-colors"
               >
-                {/* Listing - Mobile optimized */}
                 <div className="flex items-center gap-3 mb-3 md:mb-0">
                   <div className="w-12 h-12 rounded-xl bg-gray-100 overflow-hidden shrink-0">
-                    {b.listing?.photos?.[0]?.url || b.listing?.photos?.[0]?.url ? (
-                      <img src={b.listing?.photos?.[0]?.url || b.listing?.photos?.[0]?.url} alt={b.listing.title} className="w-full h-full object-cover" />
-                    ) : (
-                      <div className="w-full h-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
-                        <Home size={18} className="text-gray-300" />
-                      </div>
-                    )}
+                    <img src={b.listing?.photos?.[0]?.url || '/placeholder.png'} alt="Listing" className="w-full h-full object-cover" />
                   </div>
                   <div className="min-w-0">
                     <p className="font-semibold text-gray-900 text-sm truncate">{b.listing?.title ?? 'Listing'}</p>
-                    <p className="text-xs text-gray-500 truncate">{b.listing?.location || b.listing?.location}</p>
+                    <p className="text-xs text-gray-500 truncate">{b.listing?.location}</p>
                   </div>
                 </div>
 
-                {/* Guest */}
                 <div className="flex items-center justify-between mb-2 md:mb-0">
-                  <span className="text-xs text-gray-500 md:hidden">Guest:</span>
-                  <p className="text-sm font-medium text-gray-700">{b.guestName}</p>
+                  <span className="text-xs text-gray-500 md:hidden">{role === 'GUEST' ? 'Host:' : 'Guest:'}</span>
+                  <p className="text-sm font-medium text-gray-700">{role === 'GUEST' ? b.listing?.host?.name : b.guest?.name}</p>
                 </div>
 
-                {/* Dates */}
                 <div className="flex items-center justify-between mb-2 md:mb-0">
                   <span className="text-xs text-gray-500 md:hidden">Dates:</span>
                   <div className="flex items-center gap-1.5 text-xs text-gray-500">
                     <Clock size={12} />
-                    <span>{b.checkIn} → {b.checkOut}</span>
+                    <span>{new Date(b.checkIn).toLocaleDateString()} → {new Date(b.checkOut).toLocaleDateString()}</span>
                   </div>
                 </div>
 
-                {/* Payment */}
                 <div className="flex items-center justify-between mb-2 md:mb-0">
                   <span className="text-xs text-gray-500 md:hidden">Payment:</span>
                   <div>
-                    <p className="text-sm font-semibold text-gray-900">${b.amount}</p>
-                    <p className="text-[10px] font-medium text-gray-400">{b.method}</p>
+                    <p className="text-sm font-semibold text-gray-900">${b.totalPrice}</p>
                   </div>
                 </div>
 
-                {/* Status */}
                 <div className="flex items-center justify-between">
                   <span className="text-xs text-gray-500 md:hidden">Status:</span>
                   <div className="flex items-center gap-2">
@@ -270,13 +261,9 @@ const DashboardOverview: React.FC = () => {
             ))
           ) : (
             <div className="flex flex-col items-center justify-center py-12 text-center">
-              <div className="w-12 h-12 rounded-full bg-gray-50 flex items-center justify-center mb-3">
-                <CalendarCheck size={24} className="text-gray-300" />
-              </div>
-              <p className="font-semibold text-gray-900">No reservations yet</p>
-              <p className="text-xs text-gray-500 mt-1 max-w-xs">Complete and publish a listing to start receiving bookings.</p>
-              <Link to="/dashboard/listings" className="mt-4 px-4 py-2 bg-gray-900 text-white rounded-lg text-sm font-medium hover:scale-105 transition-all">
-                Go to Listings
+              <p className="font-semibold text-gray-900">No {role === 'GUEST' ? 'trips' : 'reservations'} yet</p>
+              <Link to="/" className="mt-4 px-4 py-2 bg-gray-900 text-white rounded-lg text-sm font-medium">
+                {role === 'GUEST' ? 'Explore Stays' : 'Manage Listings'}
               </Link>
             </div>
           )}

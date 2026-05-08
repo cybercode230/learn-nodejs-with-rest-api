@@ -4,9 +4,9 @@ import { useAuth } from '../../../contexts/AuthContext';
 const ONBOARDING_KEY = 'hostify_onboarding_complete';
 const STEP_KEY = 'hostify_onboarding_step';
 
-export type OnboardingStep = 'welcome' | 'payment' | 'listing' | 'done';
+export type OnboardingStep = 'welcome' | 'profile' | 'payment' | 'listing' | 'done';
 
-const STEPS: OnboardingStep[] = ['welcome', 'payment', 'listing', 'done'];
+const STEPS: OnboardingStep[] = ['welcome', 'profile', 'payment', 'listing', 'done'];
 
 export const useOnboarding = () => {
   const { user } = useAuth();

@@ -9,48 +9,61 @@ import {
   Map as MapIcon,
   ChevronDown,
   TrendingUp,
-  HelpCircle
+  HelpCircle,
+  Users,
 } from 'lucide-react';
 import SidebarNavItem from './SidebarNavItem';
+import { useAuth } from '../../../../contexts/AuthContext';
+import type { Role } from '../../../../shared/types';
 
 interface SidebarNavProps {
   isCollapsed: boolean;
   messageBadge?: number;
 }
 
+interface NavItem {
+  to: string;
+  icon: React.ReactNode;
+  label: string;
+  roles: Role[];
+}
+
 // Main navigation items
-const NAV_ITEMS = [
-  { to: '/dashboard', icon: <LayoutDashboard size={18} />, label: 'Overview' },
+const NAV_ITEMS: NavItem[] = [
+  { to: '/dashboard', icon: <LayoutDashboard size={18} />, label: 'Overview', roles: ['ADMIN', 'HOST', 'GUEST'] },
+  { to: '/dashboard/users', icon: <Users size={18} />, label: 'User Management', roles: ['ADMIN'] },
 ];
 
 // Core features group
-const CORE_FEATURES = [
-  { to: '/dashboard/bookings', icon: <Calendar size={18} />, label: 'Bookings' },
-  { to: '/dashboard/listings', icon: <Home size={18} />, label: 'Listings' },
-  { to: '/dashboard/messages', icon: <MessageSquare size={18} />, label: 'Messages' },
+const CORE_FEATURES: NavItem[] = [
+  { to: '/dashboard/bookings', icon: <Calendar size={18} />, label: 'Bookings', roles: ['ADMIN', 'HOST', 'GUEST'] },
+  { to: '/dashboard/listings', icon: <Home size={18} />, label: 'Listings', roles: ['ADMIN', 'HOST'] },
+  { to: '/dashboard/messages', icon: <MessageSquare size={18} />, label: 'Messages', roles: ['ADMIN', 'HOST', 'GUEST'] },
 ];
 
 // Financial group
-const FINANCIAL_ITEMS = [
-  { to: '/dashboard/wallet', icon: <Wallet size={18} />, label: 'Wallet' },
-  { to: '/dashboard/analytics', icon: <TrendingUp size={18} />, label: 'Analytics' },
+const FINANCIAL_ITEMS: NavItem[] = [
+  { to: '/dashboard/wallet', icon: <Wallet size={18} />, label: 'Wallet', roles: ['ADMIN', 'HOST'] },
+  { to: '/dashboard/analytics', icon: <TrendingUp size={18} />, label: 'Analytics', roles: ['ADMIN', 'HOST'] },
 ];
 
 // Property group
-const PROPERTY_ITEMS = [
-  { to: '/dashboard/map', icon: <MapIcon size={18} />, label: 'Property Map' },  
-   { to: '/dashboard/help', icon: <HelpCircle size={18} />, label: 'Help Center' },
+const PROPERTY_ITEMS: NavItem[] = [
+  { to: '/dashboard/map', icon: <MapIcon size={18} />, label: 'Property Map', roles: ['ADMIN', 'HOST', 'GUEST'] },  
+  { to: '/dashboard/help', icon: <HelpCircle size={18} />, label: 'Help Center', roles: ['ADMIN', 'HOST', 'GUEST'] },
 ];
 
 interface NavGroupProps {
   title: string;
-  items: typeof CORE_FEATURES;
+  items: NavItem[];
   isCollapsed: boolean;
   messageBadge?: number;
 }
 
 const NavGroup: React.FC<NavGroupProps> = ({ title, items, isCollapsed, messageBadge }) => {
   const [isExpanded, setIsExpanded] = useState(true);
+
+  if (items.length === 0) return null;
 
   if (isCollapsed) {
     return (
@@ -108,11 +121,22 @@ const NavGroup: React.FC<NavGroupProps> = ({ title, items, isCollapsed, messageB
 };
 
 const SidebarNav: React.FC<SidebarNavProps> = ({ isCollapsed, messageBadge }) => {
+  const { user } = useAuth();
+  const userRole = user?.role || 'GUEST';
+
+  const filterByRole = (items: NavItem[]) => 
+    items.filter(item => item.roles.includes(userRole));
+
+  const filteredNavItems = filterByRole(NAV_ITEMS);
+  const filteredCoreFeatures = filterByRole(CORE_FEATURES);
+  const filteredFinancialItems = filterByRole(FINANCIAL_ITEMS);
+  const filteredPropertyItems = filterByRole(PROPERTY_ITEMS);
+
   return (
     <nav className="flex-1 px-2 py-4 space-y-4 overflow-y-auto no-scrollbar">
       {/* Main items */}
       <div className="space-y-1">
-        {NAV_ITEMS.map((item) => (
+        {filteredNavItems.map((item) => (
           <SidebarNavItem
             key={item.to}
             {...item}
@@ -124,7 +148,7 @@ const SidebarNav: React.FC<SidebarNavProps> = ({ isCollapsed, messageBadge }) =>
       {/* Core Features Group */}
       <NavGroup 
         title="CORE" 
-        items={CORE_FEATURES} 
+        items={filteredCoreFeatures} 
         isCollapsed={isCollapsed}
         messageBadge={messageBadge}
       />
@@ -132,14 +156,14 @@ const SidebarNav: React.FC<SidebarNavProps> = ({ isCollapsed, messageBadge }) =>
       {/* Financial Group */}
       <NavGroup 
         title="FINANCIAL" 
-        items={FINANCIAL_ITEMS} 
+        items={filteredFinancialItems} 
         isCollapsed={isCollapsed}
       />
 
       {/* Property Group */}
       <NavGroup 
         title="PROPERTY" 
-        items={PROPERTY_ITEMS} 
+        items={filteredPropertyItems} 
         isCollapsed={isCollapsed}
       />
     </nav>

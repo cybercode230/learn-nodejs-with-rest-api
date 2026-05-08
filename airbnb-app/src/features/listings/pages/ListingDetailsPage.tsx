@@ -13,6 +13,211 @@ import { useAuth } from '../../../contexts/AuthContext';
 import ListingCard from '../components/ListingCard';
 import { useListingDetails } from '../hooks/useListingDetails';
 
+const BookingModal: React.FC<{ 
+  isOpen: boolean; 
+  onClose: () => void; 
+  listing: any; 
+  dates: { checkIn: Date | null; checkOut: Date | null };
+  guests: any;
+  pricePerNight: number;
+  total: number;
+}> = ({ isOpen, onClose, listing, dates, guests, pricePerNight, total }) => {
+  const [step, setStep] = useState<'summary' | 'confirm' | 'message' | 'payment' | 'done'>('summary');
+  const [message, setMessage] = useState('');
+  const [cardData, setCardData] = useState({ number: '', expiry: '', cvv: '' });
+  const [isBooking, setIsBooking] = useState(false);
+
+  if (!isOpen) return null;
+
+  const handleBooking = async () => {
+    setIsBooking(true);
+    // Mock booking creation
+    try {
+      await api.post(ENDPOINTS.BOOKINGS.BASE, {
+        listingId: listing.id,
+        startDate: dates.checkIn,
+        endDate: dates.checkOut,
+        totalGuests: guests.adults + guests.children,
+        totalPrice: total,
+        message: message
+      });
+      // Store payment info mock
+      localStorage.setItem('last_booking_payment', JSON.stringify({ listingId: listing.id, ...cardData }));
+      setStep('done');
+    } catch (err) {
+      console.error('Booking failed:', err);
+    } finally {
+      setIsBooking(false);
+    }
+  };
+
+  const steps = ['summary', 'confirm', 'message', 'payment'];
+  const currentStepIdx = steps.indexOf(step);
+
+  return (
+    <motion.div 
+      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+      className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+      onClick={onClose}
+    >
+      <motion.div 
+        initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }}
+        className="bg-white w-full max-w-2xl rounded-3xl overflow-hidden shadow-2xl"
+        onClick={e => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="flex gap-1">
+              {steps.map((s, i) => (
+                <div key={s} className={`h-1 rounded-full transition-all ${i <= currentStepIdx ? 'w-6 bg-airbnb' : 'w-2 bg-gray-100'}`} />
+              ))}
+            </div>
+            <span className="text-[10px] font-black uppercase text-gray-400 ml-2">Step {currentStepIdx + 1} of 4</span>
+          </div>
+          <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full transition-colors"><X size={20}/></button>
+        </div>
+
+        <div className="p-8">
+          <AnimatePresence mode="wait">
+            {step === 'summary' && (
+              <motion.div key="summary" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-6">
+                <div className="flex gap-6">
+                  <img src={listing.photos?.[0]?.url} className="w-32 h-32 rounded-2xl object-cover shadow-md" alt="" />
+                  <div className="flex-1">
+                    <h3 className="text-xl font-bold text-gray-900">{listing.title}</h3>
+                    <p className="text-gray-500 text-sm mt-1">{listing.location}</p>
+                    <div className="flex items-center gap-1 mt-4 text-sm font-bold">
+                      <Star size={14} className="fill-gray-900" /> 4.95 • {listing.guests} guests
+                    </div>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4 py-6 border-y border-gray-100">
+                  <div>
+                    <p className="text-[10px] font-black uppercase text-gray-400">Check-in</p>
+                    <p className="font-bold">{dayjs(dates.checkIn).format('MMM D, YYYY')}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-black uppercase text-gray-400">Checkout</p>
+                    <p className="font-bold">{dayjs(dates.checkOut).format('MMM D, YYYY')}</p>
+                  </div>
+                </div>
+                <Button className="w-full py-4 rounded-2xl" onClick={() => setStep('confirm')}>Next Step</Button>
+              </motion.div>
+            )}
+
+            {step === 'confirm' && (
+              <motion.div key="confirm" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-6">
+                <h2 className="text-2xl font-black text-gray-900">Confirm details</h2>
+                <div className="space-y-4">
+                  <div className="flex justify-between p-4 bg-gray-50 rounded-2xl">
+                    <div>
+                      <p className="font-bold">Total Guests</p>
+                      <p className="text-sm text-gray-500">{guests.adults + guests.children} guests</p>
+                    </div>
+                    <button className="text-sm font-bold underline" onClick={onClose}>Edit</button>
+                  </div>
+                  <div className="p-4 bg-gray-50 rounded-2xl">
+                    <p className="font-bold">Cancellation policy</p>
+                    <p className="text-sm text-gray-500 mt-1">Free cancellation for 48 hours. After that, cancel before check-in for a partial refund.</p>
+                  </div>
+                </div>
+                <div className="flex gap-3">
+                  <Button variant="outline" className="flex-1 py-4" onClick={() => setStep('summary')}>Back</Button>
+                  <Button className="flex-2 py-4" onClick={() => setStep('message')}>Continue</Button>
+                </div>
+              </motion.div>
+            )}
+
+            {step === 'message' && (
+              <motion.div key="message" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-6">
+                <div className="flex items-center gap-4 mb-2">
+                  <img src={listing.host?.avatar} className="w-12 h-12 rounded-full" alt="" />
+                  <div>
+                    <h3 className="font-bold">Message {listing.host?.name}</h3>
+                    <p className="text-xs text-gray-500">Ask a question or say hello</p>
+                  </div>
+                </div>
+                <textarea 
+                  className="w-full p-6 bg-gray-50 border border-gray-100 rounded-3xl text-sm focus:outline-none focus:ring-1 focus:ring-airbnb min-h-[150px] resize-none"
+                  placeholder="Hi! I'm visiting for a conference and love your place..."
+                  value={message}
+                  onChange={e => setMessage(e.target.value)}
+                />
+                <div className="flex gap-3">
+                  <Button variant="outline" className="flex-1 py-4" onClick={() => setStep('confirm')}>Back</Button>
+                  <Button className="flex-2 py-4" onClick={() => setStep('payment')}>Continue to Payment</Button>
+                </div>
+                <button className="w-full text-center text-sm font-bold text-gray-400 hover:text-gray-600 underline" onClick={() => setStep('payment')}>Skip this step</button>
+              </motion.div>
+            )}
+
+            {step === 'payment' && (
+              <motion.div key="payment" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-6">
+                <div className="flex justify-between items-center mb-2">
+                  <h2 className="text-2xl font-black text-gray-900">Payment</h2>
+                  <div className="flex gap-1">
+                    <div className="w-8 h-5 bg-gray-100 rounded border border-gray-200" />
+                    <div className="w-8 h-5 bg-gray-100 rounded border border-gray-200" />
+                  </div>
+                </div>
+                <div className="space-y-4">
+                  <div className="p-6 bg-gray-50 rounded-3xl border border-gray-100 space-y-4">
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-black uppercase text-gray-400">Card Number</label>
+                      <input 
+                        type="text" placeholder="0000 0000 0000 0000" 
+                        className="w-full px-4 py-3 bg-white border border-gray-100 rounded-xl focus:ring-1 focus:ring-airbnb outline-none font-mono text-sm"
+                        value={cardData.number}
+                        onChange={e => setCardData({...cardData, number: e.target.value})}
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-black uppercase text-gray-400">Expiry</label>
+                        <input type="text" placeholder="MM/YY" className="w-full px-4 py-3 bg-white border border-gray-100 rounded-xl focus:ring-1 focus:ring-airbnb outline-none font-mono text-sm" />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-black uppercase text-gray-400">CVV</label>
+                        <input type="password" placeholder="***" className="w-full px-4 py-3 bg-white border border-gray-100 rounded-xl focus:ring-1 focus:ring-airbnb outline-none font-mono text-sm" />
+                      </div>
+                    </div>
+                  </div>
+                  <div className="p-4 flex justify-between items-center border-t border-gray-100 mt-6">
+                    <span className="font-bold text-lg">Total</span>
+                    <span className="font-black text-2xl text-airbnb">${total}</span>
+                  </div>
+                </div>
+                <Button className="w-full py-5 rounded-2xl text-lg shadow-xl shadow-airbnb/20" onClick={handleBooking} isLoading={isBooking}>
+                  Confirm & Pay
+                </Button>
+                <button className="w-full text-center text-sm font-bold text-gray-400 hover:text-gray-600" onClick={() => setStep('message')}>Back</button>
+              </motion.div>
+            )}
+
+            {step === 'done' && (
+              <motion.div key="done" initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="text-center py-10 space-y-6">
+                <div className="w-24 h-24 bg-emerald-500 rounded-full flex items-center justify-center text-white mx-auto shadow-2xl shadow-emerald-500/30">
+                  <Check size={48} strokeWidth={3} />
+                </div>
+                <div>
+                  <h2 className="text-3xl font-black text-gray-900">Booking confirmed!</h2>
+                  <p className="text-gray-500 mt-2">Your stay at {listing.title} is reserved.</p>
+                </div>
+                <div className="p-6 bg-gray-50 rounded-3xl text-left space-y-2">
+                  <p className="text-xs font-bold text-gray-400 uppercase">Confirmation Code</p>
+                  <p className="font-mono text-xl font-black tracking-widest text-gray-900">HM-{(Math.random() * 1000000).toFixed(0)}</p>
+                </div>
+                <Button className="w-full py-4 rounded-2xl" onClick={onClose}>Done</Button>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+};
+
 const ListingDetailsPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -24,6 +229,7 @@ const ListingDetailsPage: React.FC = () => {
   // -- UI STATE --
   const [showGallery, setShowGallery] = useState(false);
   const [galleryStartIndex, setGalleryStartIndex] = useState(0);
+  const [showBookingModal, setShowBookingModal] = useState(false);
 
   // -- BOOKING STATE --
   const [showGuestPicker, setShowGuestPicker] = useState(false);
@@ -353,7 +559,15 @@ const ListingDetailsPage: React.FC = () => {
                   </AnimatePresence>
                 </div>
 
-                <Button className="w-full py-3 text-base font-bold shadow-lg bg-airbnb">Reserve</Button>
+                <Button 
+                  className="w-full py-3 text-base font-bold shadow-lg bg-airbnb"
+                  onClick={() => {
+                    if (!isAuthenticated) navigate(`/login?redirect=/listings/${id}`);
+                    else setShowBookingModal(true);
+                  }}
+                >
+                  Reserve
+                </Button>
                 <p className="text-center text-[13px] text-gray-500 mt-4">You won't be charged yet</p>
 
                 {/* PRICE BREAKDOWN */}
@@ -509,6 +723,16 @@ const ListingDetailsPage: React.FC = () => {
         isOpen={showGallery}
         initialIndex={galleryStartIndex}
         onClose={() => setShowGallery(false)}
+      />
+
+      <BookingModal 
+        isOpen={showBookingModal}
+        onClose={() => setShowBookingModal(false)}
+        listing={listing}
+        dates={{ checkIn, checkOut }}
+        guests={guests}
+        pricePerNight={pricePerNight}
+        total={pricePerNight * nights + 127}
       />
     </div>
   );

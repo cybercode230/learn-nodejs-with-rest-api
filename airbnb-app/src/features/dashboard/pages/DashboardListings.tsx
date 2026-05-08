@@ -372,6 +372,7 @@ const DashboardListings: React.FC = () => {
 
   // Fetch listings with pagination
   const fetchListings = useCallback(async (page: number, search?: string) => {
+    if (!user?.id) return;
     setLoading(true);
     try {
       const params: any = {
@@ -383,12 +384,15 @@ const DashboardListings: React.FC = () => {
         params.search = search;
       }
       
-      const response = await api.get(ENDPOINTS.LISTINGS.BASE, { params });
-      const { data, meta } = response.data;
+      // Use the user-specific listings endpoint
+      const response = await api.get(ENDPOINTS.USERS.LISTINGS(user.id), { params });
       
-      // Filter for current host only
-      const hostListings = data.filter((l: Listing) => l.hostId === user?.id);
-      setListings(hostListings);
+      // Backend returns different structure for /users/:id/listings than global search
+      // Assuming it returns the array directly or in .data
+      const listingsData = response.data.data || response.data;
+      const meta = response.data.meta || { total: listingsData.length };
+      
+      setListings(listingsData);
       setTotalPages(Math.ceil(meta.total / itemsPerPage));
       setTotalItems(meta.total);
     } catch (error) {
@@ -415,9 +419,11 @@ const DashboardListings: React.FC = () => {
   
   useEffect(() => {
     const fetchStats = async () => {
+      if (!user?.id) return;
       try {
-        const response = await api.get(ENDPOINTS.LISTINGS.BASE, { params: { limit: 100 } });
-        const allListings = response.data.data.filter((l: Listing) => l.hostId === user?.id);
+        const response = await api.get(ENDPOINTS.USERS.LISTINGS(user.id), { params: { limit: 100 } });
+        const allListings = response.data.data || response.data;
+        
         const avgPrice = allListings.length > 0 
           ? Math.round(allListings.reduce((sum: number, l: Listing) => sum + (l.pricePerNight || 0), 0) / allListings.length)
           : 0;

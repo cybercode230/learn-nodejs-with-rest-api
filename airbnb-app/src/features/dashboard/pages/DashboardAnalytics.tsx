@@ -1,4 +1,4 @@
-import React, { useState, useMemo,useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import {
   TrendingUp, Calendar, Users, Home, DollarSign,
@@ -35,17 +35,10 @@ const CustomTooltip = ({ active, payload, label, valuePrefix = '$' }: any) => {
 const DashboardAnalytics: React.FC = () => {
   const { user } = useAuth();
   const { listings, loading: listingsLoading } = useListings();
-  const { bookings, isLoading: bookingsLoading, fetchBookings } = useBookings();
+  const { bookings, isLoading: bookingsLoading } = useBookings();
   const [timeRange, setTimeRange] = useState<'week' | 'month' | 'year'>('month');
   const [selectedMetric, setSelectedMetric] = useState<'revenue' | 'bookings' | 'occupancy'>('revenue');
   const [isExporting, setIsExporting] = useState(false);
-  
-
-  useEffect(() => {
-  if (user) {
-    fetchBookings();
-  }
-}, [user, fetchBookings]);
 
   const isAdmin = user?.role === 'ADMIN';
   const hostListings = listings.filter(l => l.hostId === user?.id);
@@ -92,7 +85,7 @@ const DashboardAnalytics: React.FC = () => {
     });
     
     const revenueByListing = Array.from(revenueByListingMap.entries())
-      .map(([id, data]) => ({
+      .map(([_, data]) => ({
         name: data.title.length > 20 ? data.title.substring(0, 20) + '...' : data.title,
         revenue: data.revenue,
         bookings: data.bookings,
@@ -187,7 +180,7 @@ const DashboardAnalytics: React.FC = () => {
       });
       
       topHosts = Array.from(hostRevenueMap.entries())
-        .map(([id, data]) => ({
+        .map(([_, data]) => ({
           name: data.name,
           revenue: data.revenue,
           listings: data.listings.size,
@@ -548,7 +541,7 @@ const DashboardAnalytics: React.FC = () => {
               </div>
               <ResponsiveContainer width="100%" height={280}>
                 <RadialBarChart cx="50%" cy="50%" innerRadius="20%" outerRadius="90%" data={analyticsData.guestSatisfaction} startAngle={180} endAngle={0}>
-                  <RadialBar minAngle={15} background clockWise dataKey="count" cornerRadius={8} />
+                  <RadialBar background dataKey="count" cornerRadius={8} />
                   <Legend iconSize={10} wrapperStyle={{ fontSize: 11 }} />
                   <Tooltip />
                 </RadialBarChart>

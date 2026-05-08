@@ -1,6 +1,8 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import type { User } from '../shared/types';
 import { encrypt, decrypt } from '../shared/utils/encryption';
+import api from '../api/axios';
+import { ENDPOINTS } from '../api/endpoints';
 
 interface AuthContextType {
   user: User | null;
@@ -9,6 +11,7 @@ interface AuthContextType {
   logout: () => void;
   isAuthenticated: boolean;
   isLoading: boolean;
+  refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -45,6 +48,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     initAuth();
   }, []);
 
+  const refreshUser = async () => {
+    if (!token) return;
+    try {
+      const response = await api.get(ENDPOINTS.AUTH.ME);
+      setUser(response.data);
+      localStorage.setItem('user', encrypt(JSON.stringify(response.data)));
+    } catch (error) {
+      console.error('Failed to refresh user:', error);
+    }
+  };
+
   const login = (newToken: string, newUser: User) => {
     const encryptedToken = encrypt(newToken);
     const encryptedUser = encrypt(JSON.stringify(newUser));
@@ -70,7 +84,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       login, 
       logout, 
       isAuthenticated: !!token, 
-      isLoading 
+      isLoading,
+      refreshUser
     }}>
       {children}
     </AuthContext.Provider>

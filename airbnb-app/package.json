@@ -11,9 +11,11 @@
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.2.4",
+    "@tanstack/react-query": "^5.100.9",
     "axios": "^1.16.0",
     "clsx": "^2.1.1",
     "dayjs": "^1.11.20",
+    "formik": "^2.4.9",
     "framer-motion": "^12.38.0",
     "lucide-react": "^1.14.0",
     "mapbox-gl": "^3.23.1",
@@ -25,7 +27,9 @@
     "react-window": "^2.2.7",
     "recharts": "^3.8.1",
     "tailwind-merge": "^3.5.0",
-    "tailwindcss": "^4.2.4"
+    "tailwindcss": "^4.2.4",
+    "zod": "^4.4.3",
+    "zod-formik-adapter": "^2.0.0"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

@@ -3,7 +3,7 @@ import { useState, useCallback } from 'react';
 import api from '../../../api/axios';
 import { ENDPOINTS } from '../../../api/endpoints';
 import { useAuth } from '../../../contexts/AuthContext';
-import type { Listing, ListingPhoto, Review } from '../../../shared/types';
+import type { ListingPhoto } from '../../../shared/types';
 
 interface UpdateListingData {
   title?: string;
@@ -27,6 +27,30 @@ export const useListingsManagement = () => {
 
   // Check if user has permission (HOST or ADMIN)
   const hasPermission = user?.role === 'HOST' || user?.role === 'ADMIN';
+
+  // Create new listing
+  const createListing = useCallback(async (data: UpdateListingData) => {
+    if (!hasPermission) {
+      setError('You do not have permission to create listings');
+      return { success: false, error: 'Permission denied' };
+    }
+
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const response = await api.post(ENDPOINTS.LISTINGS.BASE, data, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      return { success: true, data: response.data };
+    } catch (err: any) {
+      const errorMessage = err.response?.data?.message || 'Failed to create listing';
+      setError(errorMessage);
+      return { success: false, error: errorMessage };
+    } finally {
+      setIsLoading(false);
+    }
+  }, [hasPermission, token]);
 
   // Update listing
   const updateListing = useCallback(async (listingId: string, data: UpdateListingData) => {
@@ -87,7 +111,7 @@ export const useListingsManagement = () => {
     setError(null);
 
     const formData = new FormData();
-    formData.append('photo', file);
+    formData.append('photos', file);
 
     try {
       const response = await api.post(ENDPOINTS.LISTINGS.PHOTOS(listingId), formData, {
@@ -150,6 +174,7 @@ export const useListingsManagement = () => {
   }, []);
 
   return {
+    createListing,
     updateListing,
     deleteListing,
     uploadPhoto,

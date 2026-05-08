@@ -1,5 +1,6 @@
 /**
  * Centralized API endpoints for the entire application.
+ * Aligned with Backend v1 API structure.
  */
 
 export const ENDPOINTS = {
@@ -10,10 +11,13 @@ export const ENDPOINTS = {
     FORGOT_PASSWORD: '/auth/forgot-password',
     VALIDATE_RESET_TOKEN: (token: string) => `/auth/validate-reset-token/${token}`,
     RESET_PASSWORD: (token: string) => `/auth/reset-password/${token}`,
+    CHANGE_PASSWORD: '/auth/change-password',
   },
   LISTINGS: {
     BASE: '/listings',
     SEARCH: '/listings/search',
+    STATS: '/listings/stats',
+    HISTORY: '/listings/history',
     DETAILS: (id: string) => `/listings/${id}`,
     PHOTOS: (id: string) => `/listings/${id}/photos`,
     PHOTO: (listingId: string, photoId: string) => `/listings/${listingId}/photos/${photoId}`,
@@ -31,5 +35,18 @@ export const ENDPOINTS = {
   USERS: {
     BASE: '/users',
     PROFILE: (id: string) => `/users/${id}`,
+    BY_ID: (id: string) => `/users/${id}`,
+    AVATAR: (id: string) => `/users/${id}/avatar`,
+    LISTINGS: (id: string) => `/users/${id}/listings`,
+    BOOKINGS: (id: string) => `/users/${id}/bookings`,
+    HOST_BOOKINGS: (id: string) => `/users/${id}/host-bookings`,
   },
+  PROFILE: {
+    BASE: '/profile',
+    UPLOAD: '/profile/upload',
+  },
+  REVIEWS: {
+    BASE: '/reviews',
+    BY_ID: (id: string) => `/reviews/${id}`,
+  }
 };

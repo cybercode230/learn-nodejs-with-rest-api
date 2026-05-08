@@ -40,39 +40,25 @@ const StatusBadge: React.FC<{ status: string }> = ({ status }) => {
 
 const DashboardBookings: React.FC = () => {
   const { user } = useAuth();
-  const { listings, loading } = useListings();
-  const { updateBookingStatus, deleteBooking, hasPermission } = useBookings();
+  const role = user?.role || 'GUEST';
+  const { bookings, isLoading, updateBookingStatus, deleteBooking, getBookingStats, hasPermission } = useBookings();
   
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [selectedBookings, setSelectedBookings] = useState<Set<string>>(new Set());
   const [actionMenuOpen, setActionMenuOpen] = useState<string | null>(null);
   const [statusMenuOpen, setStatusMenuOpen] = useState<string | null>(null);
-  const [showBulkActions, setShowBulkActions] = useState(false);
-
-  // Mock booking data (replace with actual API call)
-  const [bookings, setBookings] = useState<Booking[]>(() => [
-    { id: '1', listing: listings[0], guestName: 'Alice Martin', guestEmail: 'alice@example.com', checkIn: '2026-05-10', checkOut: '2026-05-14', amount: 480, status: 'CONFIRMED', method: 'Card' },
-    { id: '2', listing: listings[1], guestName: 'James Okonkwo', guestEmail: 'james@example.com', checkIn: '2026-05-15', checkOut: '2026-05-18', amount: 210, status: 'PENDING', method: 'Wallet' },
-    { id: '3', listing: listings[0], guestName: 'Sofia Leclerc', guestEmail: 'sofia@example.com', checkIn: '2026-05-20', checkOut: '2026-05-25', amount: 600, status: 'CONFIRMED', method: 'Card' },
-    { id: '4', listing: listings[2], guestName: 'Michael Chen', guestEmail: 'michael@example.com', checkIn: '2026-06-01', checkOut: '2026-06-05', amount: 750, status: 'COMPLETED', method: 'Card' },
-  ].filter(b => b.listing && b.listing.hostId === user?.id));
 
   const filteredBookings = bookings.filter(booking => {
-    const matchesSearch = booking.guestName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          booking.listing?.title.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = 
+      booking.guest?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      booking.listing?.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      booking.listing?.host?.name?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === 'all' || booking.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
 
-  const stats = {
-    total: bookings.length,
-    confirmed: bookings.filter(b => b.status === 'CONFIRMED').length,
-    pending: bookings.filter(b => b.status === 'PENDING').length,
-    completed: bookings.filter(b => b.status === 'COMPLETED').length,
-    cancelled: bookings.filter(b => b.status === 'CANCELLED').length,
-    revenue: bookings.filter(b => b.status === 'CONFIRMED' || b.status === 'COMPLETED').reduce((s, b) => s + b.amount, 0)
-  };
+  const stats = getBookingStats();
 
   const toggleSelectAll = () => {
     if (selectedBookings.size === filteredBookings.length) {
@@ -92,44 +78,38 @@ const DashboardBookings: React.FC = () => {
     setSelectedBookings(newSelected);
   };
 
-  const handleStatusUpdate = async (bookingId: string, newStatus: 'CONFIRMED' | 'PENDING' | 'CANCELLED') => {
-    const result = await updateBookingStatus(bookingId, newStatus);
-    if (result.success) {
-      setBookings(prev => prev.map(b => 
-        b.id === bookingId ? { ...b, status: newStatus } : b
-      ));
+  const handleStatusUpdate = async (bookingId: string, newStatus: any) => {
+    try {
+      await updateBookingStatus(bookingId, newStatus);
+    } catch (error) {
+      console.error('Failed to update status:', error);
     }
     setStatusMenuOpen(null);
   };
 
-  const handleBulkStatusUpdate = async (newStatus: 'CONFIRMED' | 'PENDING' | 'CANCELLED') => {
+  const handleBulkStatusUpdate = async (newStatus: any) => {
     const bookingIds = Array.from(selectedBookings);
     for (const id of bookingIds) {
-      await updateBookingStatus(id, newStatus);
+      await handleStatusUpdate(id, newStatus);
     }
-    setBookings(prev => prev.map(b => 
-      selectedBookings.has(b.id) ? { ...b, status: newStatus } : b
-    ));
     setSelectedBookings(new Set());
-    setShowBulkActions(false);
   };
 
   const handleDeleteBooking = async (bookingId: string) => {
     if (window.confirm('Are you sure you want to delete this booking?')) {
-      const result = await deleteBooking(bookingId);
-      if (result.success) {
-        setBookings(prev => prev.filter(b => b.id !== bookingId));
-        selectedBookings.delete(bookingId);
-        setSelectedBookings(new Set(selectedBookings));
+      try {
+        await deleteBooking(bookingId);
+      } catch (error) {
+        console.error('Failed to delete booking:', error);
       }
     }
     setActionMenuOpen(null);
   };
 
   const exportReport = () => {
-    const headers = ['Booking ID', 'Guest Name', 'Listing', 'Check In', 'Check Out', 'Amount', 'Status', 'Payment Method'];
+    const headers = ['Booking ID', 'Guest Name', 'Listing', 'Check In', 'Check Out', 'Amount', 'Status'];
     const rows = bookings.map(b => [
-      b.id, b.guestName, b.listing?.title || 'N/A', b.checkIn, b.checkOut, `$${b.amount}`, b.status, b.method
+      b.id, b.guest?.name || 'N/A', b.listing?.title || 'N/A', b.checkIn, b.checkOut, `$${b.totalPrice}`, b.status
     ]);
     
     const csvContent = [headers, ...rows].map(row => row.join(',')).join('\n');
@@ -187,7 +167,7 @@ const DashboardBookings: React.FC = () => {
         </div>
         <div className="bg-white rounded-lg p-3 border border-gray-100">
           <p className="text-xs text-gray-500">Revenue</p>
-          <p className="text-xl font-bold text-gray-900">${stats.revenue}</p>
+          <p className="text-xl font-bold text-gray-900">${stats.totalRevenue}</p>
         </div>
       </div>
 
@@ -274,7 +254,9 @@ const DashboardBookings: React.FC = () => {
                     )}
                   </button>
                 </th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500">Listing & Guest</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500">
+                  {role === 'GUEST' ? 'Listing & Host' : 'Listing & Guest'}
+                </th>
                 <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500">Dates</th>
                 <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500">Amount</th>
                 <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500">Status</th>
@@ -282,7 +264,7 @@ const DashboardBookings: React.FC = () => {
               </tr>
             </thead>
             <tbody>
-              {loading ? (
+              {isLoading ? (
                 Array.from({ length: 3 }).map((_, i) => (
                   <tr key={i} className="border-b border-gray-50">
                     <td colSpan={6} className="px-4 py-4">
@@ -327,7 +309,9 @@ const DashboardBookings: React.FC = () => {
                         </div>
                         <div>
                           <p className="font-medium text-gray-900 text-sm">{booking.listing?.title || 'Listing'}</p>
-                          <p className="text-xs text-gray-500">{booking.guestName}</p>
+                          <p className="text-xs text-gray-500">
+                            {role === 'GUEST' ? (booking.listing?.host?.name || 'Host') : (booking.guest?.name || 'Guest')}
+                          </p>
                         </div>
                       </div>
                     </td>
@@ -338,8 +322,7 @@ const DashboardBookings: React.FC = () => {
                       </div>
                     </td>
                     <td className="px-4 py-3">
-                      <p className="font-semibold text-gray-900">${booking.amount}</p>
-                      <p className="text-[10px] text-gray-400">{booking.method}</p>
+                      <p className="font-semibold text-gray-900">${booking.totalPrice}</p>
                     </td>
                     <td className="px-4 py-3">
                       <div className="relative">

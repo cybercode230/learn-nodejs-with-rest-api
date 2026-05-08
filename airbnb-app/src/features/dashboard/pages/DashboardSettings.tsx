@@ -4,28 +4,47 @@ import {
   User, Bell, Lock, CreditCard, Shield, 
   Mail, Phone, MapPin, Camera, Save, Moon, Sun,
   Globe, ChevronRight, CheckCircle, AlertCircle,
-  LogOut, DollarSign, Key
+  LogOut, Key
 } from 'lucide-react';
 import { useAuth } from '../../../contexts/AuthContext';
 
+import { useProfile } from '../hooks/useProfile';
+
 const DashboardSettings: React.FC = () => {
   const { user, logout } = useAuth();
+  const { profile: apiProfile, updateProfile, uploadAvatar, isLoading } = useProfile();
   const [activeTab, setActiveTab] = useState<'profile' | 'notifications' | 'security' | 'payouts'>('profile');
   const [darkMode, setDarkMode] = useState(false);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
   
   // Profile data
   const [profile, setProfile] = useState({
-    name: user?.name || 'John Doe',
-    email: user?.email || 'john@example.com',
-    phone: '+1 234 567 8900',
-    location: 'New York, NY',
-    bio: 'Experienced host with 5+ years of hosting guests from around the world.',
+    name: '',
+    email: '',
+    phone: '',
+    location: '',
+    bio: '',
     language: 'English',
     currency: 'USD',
     timezone: 'America/New_York'
   });
+
+  // Sync with API data
+  React.useEffect(() => {
+    if (apiProfile) {
+      setProfile({
+        name: apiProfile.name || user?.name || '',
+        email: apiProfile.email || user?.email || '',
+        phone: apiProfile.phone || '',
+        location: apiProfile.location || '',
+        bio: apiProfile.bio || '',
+        language: apiProfile.language || 'English',
+        currency: apiProfile.currency || 'USD',
+        timezone: apiProfile.timezone || 'America/New_York'
+      });
+    }
+  }, [apiProfile, user]);
 
   // Notification preferences
   const [notifications, setNotifications] = useState({
@@ -38,10 +57,23 @@ const DashboardSettings: React.FC = () => {
 
   const handleSave = async () => {
     setSaving(true);
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    const res = await updateProfile(profile);
     setSaving(false);
-    alert('Settings saved successfully!');
+    if (res.success) {
+      alert('Settings saved successfully!');
+    } else {
+      alert('Error: ' + res.error);
+    }
+  };
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setUploading(true);
+      const res = await uploadAvatar(file);
+      setUploading(false);
+      if (!res.success) alert(res.error);
+    }
   };
 
   const toggleNotification = (key: keyof typeof notifications) => {
@@ -111,12 +143,17 @@ const DashboardSettings: React.FC = () => {
               <div className="p-5 space-y-5">
                 {/* Avatar */}
                 <div className="flex items-center gap-4">
-                  <div className="w-16 h-16 rounded-full bg-gradient-to-br from-airbnb to-pink-500 flex items-center justify-center text-white text-xl font-semibold">
-                    {profile.name[0]}
+                  <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-gray-100 shadow-sm bg-gray-50 flex items-center justify-center">
+                    {user?.avatar ? (
+                      <img src={user.avatar} className="w-full h-full object-cover" alt="Profile" />
+                    ) : (
+                      <User size={24} className="text-gray-400" />
+                    )}
                   </div>
-                  <button className="flex items-center gap-2 px-3 py-1.5 bg-gray-100 rounded-lg text-xs font-medium hover:bg-gray-200 transition-colors">
-                    <Camera size={14} /> Change Photo
-                  </button>
+                  <label className="flex items-center gap-2 px-3 py-1.5 bg-gray-100 rounded-lg text-xs font-medium hover:bg-gray-200 transition-colors cursor-pointer">
+                    <Camera size={14} /> {uploading ? 'Uploading...' : 'Change Photo'}
+                    <input type="file" className="hidden" accept="image/*" onChange={handleAvatarUpload} />
+                  </label>
                 </div>
 
                 {/* Form Fields */}
@@ -203,7 +240,7 @@ const DashboardSettings: React.FC = () => {
                   <div>
                     <label className="text-xs font-medium text-gray-700 block mb-1">Currency</label>
                     <div className="flex items-center gap-2 px-3 py-2 bg-gray-50 rounded-lg border border-gray-100">
-                      <DollarSign size={14} className="text-gray-400" />
+                      <DollarSignIcon size={14} className="text-gray-400" />
                       <select
                         value={profile.currency}
                         onChange={(e) => setProfile({ ...profile, currency: e.target.value })}
@@ -262,7 +299,7 @@ const DashboardSettings: React.FC = () => {
                 {[
                   { key: 'bookings', label: 'Booking Confirmations', description: 'Get notified when someone books your property', icon: Bell },
                   { key: 'messages', label: 'New Messages', description: 'Receive alerts for new guest messages', icon: MessageSquare },
-                  { key: 'payments', label: 'Payment Updates', description: 'Get notified about payouts and transactions', icon: DollarSign },
+                  { key: 'payments', label: 'Payment Updates', description: 'Get notified about payouts and transactions', icon: DollarSignIcon },
                   { key: 'reviews', label: 'Review Alerts', description: 'Get notified when guests leave reviews', icon: Star },
                   { key: 'marketing', label: 'Marketing Emails', description: 'Receive offers and updates from Hostify', icon: Mail },
                 ].map((item) => (
