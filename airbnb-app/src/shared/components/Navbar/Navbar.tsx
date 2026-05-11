@@ -2,11 +2,10 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Globe, Menu, User, Home, Settings, HelpCircle, LogOut, Heart } from 'lucide-react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../../contexts/AuthContext';
-import { useListings } from '../../../contexts/ListingContext';
 import { useSearchState } from '../../../contexts/SearchContext';
 import { Button } from '../index';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search as SearchIcon, X } from 'lucide-react';
+import { X } from 'lucide-react';
 import { SearchContainer } from '../../../features/search';
 
 const Dropdown: React.FC<{ trigger: React.ReactNode; children: React.ReactNode; align?: 'left' | 'right' }> = ({ 
@@ -43,7 +42,6 @@ const Dropdown: React.FC<{ trigger: React.ReactNode; children: React.ReactNode; 
 
 const Navbar: React.FC = () => {
   const { user, logout } = useAuth();
-  const { filters } = useListings();
   const { mode, setMode, isExpanded: isSearchExpanded, setIsExpanded: setIsSearchExpanded } = useSearchState();
   const navigate = useNavigate();
   const location = useLocation();
@@ -65,6 +63,7 @@ const Navbar: React.FC = () => {
   };
 
   const isHomePage = location.pathname === '/';
+  const logoOnClick = isHomePage ? undefined : () => navigate('/');
 
   return (
     <>
@@ -73,7 +72,7 @@ const Navbar: React.FC = () => {
           {/* Logo Section */}
           <div className="flex flex-col items-start min-w-[140px]">
             <Link to="/" onClick={() => setIsSearchExpanded(false)} className="flex items-center gap-2 text-airbnb hover:opacity-90 transition-all group">
-              <div className="bg-airbnb p-1.5 rounded-lg text-white group-hover:scale-110 transition-transform">
+              <div className="bg-airbnb p-1.5 rounded-lg text-white group-hover:scale-110 transition-transform" onClick={logoOnClick}>
                 <Home size={22} strokeWidth={2.5} />
               </div>
               <span className={`text-2xl font-black tracking-tighter transition-all ${scrolled ? 'scale-90 origin-left' : ''}`}>airbnb</span>

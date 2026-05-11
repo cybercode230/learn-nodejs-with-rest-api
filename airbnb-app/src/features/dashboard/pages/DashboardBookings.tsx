@@ -6,22 +6,10 @@ import {
   CheckSquare, Square, Trash2, Check, X
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { useListings } from '../../../contexts/ListingContext';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useBookings } from '../hooks/useBookings';
 
-interface Booking {
-  id: string;
-  listing: any;
-  guestName: string;
-  checkIn: string;
-  checkOut: string;
-  amount: number;
-  status: string;
-  method: string;
-  guestEmail?: string;
-  guestPhone?: string;
-}
+
 
 const StatusBadge: React.FC<{ status: string }> = ({ status }) => {
   const map: Record<string, { label: string; cls: string; icon: React.ReactNode }> = {

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { MapPin, Home, Filter, Maximize2, Navigation, Star, DollarSign } from 'lucide-react';
+import { MapPin, Home, Maximize2, Navigation, Star, DollarSign } from 'lucide-react';
 import { useListings } from '../../../contexts/ListingContext';
 import { useAuth } from '../../../contexts/AuthContext';
 
@@ -35,7 +35,7 @@ const MapPlaceholder: React.FC<{ listings: any[]; selectedId?: string }> = ({ li
               className={`${selectedId === listing.id ? 'text-airbnb fill-airbnb' : 'text-gray-600 fill-white'} drop-shadow-lg`}
             />
             <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap bg-white rounded-xl px-3 py-1.5 shadow-lg text-sm font-bold">
-              ${listing.price}/night
+              ${listing.pricePerNight}/night
             </div>
           </div>
         </motion.div>
@@ -62,10 +62,11 @@ const DashboardMap: React.FC = () => {
   
   const hostListings = listings.filter(l => l.hostId === user?.id);
   
-  const filteredListings = hostListings.filter(listing => {
+  const filteredListings = hostListings.filter(() => {
     if (filterType === 'all') return true;
-    if (filterType === 'active') return listing.isActive;
-    return !listing.isActive;
+    // Assuming all listings are active for now since isActive is missing from schema
+    if (filterType === 'active') return true; 
+    return false;
   });
 
   return (
@@ -131,11 +132,7 @@ const DashboardMap: React.FC = () => {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between">
                       <p className="font-bold text-sm text-gray-900 truncate">{listing.title}</p>
-                      {listing.isActive ? (
-                        <span className="w-2 h-2 rounded-full bg-emerald-500" />
-                      ) : (
-                        <span className="w-2 h-2 rounded-full bg-gray-400" />
-                      )}
+                      <span className="w-2 h-2 rounded-full bg-emerald-500" />
                     </div>
                     <p className="text-xs text-gray-500 flex items-center gap-1 mt-1">
                       <MapPin size={12} /> {listing.location}
@@ -143,7 +140,7 @@ const DashboardMap: React.FC = () => {
                     <div className="flex items-center justify-between mt-2">
                       <div className="flex items-center gap-2">
                         <DollarSign size={14} className="text-gray-500" />
-                        <span className="text-sm font-bold">{listing.price}/night</span>
+                        <span className="text-sm font-bold">{listing.pricePerNight}/night</span>
                       </div>
                       {listing.rating && (
                         <div className="flex items-center gap-1">

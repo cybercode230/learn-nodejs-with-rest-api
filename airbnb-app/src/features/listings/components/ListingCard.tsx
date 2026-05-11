@@ -19,26 +19,36 @@ const ListingCard: React.FC<ListingCardProps> = ({ listing, variant = 'compact' 
 
   const getFallbackImage = () => {
     const typeImages: Record<string, string> = {
-      HOUSE: 'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?q=80&w=1080&auto=format&fit=crop',
-      APARTMENT: 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?q=80&w=1080&auto=format&fit=crop',
-      VILLA: 'https://images.unsplash.com/photo-1613977257363-707ba9348227?q=80&w=1080&auto=format&fit=crop',
-      CABIN: 'https://images.unsplash.com/photo-1449158743715-0a90ebb6d2d8?q=80&w=1080&auto=format&fit=crop',
+      HOUSE: 'https://images.unsplash.com/photo-1500382017468-9049fed747ef?q=80&w=1000&auto=format&fit=crop',
+      APARTMENT: 'https://images.unsplash.com/photo-1493809842364-78817add7ffb?q=80&w=1000&auto=format&fit=crop',
+      VILLA: 'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?q=80&w=1000&auto=format&fit=crop',
+      CABIN: 'https://images.unsplash.com/photo-1449158743715-0a90ebb6d2d8?q=80&w=1000&auto=format&fit=crop',
     };
-    return typeImages[listing.type] || typeImages.HOUSE;
+    return typeImages[listing.type] || 'https://images.unsplash.com/photo-1500382017468-9049fed747ef?q=80&w=1000&auto=format&fit=crop';
   };
 
   const images = listing.photos && listing.photos.length > 0 
     ? listing.photos.map(p => p.url) 
     : [getFallbackImage()];
 
+  const [imgSrc, setImgSrc] = useState(images[currentImageIndex]);
+
+  const handleImageError = () => {
+    setImgSrc(getFallbackImage());
+  };
+
   const nextImage = (e: React.MouseEvent) => {
     e.preventDefault();
-    setCurrentImageIndex((prev) => (prev + 1) % images.length);
+    const nextIndex = (currentImageIndex + 1) % images.length;
+    setCurrentImageIndex(nextIndex);
+    setImgSrc(images[nextIndex]);
   };
 
   const prevImage = (e: React.MouseEvent) => {
     e.preventDefault();
-    setCurrentImageIndex((prev) => (prev - 1 + images.length) % images.length);
+    const prevIndex = (currentImageIndex - 1 + images.length) % images.length;
+    setCurrentImageIndex(prevIndex);
+    setImgSrc(images[prevIndex]);
   };
 
   const handleFavoriteClick = (e: React.MouseEvent) => {
@@ -58,7 +68,12 @@ const ListingCard: React.FC<ListingCardProps> = ({ listing, variant = 'compact' 
     return (
       <Link to={`/listings/${listing.id}`} className="flex flex-col gap-3 group animate-fade-in">
         <div className="relative aspect-[16/10] w-full rounded-2xl overflow-hidden shadow-sm">
-          <img src={images[currentImageIndex]} alt={listing.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+          <img 
+            src={imgSrc} 
+            alt={listing.title} 
+            onError={handleImageError}
+            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" 
+          />
           
           <div className="absolute inset-0 flex items-center justify-between p-3 opacity-0 group-hover:opacity-100 transition-opacity">
             <button onClick={prevImage} className="p-1.5 rounded-full bg-white/90 shadow-md hover:bg-white"><ChevronLeft size={16} strokeWidth={3} /></button>
@@ -112,8 +127,9 @@ const ListingCard: React.FC<ListingCardProps> = ({ listing, variant = 'compact' 
       <Link to={`/listings/${listing.id}`} className="block">
         <div className="relative aspect-square w-full rounded-2xl overflow-hidden mb-3 shadow-sm">
           <img
-            src={images[currentImageIndex]}
+            src={imgSrc}
             alt={listing.title}
+            onError={handleImageError}
             className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
           />
           {listing._count && listing._count.bookings > 0 && (

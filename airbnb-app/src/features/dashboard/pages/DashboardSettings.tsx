@@ -12,7 +12,7 @@ import { useProfile } from '../hooks/useProfile';
 
 const DashboardSettings: React.FC = () => {
   const { user, logout } = useAuth();
-  const { profile: apiProfile, updateProfile, uploadAvatar, isLoading } = useProfile();
+  const { profile: apiProfile, updateProfile, uploadAvatar } = useProfile();
   const [activeTab, setActiveTab] = useState<'profile' | 'notifications' | 'security' | 'payouts'>('profile');
   const [darkMode, setDarkMode] = useState(false);
   const [saving, setSaving] = useState(false);

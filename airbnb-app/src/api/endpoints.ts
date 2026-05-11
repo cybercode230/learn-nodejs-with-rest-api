@@ -40,6 +40,7 @@ export const ENDPOINTS = {
     LISTINGS: (id: string) => `/users/${id}/listings`,
     BOOKINGS: (id: string) => `/users/${id}/bookings`,
     HOST_BOOKINGS: (id: string) => `/users/${id}/host-bookings`,
+    ROLE: (id: string) => `/users/${id}/role`,
   },
   PROFILE: {
     BASE: '/profile',

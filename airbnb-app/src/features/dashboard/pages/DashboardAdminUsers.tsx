@@ -34,7 +34,7 @@ interface Meta {
 }
 
 const AdminUsers: React.FC = () => {
-  const { token } = useAuth();
+  useAuth();
   const [users, setUsers] = useState<User[]>([]);
   const [meta, setMeta] = useState<Meta>({ total: 0, page: 1, limit: 10, totalPages: 0 });
   const [loading, setLoading] = useState(true);

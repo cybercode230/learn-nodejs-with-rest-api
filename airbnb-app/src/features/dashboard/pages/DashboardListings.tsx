@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Home, Plus, Edit, Trash2, Eye, MoreVertical, 
   Search, AlertCircle, CheckSquare, Square,
-  MapPin, Star, Upload, X, Image as ImageIcon,
+  MapPin, Star, Upload, X,
   Users, Wifi, Coffee, ParkingCircle, Wind, Waves, Tv, Utensils,
   Building2, CalendarCheck, Download, ChevronLeft, ChevronRight
 } from 'lucide-react';
@@ -367,7 +367,7 @@ const DashboardListings: React.FC = () => {
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const [totalItems, setTotalItems] = useState(0);
+  const [, setTotalItems] = useState(0);
   const [itemsPerPage] = useState(10);
 
   // Fetch listings with pagination

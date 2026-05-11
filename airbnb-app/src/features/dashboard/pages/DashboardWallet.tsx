@@ -58,7 +58,7 @@ const DashboardWallet: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'overview' | 'earnings' | 'transactions' | 'payouts' | 'settings'>('overview');
   const [selectedFilter, setSelectedFilter] = useState<string>('all');
   const [showPayoutMenu, setShowPayoutMenu] = useState<string | null>(null);
-  const [showAddMethod, setShowAddMethod] = useState(false);
+  const [, setShowAddMethod] = useState(false);
   
   // Wallet data
   const balance = 2840.50;

@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useFormik } from 'formik';
 import { toFormikValidationSchema } from 'zod-formik-adapter';
+import { motion } from 'framer-motion';
 
 import { registerSchema } from '../schemas/register.schema';
 import { useRegister } from '../hooks/useRegister';
@@ -67,20 +68,20 @@ const RegisterPage: React.FC = () => {
   return (
     <AuthLayout>
       <Card
-        className="w-full max-w-2xl p-8 sm:p-12 shadow-2xl animate-fade-in rounded-3xl bg-white/95 backdrop-blur-md"
+        className="w-full max-w-3xl p-10 sm:p-12 shadow-[0_32px_64px_-12px_rgba(0,0,0,0.14)] animate-fade-in rounded-[2.5rem] bg-white border border-gray-100/50"
         hoverable={false}
       >
         <div className="text-center mb-10">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-airbnb/10 text-airbnb mb-4">
-            <UserPlus size={32} />
+          <div className="inline-flex items-center justify-center w-20 h-20 rounded-3xl bg-airbnb/5 text-airbnb mb-6 shadow-inner">
+            <UserPlus size={40} strokeWidth={2.5} />
           </div>
 
-          <h1 className="text-3xl font-bold text-gray-900">
+          <h1 className="text-4xl font-black text-gray-900 tracking-tighter">
             Create your account
           </h1>
 
-          <p className="text-gray-500 mt-2 font-medium">
-            Join our community and start exploring the world
+          <p className="text-gray-500 mt-3 font-medium text-lg">
+            Join the premium travel community
           </p>
         </div>
 
@@ -89,14 +90,19 @@ const RegisterPage: React.FC = () => {
           className="space-y-6"
         >
           {error && (
-            <div className="p-4 bg-red-50 border border-red-100 rounded-xl text-red-600 text-sm font-bold animate-shake">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="p-4 bg-red-50 border border-red-100 rounded-2xl text-red-600 text-sm font-bold flex items-center gap-3"
+            >
+              <div className="w-1.5 h-10 bg-red-500 rounded-full" />
               {error}
-            </div>
+            </motion.div>
           )}
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <Label htmlFor="name" required>
+            <div className="space-y-2">
+              <Label htmlFor="name" className="ml-1 text-xs font-black uppercase tracking-widest text-gray-400">
                 Full Name
               </Label>
               <Input
@@ -104,7 +110,8 @@ const RegisterPage: React.FC = () => {
                 name="name"
                 type="text"
                 placeholder="John Doe"
-                leftIcon={<User size={18} />}
+                leftIcon={<User size={20} className="text-gray-400" />}
+                className="py-3.5 px-6 rounded-2xl bg-gray-50 border-gray-100 focus:bg-white transition-all font-medium"
                 value={formik.values.name}
                 onChange={formik.handleChange}
                 onBlur={formik.handleBlur}
@@ -115,8 +122,8 @@ const RegisterPage: React.FC = () => {
               />
             </div>
 
-            <div>
-              <Label htmlFor="username" required>
+            <div className="space-y-2">
+              <Label htmlFor="username" className="ml-1 text-xs font-black uppercase tracking-widest text-gray-400">
                 Username
               </Label>
               <Input
@@ -124,7 +131,8 @@ const RegisterPage: React.FC = () => {
                 name="username"
                 type="text"
                 placeholder="johndoe123"
-                leftIcon={<User size={18} />}
+                leftIcon={<User size={20} className="text-gray-400" />}
+                className="py-3.5 px-6 rounded-2xl bg-gray-50 border-gray-100 focus:bg-white transition-all font-medium"
                 value={formik.values.username}
                 onChange={formik.handleChange}
                 onBlur={formik.handleBlur}
@@ -137,8 +145,8 @@ const RegisterPage: React.FC = () => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <Label htmlFor="email" required>
+            <div className="space-y-2">
+              <Label htmlFor="email" className="ml-1 text-xs font-black uppercase tracking-widest text-gray-400">
                 Email Address
               </Label>
               <Input
@@ -146,7 +154,8 @@ const RegisterPage: React.FC = () => {
                 name="email"
                 type="email"
                 placeholder="john@example.com"
-                leftIcon={<Mail size={18} />}
+                leftIcon={<Mail size={20} className="text-gray-400" />}
+                className="py-3.5 px-6 rounded-2xl bg-gray-50 border-gray-100 focus:bg-white transition-all font-medium"
                 value={formik.values.email}
                 onChange={formik.handleChange}
                 onBlur={formik.handleBlur}
@@ -157,8 +166,8 @@ const RegisterPage: React.FC = () => {
               />
             </div>
 
-            <div>
-              <Label htmlFor="phone" required>
+            <div className="space-y-2">
+              <Label htmlFor="phone" className="ml-1 text-xs font-black uppercase tracking-widest text-gray-400">
                 Phone Number
               </Label>
               <Input
@@ -166,7 +175,8 @@ const RegisterPage: React.FC = () => {
                 name="phone"
                 type="text"
                 placeholder="+250 788 123 456"
-                leftIcon={<Phone size={18} />}
+                leftIcon={<Phone size={20} className="text-gray-400" />}
+                className="py-3.5 px-6 rounded-2xl bg-gray-50 border-gray-100 focus:bg-white transition-all font-medium"
                 value={formik.values.phone}
                 onChange={formik.handleChange}
                 onBlur={formik.handleBlur}
@@ -179,8 +189,8 @@ const RegisterPage: React.FC = () => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <Label htmlFor="password" required>
+            <div className="space-y-2">
+              <Label htmlFor="password" className="ml-1 text-xs font-black uppercase tracking-widest text-gray-400">
                 Password
               </Label>
               <Input
@@ -188,7 +198,8 @@ const RegisterPage: React.FC = () => {
                 name="password"
                 type="password"
                 placeholder="••••••••"
-                leftIcon={<Lock size={18} />}
+                leftIcon={<Lock size={20} className="text-gray-400" />}
+                className="py-3.5 px-6 rounded-2xl bg-gray-50 border-gray-100 focus:bg-white transition-all font-medium"
                 value={formik.values.password}
                 onChange={formik.handleChange}
                 onBlur={formik.handleBlur}
@@ -199,8 +210,8 @@ const RegisterPage: React.FC = () => {
               />
             </div>
 
-            <div>
-              <Label htmlFor="role" required>
+            <div className="space-y-2">
+              <Label htmlFor="role" className="ml-1 text-xs font-black uppercase tracking-widest text-gray-400">
                 I want to...
               </Label>
               <div className="relative">
@@ -210,13 +221,13 @@ const RegisterPage: React.FC = () => {
                   value={formik.values.role}
                   onChange={formik.handleChange}
                   onBlur={formik.handleBlur}
-                  className="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:border-airbnb focus:ring-2 focus:ring-airbnb/10 outline-none transition-all appearance-none cursor-pointer font-medium"
+                  className="w-full px-6 py-3.5 bg-gray-50 border border-gray-100 rounded-2xl focus:bg-white focus:border-airbnb focus:ring-4 focus:ring-airbnb/5 outline-none transition-all appearance-none cursor-pointer font-medium text-gray-700"
                 >
                   <option value="GUEST">Book unique places (Guest)</option>
                   <option value="HOST">Host my home (Host)</option>
                 </select>
                 <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
-                  <ArrowRight size={16} className="rotate-90" />
+                  <ArrowRight size={18} className="rotate-90" />
                 </div>
               </div>
               <FormFieldError
@@ -226,10 +237,10 @@ const RegisterPage: React.FC = () => {
             </div>
           </div>
 
-          <div>
-            <Label htmlFor="bio">Bio (Optional)</Label>
+          <div className="space-y-2">
+            <Label htmlFor="bio" className="ml-1 text-xs font-black uppercase tracking-widest text-gray-400">Bio (Optional)</Label>
             <div className="relative">
-              <BookOpen className="absolute left-4 top-4 text-gray-400" size={18} />
+              <BookOpen className="absolute left-6 top-4 text-gray-400" size={20} />
               <textarea
                 id="bio"
                 name="bio"
@@ -238,7 +249,7 @@ const RegisterPage: React.FC = () => {
                 value={formik.values.bio}
                 onChange={formik.handleChange}
                 onBlur={formik.handleBlur}
-                className="w-full pl-12 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:border-airbnb focus:ring-2 focus:ring-airbnb/10 outline-none transition-all resize-none font-medium"
+                className="w-full pl-14 pr-6 py-3.5 bg-gray-50 border border-gray-100 rounded-2xl focus:bg-white focus:border-airbnb focus:ring-4 focus:ring-airbnb/5 outline-none transition-all resize-none font-medium text-gray-700"
               />
             </div>
             <FormFieldError
@@ -250,19 +261,19 @@ const RegisterPage: React.FC = () => {
           <div className="pt-4">
             <Button
               type="submit"
-              className="w-full py-4 rounded-xl text-lg font-bold shadow-lg"
+              className="w-full py-5 rounded-[1.25rem] text-xl font-black shadow-2xl shadow-airbnb/20 mt-4 h-auto"
               isLoading={isLoading}
               disabled={!formik.isValid || formik.isSubmitting}
-              rightIcon={<ArrowRight size={20} />}
+              rightIcon={<ArrowRight size={22} strokeWidth={3} />}
             >
               Create Account
             </Button>
           </div>
         </form>
 
-        <p className="mt-8 text-center text-gray-500 font-medium">
+        <p className="mt-10 text-center text-gray-500 font-medium">
           Already have an account?{' '}
-          <Link to="/login" className="text-airbnb font-black hover:underline">
+          <Link to="/login" className="text-airbnb font-black hover:underline ml-1">
             Log in
           </Link>
         </p>

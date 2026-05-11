@@ -4,7 +4,7 @@ import {
   MessageCircle, Search, Send, Paperclip, Phone, 
   Video, CheckCheck, 
   Smile, Mic, Image, File, ArrowLeft, 
-  Video as VideoIcon, MoreHorizontal, Volume2, Inbox
+  MoreHorizontal, Volume2, Inbox
 } from 'lucide-react';
 
 interface Message {

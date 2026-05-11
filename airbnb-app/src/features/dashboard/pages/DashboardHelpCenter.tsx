@@ -47,7 +47,7 @@ const faqs = [
 
 const DashboardHelpCenter: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [, setSelectedCategory] = useState<string | null>(null);
   const [openFaq, setOpenFaq] = useState<string | null>(null);
 
   const filteredArticles = popularArticles.filter(article =>

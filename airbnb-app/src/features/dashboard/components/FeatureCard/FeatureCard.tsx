@@ -21,20 +21,23 @@ interface FeatureCardProps {
 }
 
 const FeatureCard: React.FC<FeatureCardProps> = ({
-  features = undefined,
+  features = [],
   autoRotate = true,
   rotateInterval = 5000,
 }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
-  const current = features[currentIndex];
 
   useEffect(() => {
-    if (!autoRotate || features.length <= 1) return;
+    if (!autoRotate || !features || features.length <= 1) return;
     const interval = setInterval(() => {
       setCurrentIndex((prev) => (prev + 1) % features.length);
     }, rotateInterval);
     return () => clearInterval(interval);
-  }, [autoRotate, features.length, rotateInterval]);
+  }, [autoRotate, features, rotateInterval]);
+
+  if (!features || features.length === 0) return null;
+
+  const current = features[currentIndex];
 
   return (
     <div

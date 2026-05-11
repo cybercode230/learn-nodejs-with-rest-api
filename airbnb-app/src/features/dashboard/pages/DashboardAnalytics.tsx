@@ -490,7 +490,7 @@ const DashboardAnalytics: React.FC = () => {
                       outerRadius={100}
                       paddingAngle={2}
                       dataKey="value"
-                      label={({ name, percent }) => percent > 0 ? `${name} ${(percent * 100).toFixed(0)}%` : ''}
+                      label={({ name, percent = 0 }) => percent > 0 ? `${name} ${(percent * 100).toFixed(0)}%` : ''}
                       labelLine={{ strokeWidth: 1 }}
                     >
                       {analyticsData.bookingStatus.map((entry, index) => (

@@ -288,7 +288,7 @@ const StepPayment: React.FC<{ onNext: () => void; onSkip: () => void }> = ({ onN
 const StepListing: React.FC<{ onNext: () => void; onSkip: () => void }> = ({ onNext, onSkip }) => {
   const { user } = useAuth();
   const [inProgressListing, setInProgressListing] = React.useState<any>(null);
-  const [loading, setLoading] = React.useState(true);
+  const [, setLoading] = React.useState(true);
 
   React.useEffect(() => {
     const fetchDraft = async () => {

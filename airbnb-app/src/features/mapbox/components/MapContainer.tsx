@@ -63,8 +63,8 @@ const MapContainer: React.FC<MapContainerProps> = ({
             longitude={listing.longitude || defaultCenter.longitude + (Math.random() - 0.5) * 0.05}
             latitude={listing.latitude || defaultCenter.latitude + (Math.random() - 0.5) * 0.05}
             anchor="bottom"
-            onClick={(e) => {
-              e.originalEvent.stopPropagation();
+            onClick={(e: React.MouseEvent) => {
+              e.stopPropagation();
               setPopupInfo(listing);
               onSelectListing?.(listing.id);
             }}
