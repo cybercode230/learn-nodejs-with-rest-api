@@ -44,6 +44,17 @@ const AdminUsers: React.FC = () => {
   const [actionMenuOpen, setActionMenuOpen] = useState<string | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState<string | null>(null);
   const [showRoleModal, setShowRoleModal] = useState<{ userId: string; currentRole: string } | null>(null);
+  const [globalStats, setGlobalStats] = useState<any>(null);
+
+  // Fetch global platform stats
+  const fetchGlobalStats = useCallback(async () => {
+    try {
+      const response = await api.get(`${ENDPOINTS.USERS.BASE}/stats`);
+      setGlobalStats(response.data);
+    } catch (error) {
+      console.error('Failed to fetch global stats:', error);
+    }
+  }, []);
 
   // Fetch users with pagination
   const fetchUsers = useCallback(async (page: number, search?: string, role?: string) => {
@@ -65,7 +76,8 @@ const AdminUsers: React.FC = () => {
 
   useEffect(() => {
     fetchUsers(meta.page, searchTerm, roleFilter);
-  }, [meta.page, searchTerm, roleFilter]);
+    fetchGlobalStats();
+  }, [meta.page, searchTerm, roleFilter, fetchGlobalStats]);
 
   const handlePageChange = (newPage: number) => {
     setMeta(prev => ({ ...prev, page: newPage }));
@@ -103,7 +115,10 @@ const AdminUsers: React.FC = () => {
   const handleDeleteUser = async (userId: string) => {
     try {
       await api.delete(ENDPOINTS.USERS.BY_ID(userId));
-      await fetchUsers(meta.page, searchTerm, roleFilter);
+      await Promise.all([
+        fetchUsers(meta.page, searchTerm, roleFilter),
+        fetchGlobalStats()
+      ]);
       setShowDeleteModal(null);
       setSelectedUsers(new Set());
     } catch (error) {
@@ -111,8 +126,28 @@ const AdminUsers: React.FC = () => {
     }
   };
 
+  const handleBulkDelete = async () => {
+    if (!window.confirm(`Are you sure you want to delete ${selectedUsers.size} users?`)) return;
+    
+    try {
+      setLoading(true);
+      await Promise.all(
+        Array.from(selectedUsers).map(id => api.delete(ENDPOINTS.USERS.BY_ID(id)))
+      );
+      await Promise.all([
+        fetchUsers(1, searchTerm, roleFilter),
+        fetchGlobalStats()
+      ]);
+      setSelectedUsers(new Set());
+    } catch (error) {
+      console.error('Failed to perform bulk delete:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const getRoleBadge = (role: string) => {
-    switch(role) {
+    switch (role) {
       case 'ADMIN': return { label: 'Admin', color: 'bg-purple-100 text-purple-700', icon: Crown };
       case 'HOST': return { label: 'Host', color: 'bg-emerald-100 text-emerald-700', icon: Home };
       default: return { label: 'Guest', color: 'bg-blue-100 text-blue-700', icon: Users };
@@ -120,10 +155,10 @@ const AdminUsers: React.FC = () => {
   };
 
   const formatDate = (dateStr: string) => {
-    return new Date(dateStr).toLocaleDateString('en-US', { 
-      year: 'numeric', 
-      month: 'short', 
-      day: 'numeric' 
+    return new Date(dateStr).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
     });
   };
 
@@ -142,13 +177,15 @@ const AdminUsers: React.FC = () => {
     URL.revokeObjectURL(url);
   };
 
-  const stats = {
-    total: meta.total,
-    hosts: users.filter(u => u.role === 'HOST').length,
-    guests: users.filter(u => u.role === 'GUEST').length,
-    admins: users.filter(u => u.role === 'ADMIN').length,
-    totalListings: users.reduce((sum, u) => sum + u._count.listings, 0),
-    totalBookings: users.reduce((sum, u) => sum + u._count.bookings, 0),
+  const getRoleCount = (r: string) => globalStats?.byRole?.find((item: any) => item.role === r)?._count?.role || 0;
+  
+  const statsDisplay = {
+    total: globalStats?.totalUsers || 0,
+    hosts: getRoleCount('HOST'),
+    guests: getRoleCount('GUEST'),
+    admins: getRoleCount('ADMIN'),
+    totalListings: globalStats?.totalListings || 0,
+    totalBookings: globalStats?.totalBookings || 0,
   };
 
   return (
@@ -177,29 +214,29 @@ const AdminUsers: React.FC = () => {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-        <div className="bg-white rounded-lg p-3 border border-gray-100">
-          <p className="text-xs text-gray-500">Total Users</p>
-          <p className="text-xl font-bold text-gray-900">{stats.total}</p>
+        <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm">
+          <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Total Users</p>
+          <p className="text-2xl font-black text-gray-900 mt-1">{statsDisplay.total}</p>
         </div>
-        <div className="bg-white rounded-lg p-3 border border-gray-100">
-          <p className="text-xs text-gray-500">Hosts</p>
-          <p className="text-xl font-bold text-emerald-600">{stats.hosts}</p>
+        <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm">
+          <p className="text-[10px] font-black uppercase tracking-widest text-emerald-500">Hosts</p>
+          <p className="text-2xl font-black text-emerald-600 mt-1">{statsDisplay.hosts}</p>
         </div>
-        <div className="bg-white rounded-lg p-3 border border-gray-100">
-          <p className="text-xs text-gray-500">Guests</p>
-          <p className="text-xl font-bold text-blue-600">{stats.guests}</p>
+        <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm">
+          <p className="text-[10px] font-black uppercase tracking-widest text-blue-500">Guests</p>
+          <p className="text-2xl font-black text-blue-600 mt-1">{statsDisplay.guests}</p>
         </div>
-        <div className="bg-white rounded-lg p-3 border border-gray-100">
-          <p className="text-xs text-gray-500">Admins</p>
-          <p className="text-xl font-bold text-purple-600">{stats.admins}</p>
+        <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm">
+          <p className="text-[10px] font-black uppercase tracking-widest text-purple-500">Admins</p>
+          <p className="text-2xl font-black text-purple-600 mt-1">{statsDisplay.admins}</p>
         </div>
-        <div className="bg-white rounded-lg p-3 border border-gray-100">
-          <p className="text-xs text-gray-500">Total Listings</p>
-          <p className="text-xl font-bold text-gray-900">{stats.totalListings}</p>
+        <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm">
+          <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Listings</p>
+          <p className="text-2xl font-black text-gray-900 mt-1">{statsDisplay.totalListings}</p>
         </div>
-        <div className="bg-white rounded-lg p-3 border border-gray-100">
-          <p className="text-xs text-gray-500">Total Bookings</p>
-          <p className="text-xl font-bold text-gray-900">{stats.totalBookings}</p>
+        <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm">
+          <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Bookings</p>
+          <p className="text-2xl font-black text-gray-900 mt-1">{statsDisplay.totalBookings}</p>
         </div>
       </div>
 
@@ -220,11 +257,10 @@ const AdminUsers: React.FC = () => {
             <button
               key={role}
               onClick={() => setRoleFilter(role as any)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
-                roleFilter === role 
-                  ? 'bg-gray-900 text-white' 
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${roleFilter === role
+                  ? 'bg-gray-900 text-white'
                   : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'
-              }`}
+                }`}
             >
               {role === 'all' ? 'All Roles' : role}
             </button>
@@ -246,10 +282,16 @@ const AdminUsers: React.FC = () => {
             </span>
             <div className="flex gap-2">
               <button
-                onClick={() => setSelectedUsers(new Set())}
-                className="px-3 py-1.5 bg-gray-700 text-white rounded-lg text-xs font-medium hover:bg-gray-600"
+                onClick={handleBulkDelete}
+                className="flex items-center gap-2 px-3 py-1.5 bg-rose-500 text-white rounded-lg text-xs font-bold hover:bg-rose-600 transition-all shadow-lg shadow-rose-500/20"
               >
-                Clear
+                <Trash2 size={14} /> Delete Selected
+              </button>
+              <button
+                onClick={() => setSelectedUsers(new Set())}
+                className="px-3 py-1.5 bg-gray-700 text-white rounded-lg text-xs font-bold hover:bg-gray-600 transition-all"
+              >
+                Cancel
               </button>
             </div>
           </motion.div>
@@ -364,7 +406,7 @@ const AdminUsers: React.FC = () => {
                           >
                             <MoreVertical size={14} className="text-gray-500" />
                           </button>
-                          
+
                           <AnimatePresence>
                             {actionMenuOpen === user.id && (
                               <motion.div
@@ -440,16 +482,15 @@ const AdminUsers: React.FC = () => {
               else if (meta.page <= 3) pageNum = i + 1;
               else if (meta.page >= meta.totalPages - 2) pageNum = meta.totalPages - 4 + i;
               else pageNum = meta.page - 2 + i;
-              
+
               return (
                 <button
                   key={pageNum}
                   onClick={() => handlePageChange(pageNum)}
-                  className={`w-8 h-8 rounded-lg text-sm font-medium transition-colors ${
-                    meta.page === pageNum
+                  className={`w-8 h-8 rounded-lg text-sm font-medium transition-colors ${meta.page === pageNum
                       ? 'bg-gray-900 text-white'
                       : 'border border-gray-200 text-gray-700 hover:bg-gray-50'
-                  }`}
+                    }`}
                 >
                   {pageNum}
                 </button>
@@ -492,11 +533,10 @@ const AdminUsers: React.FC = () => {
                   <button
                     key={role}
                     onClick={() => handleRoleChange(showRoleModal.userId, role as any)}
-                    className={`w-full flex items-center justify-between p-3 rounded-lg border transition-all ${
-                      showRoleModal.currentRole === role
+                    className={`w-full flex items-center justify-between p-3 rounded-lg border transition-all ${showRoleModal.currentRole === role
                         ? 'border-airbnb bg-airbnb/5'
                         : 'border-gray-200 hover:border-gray-300'
-                    }`}
+                      }`}
                   >
                     <span className="text-sm font-medium text-gray-900">{role}</span>
                     {showRoleModal.currentRole === role && (

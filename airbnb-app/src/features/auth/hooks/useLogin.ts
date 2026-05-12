@@ -19,7 +19,14 @@ export const useLogin = () => {
       const { token, user } = response.data;
       
       login(token, user);
-      navigate('/');
+      
+      // Redirect based on role
+      if (user.role === 'ADMIN' || user.role === 'HOST') {
+        navigate('/dashboard');
+      } else {
+        navigate('/');
+      }
+      
       return { success: true };
     } catch (err: any) {
       const message = err.response?.data?.message || 'Login failed. Please try again.';

@@ -18,7 +18,13 @@ const DashboardSettings: React.FC = () => {
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   
-  // Profile data
+  // Security data
+  const [passwords, setPasswords] = useState({
+    current: '',
+    new: '',
+    confirm: ''
+  });
+  const { changePassword } = useProfile();
   const [profile, setProfile] = useState({
     name: '',
     email: '',
@@ -78,6 +84,22 @@ const DashboardSettings: React.FC = () => {
 
   const toggleNotification = (key: keyof typeof notifications) => {
     setNotifications(prev => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  const handlePasswordUpdate = async () => {
+    if (!passwords.new || passwords.new !== passwords.confirm) {
+      alert('Passwords do not match');
+      return;
+    }
+    setSaving(true);
+    const res = await changePassword(passwords.new);
+    setSaving(false);
+    if (res.success) {
+      alert('Password updated successfully!');
+      setPasswords({ current: '', new: '', confirm: '' });
+    } else {
+      alert(res.error);
+    }
   };
 
   return (
@@ -345,7 +367,13 @@ const DashboardSettings: React.FC = () => {
                   <label className="text-xs font-medium text-gray-700 block mb-1">Current Password</label>
                   <div className="flex items-center gap-2 px-3 py-2 bg-gray-50 rounded-lg border border-gray-100 focus-within:border-airbnb focus-within:ring-1 focus-within:ring-airbnb">
                     <Lock size={14} className="text-gray-400" />
-                    <input type="password" placeholder="••••••••" className="flex-1 bg-transparent text-sm focus:outline-none" />
+                    <input 
+                      type="password" 
+                      placeholder="••••••••" 
+                      className="flex-1 bg-transparent text-sm focus:outline-none" 
+                      value={passwords.current}
+                      onChange={(e) => setPasswords({ ...passwords, current: e.target.value })}
+                    />
                   </div>
                 </div>
 
@@ -353,7 +381,13 @@ const DashboardSettings: React.FC = () => {
                   <label className="text-xs font-medium text-gray-700 block mb-1">New Password</label>
                   <div className="flex items-center gap-2 px-3 py-2 bg-gray-50 rounded-lg border border-gray-100 focus-within:border-airbnb focus-within:ring-1 focus-within:ring-airbnb">
                     <Key size={14} className="text-gray-400" />
-                    <input type="password" placeholder="New password" className="flex-1 bg-transparent text-sm focus:outline-none" />
+                    <input 
+                      type="password" 
+                      placeholder="New password" 
+                      className="flex-1 bg-transparent text-sm focus:outline-none" 
+                      value={passwords.new}
+                      onChange={(e) => setPasswords({ ...passwords, new: e.target.value })}
+                    />
                   </div>
                 </div>
 
@@ -361,7 +395,13 @@ const DashboardSettings: React.FC = () => {
                   <label className="text-xs font-medium text-gray-700 block mb-1">Confirm New Password</label>
                   <div className="flex items-center gap-2 px-3 py-2 bg-gray-50 rounded-lg border border-gray-100 focus-within:border-airbnb focus-within:ring-1 focus-within:ring-airbnb">
                     <Key size={14} className="text-gray-400" />
-                    <input type="password" placeholder="Confirm new password" className="flex-1 bg-transparent text-sm focus:outline-none" />
+                    <input 
+                      type="password" 
+                      placeholder="Confirm new password" 
+                      className="flex-1 bg-transparent text-sm focus:outline-none" 
+                      value={passwords.confirm}
+                      onChange={(e) => setPasswords({ ...passwords, confirm: e.target.value })}
+                    />
                   </div>
                 </div>
 
@@ -390,7 +430,7 @@ const DashboardSettings: React.FC = () => {
                 </div>
 
                 <button
-                  onClick={handleSave}
+                  onClick={handlePasswordUpdate}
                   disabled={saving}
                   className="w-full py-2 bg-gray-900 text-white rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors disabled:opacity-50"
                 >

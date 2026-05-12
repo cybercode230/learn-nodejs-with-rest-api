@@ -8,3 +8,4 @@ export { default as Input } from './Input/Input';
 export { default as Label } from './Label/Label';
 export { default as Footer } from './Footer/Footer';
 export { default as ProtectedRoute } from './ProtectedRoute';
+export { default as AIChatWidget } from './AIChatWidget';

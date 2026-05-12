@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { ENV } from '../config/env';
+import { decrypt } from '../shared/utils/encryption';
 
 const api = axios.create({
   baseURL: ENV.API_URL,
@@ -11,9 +12,12 @@ const api = axios.create({
 // Add a request interceptor to include the auth token
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+    const encryptedToken = localStorage.getItem('token');
+    if (encryptedToken) {
+      const token = decrypt(encryptedToken);
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
     }
     return config;
   },

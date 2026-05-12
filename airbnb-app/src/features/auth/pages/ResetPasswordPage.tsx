@@ -2,39 +2,29 @@ import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useFormik } from 'formik';
 import { toFormikValidationSchema } from 'zod-formik-adapter';
+import { motion, AnimatePresence } from 'framer-motion';
+import { 
+  Lock, 
+  ArrowRight, 
+  CheckCircle2, 
+  AlertCircle, 
+  ArrowLeft,
+  Eye,
+  EyeOff,
+  ShieldCheck
+} from 'lucide-react';
 
 import { resetPasswordSchema } from '../schemas/password.schema';
 import { usePasswordReset } from '../hooks/usePasswordReset';
-
-import {
-  Button,
-  Card,
-  Input,
-  Label,
-  Skeleton,
-} from '../../../shared/components';
-
+import { Button, Input, Label, Skeleton } from '../../../shared/components';
 import FormFieldError from '../components/FormFieldError';
-
-import {
-  Lock,
-  ArrowRight,
-  CheckCircle,
-  AlertCircle,
-  ArrowLeft,
-} from 'lucide-react';
-
 import AuthLayout from '../components/AuthLayout';
 
-/**
- * File: ResetPasswordPage.tsx
- * What it is doing: Finalizes the password reset flow using a secure, validated form.
- * Responsibility: Verifying the reset token, validating new password entries, and handling the update request.
- * Outcomes: Secure password update, real-time validation of matching passwords, and professional loading/error states.
- */
 const ResetPasswordPage: React.FC = () => {
   const { token } = useParams<{ token: string }>();
   const [isTokenValid, setIsTokenValid] = useState<boolean | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   
   const { validateToken, resetPassword, isLoading, error, successMessage, clearError } = usePasswordReset();
 
@@ -53,12 +43,9 @@ const ResetPasswordPage: React.FC = () => {
       password: '',
       confirmPassword: '',
     },
-
     validationSchema: toFormikValidationSchema(resetPasswordSchema),
-
     validateOnChange: true,
     validateOnBlur: true,
-
     onSubmit: async (values) => {
       if (token) {
         await resetPassword(token, { newPassword: values.password });
@@ -66,7 +53,6 @@ const ResetPasswordPage: React.FC = () => {
     },
   });
 
-  // Clear backend error when user starts typing again
   useEffect(() => {
     if (error) {
       clearError();
@@ -76,18 +62,22 @@ const ResetPasswordPage: React.FC = () => {
   if (isTokenValid === null) {
     return (
       <AuthLayout>
-        <Card className="w-full max-w-md p-10 text-center bg-white/95 backdrop-blur-md rounded-3xl" hoverable={false}>
-          <div className="animate-spin inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-airbnb/10 text-airbnb mb-6">
-            <Lock size={32} />
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="w-full max-w-lg bg-white rounded-[2.5rem] shadow-2xl p-10 text-center"
+        >
+          <div className="animate-spin inline-flex items-center justify-center w-20 h-20 rounded-3xl bg-airbnb/5 text-[#FF385C] mb-8 shadow-inner">
+            <Lock size={40} strokeWidth={2.5} />
           </div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Verifying your link</h1>
-          <p className="text-gray-500 mb-8 font-medium italic">Please wait while we secure your account access...</p>
-          <div className="space-y-4">
-            <Skeleton height={56} className="rounded-xl" />
-            <Skeleton height={56} className="rounded-xl" />
-            <Skeleton height={56} className="rounded-xl" />
+          <h1 className="text-3xl font-black text-gray-900 tracking-tighter mb-2">Verifying Link</h1>
+          <p className="text-gray-500 mb-10 font-medium">Securing your account access, please wait...</p>
+          <div className="space-y-6">
+            <Skeleton height={60} className="rounded-2xl" />
+            <Skeleton height={60} className="rounded-2xl" />
+            <Skeleton height={60} className="rounded-2xl" />
           </div>
-        </Card>
+        </motion.div>
       </AuthLayout>
     );
   }
@@ -95,126 +85,158 @@ const ResetPasswordPage: React.FC = () => {
   if (isTokenValid === false) {
     return (
       <AuthLayout>
-        <Card className="w-full max-w-md p-10 text-center rounded-3xl bg-white/95 backdrop-blur-md shadow-2xl" hoverable={false}>
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-red-50 text-red-500 mb-6">
-            <AlertCircle size={32} />
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="w-full max-w-lg bg-white rounded-[2.5rem] shadow-2xl p-10 text-center"
+        >
+          <div className="inline-flex items-center justify-center w-20 h-20 rounded-3xl bg-red-50 text-red-500 mb-8 shadow-inner">
+            <AlertCircle size={40} strokeWidth={2.5} />
           </div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Invalid or Expired Link</h1>
-          <p className="text-gray-500 mb-8 font-medium">This password reset link is no longer valid. Please request a new one.</p>
+          <h1 className="text-3xl font-black text-gray-900 tracking-tighter mb-2">Expired Link</h1>
+          <p className="text-gray-500 mb-10 font-medium">This password reset link is no longer valid or has expired.</p>
           <Link to="/forgot-password">
-            <Button className="w-full">Request New Link</Button>
+            <Button className="w-full py-4 rounded-2xl text-lg font-black bg-[#FF385C] hover:bg-[#FF385C]/90 h-auto">Request New Link</Button>
           </Link>
-        </Card>
+        </motion.div>
       </AuthLayout>
     );
   }
 
   return (
     <AuthLayout>
-      <Card
-        className="w-full max-w-md p-8 sm:p-10 shadow-2xl animate-fade-in rounded-3xl bg-white/95 backdrop-blur-md"
-        hoverable={false}
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.5 }}
+        className="w-full max-w-lg bg-white rounded-[2.5rem] shadow-2xl overflow-hidden p-10 md:p-12"
       >
         <div className="text-center mb-10">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-airbnb/10 text-airbnb mb-4">
-            <Lock size={32} />
+          <div className="inline-flex items-center justify-center w-20 h-20 rounded-3xl bg-airbnb/5 text-[#FF385C] mb-6 shadow-inner">
+            <ShieldCheck size={40} strokeWidth={2.5} />
           </div>
 
-          <h1 className="text-3xl font-bold text-gray-900">
-            Set New Password
+          <h1 className="text-3xl font-black text-gray-900 tracking-tighter">
+            Reset Password
           </h1>
 
-          <p className="text-gray-500 mt-2 font-medium">
-            Please enter and confirm your new password below.
+          <p className="text-gray-500 mt-3 font-medium">
+            Strong passwords help keep your account secure.
           </p>
         </div>
 
-        {successMessage ? (
-          <div className="text-center space-y-6">
-            <div className="p-6 bg-green-50 border border-green-100 rounded-2xl">
-              <CheckCircle size={48} className="text-green-500 mx-auto mb-4" />
-              <h2 className="text-xl font-bold text-green-900 mb-2">Success!</h2>
-              <p className="text-green-700 font-medium">{successMessage}</p>
-            </div>
-            <Link to="/login" className="block">
-              <Button className="w-full" rightIcon={<ArrowRight size={18} />}>
-                Go to Login
-              </Button>
-            </Link>
-          </div>
-        ) : (
-          <form
-            onSubmit={formik.handleSubmit}
-            className="space-y-6"
-          >
-            {error && (
-              <div className="p-4 bg-red-50 border border-red-100 rounded-xl text-red-600 text-sm font-bold animate-shake">
-                {error}
+        <AnimatePresence mode="wait">
+          {successMessage ? (
+            <motion.div 
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="space-y-8"
+            >
+              <div className="p-6 bg-green-50 border border-green-100 rounded-3xl flex flex-col items-center text-center gap-4">
+                <div className="w-12 h-12 rounded-full bg-green-100 text-green-600 flex items-center justify-center">
+                  <CheckCircle2 size={28} />
+                </div>
+                <p className="text-green-800 font-bold">
+                  {successMessage}
+                </p>
               </div>
-            )}
+              
+              <Link to="/login" className="block">
+                <Button className="w-full py-4 rounded-2xl text-lg font-black bg-gray-900 hover:bg-gray-800 text-white shadow-xl h-auto" rightIcon={<ArrowRight size={20} />}>
+                  Go to Sign In
+                </Button>
+              </Link>
+            </motion.div>
+          ) : (
+            <form onSubmit={formik.handleSubmit} className="space-y-5">
+              {error && (
+                <motion.div 
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  className="p-4 bg-red-50 border border-red-100 rounded-2xl text-red-600 text-sm font-semibold mb-4"
+                >
+                  {error}
+                </motion.div>
+              )}
 
-            <div>
-              <Label htmlFor="password" required>
-                New Password
-              </Label>
-              <Input
-                id="password"
-                name="password"
-                type="password"
-                placeholder="••••••••"
-                leftIcon={<Lock size={18} />}
-                value={formik.values.password}
-                onChange={formik.handleChange}
-                onBlur={formik.handleBlur}
-              />
-              <FormFieldError
-                error={formik.errors.password}
-                touched={formik.touched.password}
-              />
-            </div>
+              <div className="space-y-2">
+                <Label htmlFor="password"  className="text-xs font-black uppercase tracking-widest text-gray-400 ml-1">
+                  New Password
+                </Label>
+                <div className="relative">
+                  <Input
+                    id="password"
+                    name="password"
+                    type={showPassword ? "text" : "password"}
+                    placeholder="••••••••"
+                    leftIcon={<Lock size={18} className="text-gray-400" />}
+                    className="py-4 px-6 pr-14 rounded-2xl bg-gray-50 border-gray-100 focus:bg-white transition-all text-base font-medium"
+                    value={formik.values.password}
+                    onChange={formik.handleChange}
+                    onBlur={formik.handleBlur}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                  >
+                    {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                  </button>
+                </div>
+                <FormFieldError error={formik.errors.password} touched={formik.touched.password} />
+              </div>
 
-            <div>
-              <Label htmlFor="confirmPassword" required>
-                Confirm Password
-              </Label>
-              <Input
-                id="confirmPassword"
-                name="confirmPassword"
-                type="password"
-                placeholder="••••••••"
-                leftIcon={<Lock size={18} />}
-                value={formik.values.confirmPassword}
-                onChange={formik.handleChange}
-                onBlur={formik.handleBlur}
-              />
-              <FormFieldError
-                error={formik.errors.confirmPassword}
-                touched={formik.touched.confirmPassword}
-              />
-            </div>
+              <div className="space-y-2">
+                <Label htmlFor="confirmPassword"  className="text-xs font-black uppercase tracking-widest text-gray-400 ml-1">
+                  Confirm Password
+                </Label>
+                <div className="relative">
+                  <Input
+                    id="confirmPassword"
+                    name="confirmPassword"
+                    type={showConfirmPassword ? "text" : "password"}
+                    placeholder="••••••••"
+                    leftIcon={<Lock size={18} className="text-gray-400" />}
+                    className="py-4 px-6 pr-14 rounded-2xl bg-gray-50 border-gray-100 focus:bg-white transition-all text-base font-medium"
+                    value={formik.values.confirmPassword}
+                    onChange={formik.handleChange}
+                    onBlur={formik.handleBlur}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute right-5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                  >
+                    {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                  </button>
+                </div>
+                <FormFieldError error={formik.errors.confirmPassword} touched={formik.touched.confirmPassword} />
+              </div>
 
-            <Button
-              type="submit"
-              className="w-full py-4 rounded-xl text-lg font-bold shadow-lg"
-              isLoading={isLoading}
-              disabled={!formik.isValid || formik.isSubmitting}
-              rightIcon={<ArrowRight size={20} />}
-            >
-              Update Password
-            </Button>
+              <Button
+                type="submit"
+                className="w-full py-4 rounded-2xl text-lg font-black bg-[#FF385C] hover:bg-[#FF385C]/90 text-white shadow-lg shadow-[#FF385C]/20 mt-2 h-auto"
+                isLoading={isLoading}
+                disabled={!formik.isValid || formik.isSubmitting}
+                rightIcon={<ArrowRight size={20} strokeWidth={3} />}
+              >
+                Update Password
+              </Button>
 
-            <Link
-              to="/login"
-              className="flex items-center justify-center gap-2 text-sm font-bold text-gray-500 hover:text-gray-900 transition-colors mt-6"
-            >
-              <ArrowLeft size={16} />
-              <span>Back to Login</span>
-            </Link>
-          </form>
-        )}
-      </Card>
+              <Link
+                to="/login"
+                className="flex items-center justify-center gap-2 text-sm font-black text-gray-400 hover:text-[#FF385C] transition-colors mt-8"
+              >
+                <ArrowLeft size={18} strokeWidth={3} />
+                <span>Return to Sign In</span>
+              </Link>
+            </form>
+          )}
+        </AnimatePresence>
+      </motion.div>
     </AuthLayout>
   );
 };
 
 export default ResetPasswordPage;
+

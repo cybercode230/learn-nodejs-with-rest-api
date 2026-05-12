@@ -25,6 +25,9 @@ export const ENDPOINTS = {
   },
   AI: {
     SEARCH: '/ai/search',
+    CHAT: '/ai/chat',
+    RECOMMEND: '/ai/recommend',
+    REVIEW_SUMMARY: (id: string) => `/ai/listings/${id}/review-summary`,
   },
   BOOKINGS: {
     BASE: '/bookings',

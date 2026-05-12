@@ -5,7 +5,6 @@ import {
   ChevronRight, Search, Download, Eye, MoreVertical,
   CheckSquare, Square, Trash2, Check, X
 } from 'lucide-react';
-import { Link } from 'react-router-dom';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useBookings } from '../hooks/useBookings';
 
@@ -26,6 +25,81 @@ const StatusBadge: React.FC<{ status: string }> = ({ status }) => {
   );
 };
 
+const BookingDetailsModal: React.FC<{ 
+  booking: any; 
+  isOpen: boolean; 
+  onClose: () => void;
+  role: string;
+}> = ({ booking, isOpen, onClose, role }) => {
+  if (!isOpen || !booking) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="bg-white rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl"
+      >
+        <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+          <h3 className="font-bold text-gray-900">Booking Details</h3>
+          <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full transition-colors"><X size={18} /></button>
+        </div>
+        
+        <div className="p-6 space-y-6">
+          <div className="flex gap-4">
+            <img 
+              src={booking.listing?.photos?.[0]?.url || '/placeholder.png'} 
+              className="w-24 h-24 rounded-xl object-cover shadow-sm" 
+              alt="" 
+            />
+            <div>
+              <h4 className="font-bold text-lg">{booking.listing?.title}</h4>
+              <p className="text-sm text-gray-500">{booking.listing?.location}</p>
+              <div className="mt-2">
+                <StatusBadge status={booking.status} />
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-6 py-6 border-y border-gray-50">
+            <div className="space-y-1">
+              <p className="text-[10px] font-black uppercase text-gray-400">Check-in</p>
+              <p className="font-bold text-sm">{new Date(booking.checkIn).toLocaleDateString(undefined, { dateStyle: 'full' })}</p>
+            </div>
+            <div className="space-y-1">
+              <p className="text-[10px] font-black uppercase text-gray-400">Checkout</p>
+              <p className="font-bold text-sm">{new Date(booking.checkOut).toLocaleDateString(undefined, { dateStyle: 'full' })}</p>
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            <div className="flex justify-between items-center">
+              <p className="text-sm text-gray-500 font-medium">
+                {role === 'GUEST' ? 'Host' : 'Guest'}
+              </p>
+              <div className="flex items-center gap-2">
+                <div className="w-6 h-6 rounded-full bg-gray-100 overflow-hidden">
+                  <img src={role === 'GUEST' ? booking.listing?.host?.avatar : booking.guest?.avatar} alt="" />
+                </div>
+                <p className="text-sm font-bold">
+                  {role === 'GUEST' ? booking.listing?.host?.name : booking.guest?.name}
+                </p>
+              </div>
+            </div>
+            
+            <div className="flex justify-between items-center">
+              <p className="text-sm text-gray-500 font-medium">Total Amount</p>
+              <p className="text-lg font-black text-gray-900">${booking.totalPrice}</p>
+            </div>
+          </div>
+
+          <button className="w-full py-4 rounded-xl" onClick={onClose}>Close Details</button>
+        </div>
+      </motion.div>
+    </div>
+  );
+};
+
 const DashboardBookings: React.FC = () => {
   const { user } = useAuth();
   const role = user?.role || 'GUEST';
@@ -36,6 +110,7 @@ const DashboardBookings: React.FC = () => {
   const [selectedBookings, setSelectedBookings] = useState<Set<string>>(new Set());
   const [actionMenuOpen, setActionMenuOpen] = useState<string | null>(null);
   const [statusMenuOpen, setStatusMenuOpen] = useState<string | null>(null);
+  const [viewingBooking, setViewingBooking] = useState<any | null>(null);
 
   const filteredBookings = bookings.filter(booking => {
     const matchesSearch = 
@@ -366,11 +441,12 @@ const DashboardBookings: React.FC = () => {
                               exit={{ opacity: 0, scale: 0.95 }}
                               className="absolute right-0 top-full mt-1 bg-white rounded-lg shadow-lg border border-gray-100 z-10 min-w-[140px]"
                             >
-                              <Link to={`/listings/${booking.listing?.id}`} target="_blank">
-                                <button className="w-full px-3 py-2 text-left text-xs text-gray-700 hover:bg-gray-50 rounded-t-lg flex items-center gap-2">
+                                <button 
+                                  onClick={() => { setViewingBooking(booking); setActionMenuOpen(null); }}
+                                  className="w-full px-3 py-2 text-left text-xs text-gray-700 hover:bg-gray-50 rounded-t-lg flex items-center gap-2"
+                                >
                                   <Eye size={12} /> View Details
                                 </button>
-                              </Link>
                               <button
                                 onClick={() => handleDeleteBooking(booking.id)}
                                 className="w-full px-3 py-2 text-left text-xs text-rose-600 hover:bg-gray-50 rounded-b-lg flex items-center gap-2"
@@ -396,6 +472,13 @@ const DashboardBookings: React.FC = () => {
           </table>
         </div>
       </div>
+
+      <BookingDetailsModal 
+        isOpen={!!viewingBooking} 
+        onClose={() => setViewingBooking(null)} 
+        booking={viewingBooking}
+        role={role}
+      />
     </div>
   );
 };

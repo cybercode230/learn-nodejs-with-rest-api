@@ -97,6 +97,24 @@ export const useProfile = () => {
     }
   }, [user?.id, refreshUser]);
 
+  const changePassword = useCallback(async (newPassword: string) => {
+    if (!user?.id) return { success: false, error: 'User not found' };
+    
+    setIsLoading(true);
+    setError(null);
+    try {
+      // The backend's updateUser endpoint handles password hashing if 'password' is provided in the body
+      await api.put(ENDPOINTS.USERS.BY_ID(user.id), { password: newPassword });
+      return { success: true };
+    } catch (err: any) {
+      const msg = err.response?.data?.message || 'Failed to update password';
+      setError(msg);
+      return { success: false, error: msg };
+    } finally {
+      setIsLoading(false);
+    }
+  }, [user?.id]);
+
   useEffect(() => {
     fetchProfile();
   }, [fetchProfile]);
@@ -108,6 +126,7 @@ export const useProfile = () => {
     updateProfile,
     uploadAvatar,
     deleteAvatar,
+    changePassword,
     refreshProfile: fetchProfile
   };
 };

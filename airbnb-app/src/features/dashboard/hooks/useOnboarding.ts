@@ -15,10 +15,10 @@ export const useOnboarding = () => {
   const userKey = user?.id ? `${ONBOARDING_KEY}_${user.id}` : ONBOARDING_KEY;
   const stepKey = user?.id ? `${STEP_KEY}_${user.id}` : STEP_KEY;
 
-  const isComplete = localStorage.getItem(userKey) === 'true';
+  const isComplete = localStorage.getItem(userKey) === 'true' || user?.role === 'ADMIN';
   const savedStep = (localStorage.getItem(stepKey) as OnboardingStep) ?? 'welcome';
 
-  const [step, setStep] = useState<OnboardingStep>(isComplete ? 'done' : savedStep);
+  const [step, setStep] = useState<OnboardingStep>((isComplete || user?.role === 'ADMIN') ? 'done' : savedStep);
 
   const goNext = useCallback(() => {
     setStep(prev => {

@@ -44,7 +44,7 @@ export interface Listing {
   };
 }
 
-export type BookingStatus = 'PENDING' | 'CONFIRMED' | 'CANCELLED' | 'COMPLETED';
+export type BookingStatus = 'PENDING' | 'CONFIRMED' | 'CANCELLED' | 'REJECTED' | 'COMPLETED';
 
 export interface Booking {
   id: string;

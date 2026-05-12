@@ -19,8 +19,14 @@ const OAuthCallback: React.FC = () => {
           const response = await api.get('/auth/me', {
             headers: { Authorization: `Bearer ${token}` }
           });
-          login(token, response.data.user);
-          navigate('/');
+          const user = response.data.user || response.data;
+          login(token, user);
+          
+          if (user.role === 'ADMIN' || user.role === 'HOST') {
+            navigate('/dashboard');
+          } else {
+            navigate('/');
+          }
         } catch (error) {
           console.error('OAuth login failed:', error);
           navigate('/login?error=oauth_failed');

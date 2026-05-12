@@ -1,9 +1,9 @@
 import React, { useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { 
-  Home, DollarSign, Star, CalendarCheck, 
+import {
+  Home, DollarSign, Star, CalendarCheck,
   ArrowUpRight, ChevronRight, Clock, CheckCircle, XCircle, AlertCircle,
-  Users as UsersIcon, MapPin, Heart,MessageSquare
+  Users as UsersIcon, MapPin, Heart, MessageSquare
 } from 'lucide-react';
 import { useAuth } from '../../../contexts/AuthContext';
 import { Link } from 'react-router-dom';
@@ -19,37 +19,63 @@ interface StatCardProps {
   trend?: string;
   trendUp?: boolean;
   color: string;
+  link?: string;
 }
 
-const StatCard: React.FC<StatCardProps> = ({ label, value, icon, trend, trendUp, color }) => (
-  <motion.div
-    initial={{ opacity: 0, y: 16 }}
-    animate={{ opacity: 1, y: 0 }}
-    className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm hover:shadow-md transition-shadow"
-  >
-    <div className="flex items-start justify-between">
-      <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${color}`}>
-        {icon}
+const StatCard: React.FC<StatCardProps> = ({ label, value, icon, trend, trendUp, color, link }) => {
+  const content = (
+    <>
+      <div className="flex items-start justify-between">
+        <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${color}`}>
+          {icon}
+        </div>
+        {trend && (
+          <span className={`text-xs font-semibold flex items-center gap-1 ${trendUp ? 'text-emerald-600' : 'text-rose-500'}`}>
+            <ArrowUpRight size={12} className={trendUp ? '' : 'rotate-180'} />
+            {trend}
+          </span>
+        )}
       </div>
-      {trend && (
-        <span className={`text-xs font-semibold flex items-center gap-1 ${trendUp ? 'text-emerald-600' : 'text-rose-500'}`}>
-          <ArrowUpRight size={12} className={trendUp ? '' : 'rotate-180'} />
-          {trend}
-        </span>
-      )}
-    </div>
-    <div className="mt-3">
-      <p className="text-2xl font-bold text-gray-900">{value}</p>
-      <p className="text-xs font-medium text-gray-500 mt-1">{label}</p>
-    </div>
-  </motion.div>
-);
+      <div className="mt-3">
+        <p className="text-2xl font-bold text-gray-900">{value}</p>
+        <p className="text-xs font-medium text-gray-500 mt-1">{label}</p>
+      </div>
+    </>
+  );
+
+  const wrapperClass = "bg-white rounded-xl p-4 border border-gray-100 shadow-sm hover:shadow-md transition-all block text-left w-full";
+
+  if (link) {
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+      >
+        <Link to={link} className={`${wrapperClass} hover:border-airbnb/30 hover:scale-[1.02] active:scale-[0.98]`}>
+          {content}
+        </Link>
+      </motion.div>
+    );
+  }
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      className={wrapperClass}
+    >
+      {content}
+    </motion.div>
+  );
+};
 
 const StatusBadge: React.FC<{ status: string }> = ({ status }) => {
   const map: Record<string, { label: string; cls: string; icon: React.ReactNode }> = {
     CONFIRMED: { label: 'Confirmed', cls: 'bg-emerald-50 text-emerald-700', icon: <CheckCircle size={12} /> },
-    PENDING:   { label: 'Pending',   cls: 'bg-amber-50 text-amber-700',    icon: <AlertCircle size={12} /> },
-    CANCELLED: { label: 'Cancelled', cls: 'bg-rose-50 text-rose-600',     icon: <XCircle size={12} /> },
+    PENDING: { label: 'Pending', cls: 'bg-amber-50 text-amber-700', icon: <AlertCircle size={12} /> },
+    CANCELLED: { label: 'Cancelled', cls: 'bg-rose-50 text-rose-600', icon: <XCircle size={12} /> },
+    REJECTED: { label: 'Rejected', cls: 'bg-gray-100 text-gray-600', icon: <XCircle size={12} /> },
+    COMPLETED: { label: 'Completed', cls: 'bg-blue-50 text-blue-700', icon: <CheckCircle size={12} /> },
   };
   const { label, cls, icon } = map[status] ?? map.PENDING;
   return (
@@ -84,11 +110,11 @@ const DashboardOverview: React.FC = () => {
       {
         id: 'bookings',
         title: role === 'GUEST' ? 'Your upcoming trips' : role === 'ADMIN' ? 'Platform Bookings' : 'Manage your bookings',
-        description: role === 'GUEST' 
-          ? 'Check your itineraries, message hosts, and manage your travel plans easily.' 
+        description: role === 'GUEST'
+          ? 'Check your itineraries, message hosts, and manage your travel plans easily.'
           : role === 'ADMIN'
-          ? 'Monitor all platform reservations, track occupancy rates and handle escalations.'
-          : 'View upcoming stays, handle check-ins, and respond to reservation requests in real-time.',
+            ? 'Monitor all platform reservations, track occupancy rates and handle escalations.'
+            : 'View upcoming stays, handle check-ins, and respond to reservation requests in real-time.',
         image: '/glass.png',
         ctaText: role === 'GUEST' ? 'View My Trips' : 'Check Bookings',
         ctaLink: '/dashboard/bookings'
@@ -145,9 +171,9 @@ const DashboardOverview: React.FC = () => {
     if (role === 'ADMIN') {
       return (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-          <StatCard label="Total Users" value={stats?.totalUsers ?? '0'} icon={<UsersIcon size={18} className="text-blue-600" />} color="bg-blue-50" />
-          <StatCard label="Total Bookings" value={stats?.totalBookings ?? '0'} icon={<CalendarCheck size={18} className="text-purple-600" />} color="bg-purple-50" />
-          <StatCard label="Total Listings" value={stats?.totalListings ?? '0'} icon={<Home size={18} className="text-emerald-600" />} color="bg-emerald-50" />
+          <StatCard label="Total Users" value={stats?.totalUsers ?? '0'} icon={<UsersIcon size={18} className="text-blue-600" />} color="bg-blue-50" link="/dashboard/users" />
+          <StatCard label="Total Bookings" value={stats?.totalBookings ?? '0'} icon={<CalendarCheck size={18} className="text-purple-600" />} color="bg-purple-50" link="/dashboard/bookings" />
+          <StatCard label="Total Listings" value={stats?.totalListings ?? '0'} icon={<Home size={18} className="text-emerald-600" />} color="bg-emerald-50" link="/dashboard/listings" />
           <StatCard label="Platform Revenue" value={`$${stats?.revenue ?? '0'}`} icon={<DollarSign size={18} className="text-amber-500" />} color="bg-amber-50" />
         </div>
       );
@@ -156,8 +182,8 @@ const DashboardOverview: React.FC = () => {
     if (role === 'HOST') {
       return (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-          <StatCard label="Active Listings" value={stats?.activeListings ?? '0'} icon={<Home size={18} className="text-blue-600" />} color="bg-blue-50" />
-          <StatCard label="Recent Bookings" value={bookings?.length ?? '0'} icon={<CalendarCheck size={18} className="text-purple-600" />} color="bg-purple-50" />
+          <StatCard label="Active Listings" value={stats?.activeListings ?? '0'} icon={<Home size={18} className="text-blue-600" />} color="bg-blue-50" link="/dashboard/listings" />
+          <StatCard label="Recent Bookings" value={bookings?.length ?? '0'} icon={<CalendarCheck size={18} className="text-purple-600" />} color="bg-purple-50" link="/dashboard/bookings" />
           <StatCard label="Total Earnings" value={`$${stats?.earnings ?? '0'}`} icon={<DollarSign size={18} className="text-emerald-600" />} color="bg-emerald-50" />
           <StatCard label="Avg. Rating" value={stats?.avgRating ?? '4.9'} icon={<Star size={18} className="text-amber-500" />} color="bg-amber-50" />
         </div>
@@ -167,10 +193,10 @@ const DashboardOverview: React.FC = () => {
     // GUEST Stats
     return (
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <StatCard label="Upcoming Trips" value={stats?.upcomingTrips ?? '0'} icon={<MapPin size={18} className="text-blue-600" />} color="bg-blue-50" />
-        <StatCard label="Past Bookings" value={stats?.pastBookings ?? '0'} icon={<CalendarCheck size={18} className="text-purple-600" />} color="bg-purple-50" />
-        <StatCard label="Saved Places" value={stats?.savedPlaces ?? '0'} icon={<Heart size={18} className="text-rose-500" />} color="bg-rose-50" />
-        <StatCard label="Unread Messages" value={stats?.unreadMessages ?? '0'} icon={<MessageSquare size={18} className="text-emerald-600" />} color="bg-emerald-50" />
+        <StatCard label="Upcoming Trips" value={stats?.upcomingTrips ?? '0'} icon={<MapPin size={18} className="text-blue-600" />} color="bg-blue-50" link="/dashboard/bookings" />
+        <StatCard label="Past Bookings" value={stats?.pastBookings ?? '0'} icon={<CalendarCheck size={18} className="text-purple-600" />} color="bg-purple-50" link="/dashboard/bookings" />
+        <StatCard label="Saved Places" value={stats?.savedPlaces ?? '0'} icon={<Heart size={18} className="text-rose-500" />} color="bg-rose-50" link="/dashboard/map" />
+        <StatCard label="Unread Messages" value={stats?.unreadMessages ?? '0'} icon={<MessageSquare size={18} className="text-emerald-600" />} color="bg-emerald-50" link="/dashboard/messages" />
       </div>
     );
   };
@@ -188,7 +214,7 @@ const DashboardOverview: React.FC = () => {
             {[1, 2, 3, 4].map(i => <div key={i} className="h-32 bg-gray-50 rounded-xl animate-pulse" />)}
           </div>
         ) : renderStats()}
-      </section>   
+      </section>
 
       <section>
         <div className="flex items-center justify-between mb-3">

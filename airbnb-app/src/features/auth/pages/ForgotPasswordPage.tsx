@@ -2,34 +2,21 @@ import React, { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useFormik } from 'formik';
 import { toFormikValidationSchema } from 'zod-formik-adapter';
+import { motion, AnimatePresence } from 'framer-motion';
+import { 
+  Mail, 
+  ArrowRight, 
+  ArrowLeft, 
+  Key,
+  CheckCircle2
+} from 'lucide-react';
 
 import { forgotPasswordSchema } from '../schemas/password.schema';
 import { usePasswordReset } from '../hooks/usePasswordReset';
-
-import {
-  Button,
-  Card,
-  Input,
-  Label,
-} from '../../../shared/components';
-
+import { Button, Input, Label } from '../../../shared/components';
 import FormFieldError from '../components/FormFieldError';
-
-import {
-  Mail,
-  ArrowRight,
-  ArrowLeft,
-  Key,
-} from 'lucide-react';
-
 import AuthLayout from '../components/AuthLayout';
 
-/**
- * File: ForgotPasswordPage.tsx
- * What it is doing: Manages the password recovery initiation flow.
- * Responsibility: Implementing Formik + Zod for email validation and handling reset link requests.
- * Outcomes: Clean user interface for password recovery, secure email validation, and clear success feedback.
- */
 const ForgotPasswordPage: React.FC = () => {
   const { forgotPassword, isLoading, error, successMessage, clearError } = usePasswordReset();
 
@@ -37,18 +24,14 @@ const ForgotPasswordPage: React.FC = () => {
     initialValues: {
       email: '',
     },
-
     validationSchema: toFormikValidationSchema(forgotPasswordSchema),
-
     validateOnChange: true,
     validateOnBlur: true,
-
     onSubmit: async (values) => {
       await forgotPassword(values);
     },
   });
 
-  // Clear backend error when user starts typing again
   useEffect(() => {
     if (error) {
       clearError();
@@ -57,90 +40,102 @@ const ForgotPasswordPage: React.FC = () => {
 
   return (
     <AuthLayout>
-      <Card
-        className="w-full max-w-md p-8 sm:p-10 shadow-2xl animate-fade-in rounded-3xl bg-white/95 backdrop-blur-md"
-        hoverable={false}
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.5 }}
+        className="w-full max-w-lg bg-white rounded-[2.5rem] shadow-2xl overflow-hidden p-10 md:p-12"
       >
         <div className="text-center mb-10">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-airbnb/10 text-airbnb mb-4">
-            <Key size={32} />
+          <div className="inline-flex items-center justify-center w-20 h-20 rounded-3xl bg-airbnb/5 text-[#FF385C] mb-6 shadow-inner">
+            <Key size={40} strokeWidth={2.5} />
           </div>
 
-          <h1 className="text-3xl font-bold text-gray-900">
+          <h1 className="text-3xl font-black text-gray-900 tracking-tighter">
             Forgot Password?
           </h1>
 
-          <p className="text-gray-500 mt-2 font-medium">
-            No worries, we'll send you reset instructions.
+          <p className="text-gray-500 mt-3 font-medium">
+            No worries, we'll send you reset instructions to your email.
           </p>
         </div>
 
-        {successMessage ? (
-          <div className="space-y-6">
-            <div className="p-4 bg-green-50 border border-green-100 rounded-xl text-green-700 text-sm font-bold text-center">
-              {successMessage}
-            </div>
-            <Link to="/login">
-              <Button variant="outline" className="w-full" leftIcon={<ArrowLeft size={18} />}>
-                Back to Login
-              </Button>
-            </Link>
-          </div>
-        ) : (
-          <form
-            onSubmit={formik.handleSubmit}
-            className="space-y-6"
-          >
-            {error && (
-              <div className="p-4 bg-red-50 border border-red-100 rounded-xl text-red-600 text-sm font-bold animate-shake">
-                {error}
+        <AnimatePresence mode="wait">
+          {successMessage ? (
+            <motion.div 
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="space-y-8"
+            >
+              <div className="p-6 bg-green-50 border border-green-100 rounded-3xl flex flex-col items-center text-center gap-4">
+                <div className="w-12 h-12 rounded-full bg-green-100 text-green-600 flex items-center justify-center">
+                  <CheckCircle2 size={28} />
+                </div>
+                <p className="text-green-800 font-bold">
+                  {successMessage}
+                </p>
               </div>
-            )}
+              
+              <Link to="/login" className="block">
+                <Button className="w-full py-4 rounded-2xl text-lg font-black bg-gray-900 hover:bg-gray-800 text-white shadow-xl h-auto" leftIcon={<ArrowLeft size={20} />}>
+                  Back to Login
+                </Button>
+              </Link>
+            </motion.div>
+          ) : (
+            <form onSubmit={formik.handleSubmit} className="space-y-6">
+              {error && (
+                <motion.div 
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  className="p-4 bg-red-50 border border-red-100 rounded-2xl text-red-600 text-sm font-semibold mb-4"
+                >
+                  {error}
+                </motion.div>
+              )}
 
-            <div>
-              <Label htmlFor="email" required>
-                Email Address
-              </Label>
+              <div className="space-y-2">
+                <Label htmlFor="email" className="text-xs font-black uppercase tracking-widest text-gray-400 ml-1">
+                  Email Address
+                </Label>
+                <Input
+                  id="email"
+                  name="email"
+                  type="email"
+                  placeholder="name@example.com"
+                  leftIcon={<Mail size={18} className="text-gray-400" />}
+                  className="py-4 px-6 rounded-2xl bg-gray-50 border-gray-100 focus:bg-white transition-all text-base font-medium"
+                  value={formik.values.email}
+                  onChange={formik.handleChange}
+                  onBlur={formik.handleBlur}
+                />
+                <FormFieldError error={formik.errors.email} touched={formik.touched.email} />
+              </div>
 
-              <Input
-                id="email"
-                name="email"
-                type="email"
-                placeholder="Enter your email"
-                leftIcon={<Mail size={18} />}
-                value={formik.values.email}
-                onChange={formik.handleChange}
-                onBlur={formik.handleBlur}
-              />
+              <Button
+                type="submit"
+                className="w-full py-4 rounded-2xl text-lg font-black bg-[#FF385C] hover:bg-[#FF385C]/90 text-white shadow-lg shadow-[#FF385C]/20 mt-2 h-auto"
+                isLoading={isLoading}
+                disabled={!formik.isValid || formik.isSubmitting}
+                rightIcon={<ArrowRight size={20} strokeWidth={3} />}
+              >
+                Send Reset Link
+              </Button>
 
-              <FormFieldError
-                error={formik.errors.email}
-                touched={formik.touched.email}
-              />
-            </div>
-
-            <Button
-              type="submit"
-              className="w-full py-4 rounded-xl text-lg font-bold"
-              isLoading={isLoading}
-              disabled={!formik.isValid || formik.isSubmitting}
-              rightIcon={<ArrowRight size={20} />}
-            >
-              Reset Password
-            </Button>
-
-            <Link
-              to="/login"
-              className="flex items-center justify-center gap-2 text-sm font-bold text-gray-500 hover:text-gray-900 transition-colors mt-6"
-            >
-              <ArrowLeft size={16} />
-              <span>Back to Login</span>
-            </Link>
-          </form>
-        )}
-      </Card>
+              <Link
+                to="/login"
+                className="flex items-center justify-center gap-2 text-sm font-black text-gray-400 hover:text-[#FF385C] transition-colors mt-8"
+              >
+                <ArrowLeft size={18} strokeWidth={3} />
+                <span>Return to Sign In</span>
+              </Link>
+            </form>
+          )}
+        </AnimatePresence>
+      </motion.div>
     </AuthLayout>
   );
 };
 
 export default ForgotPasswordPage;
+

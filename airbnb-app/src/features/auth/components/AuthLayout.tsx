@@ -46,12 +46,7 @@ const AuthLayout: React.FC<AuthLayoutProps> = ({ children }) => {
         className="relative z-20 w-full max-w-6xl px-4 flex justify-center"
       >
         {children}
-      </motion.div>
-
-      {/* Footer Branding */}
-      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-20 text-gray-400 text-sm font-medium">
-        © 2026 K-Lab Airbnb Pro. All rights reserved.
-      </div>
+      </motion.div>          
     </div>
   );
 };

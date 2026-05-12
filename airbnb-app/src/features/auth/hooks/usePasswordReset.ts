@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import api from '../../../api/axios';
 import { ENDPOINTS } from '../../../api/endpoints';
 import type { 
@@ -12,7 +12,7 @@ export const usePasswordReset = () => {
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
-  const forgotPassword = async (payload: ForgotPasswordPayload) => {
+  const forgotPassword = useCallback(async (payload: ForgotPasswordPayload) => {
     setIsLoading(true);
     setError(null);
     setSuccessMessage(null);
@@ -21,15 +21,14 @@ export const usePasswordReset = () => {
       setSuccessMessage('If an account exists with this email, a reset link has been sent.');
       return { success: true };
     } catch (err: any) {
-      // Backend might return 200 silently, but if it returns error:
       setError(err.response?.data?.message || 'Something went wrong.');
       return { success: false };
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
-  const validateToken = async (token: string) => {
+  const validateToken = useCallback(async (token: string) => {
     setIsLoading(true);
     setError(null);
     try {
@@ -41,9 +40,9 @@ export const usePasswordReset = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
-  const resetPassword = async (token: string, payload: ResetPasswordPayload) => {
+  const resetPassword = useCallback(async (token: string, payload: ResetPasswordPayload) => {
     setIsLoading(true);
     setError(null);
     try {
@@ -56,9 +55,9 @@ export const usePasswordReset = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
-  const clearError = () => setError(null);
+  const clearError = useCallback(() => setError(null), []);
 
   return {
     forgotPassword,
