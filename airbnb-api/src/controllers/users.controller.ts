@@ -30,7 +30,15 @@ export const getAllUsers = async (req: AuthRequest, res: Response, next: NextFun
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 10;
     const skip = (page - 1) * limit;
-    const { data, total } = await UserService.getAllUsers({ skip, take: limit });
+    const role = req.query.role as string;
+    const search = req.query.search as string;
+
+    const { data, total } = await UserService.getAllUsers({ 
+      skip, 
+      take: limit,
+      role,
+      search 
+    });
     res.json({ data, meta: { total, page, limit, totalPages: Math.ceil(total / limit) } });
   } catch (error) { next(error); }
 };
@@ -62,15 +70,28 @@ export const getAllUsers = async (req: AuthRequest, res: Response, next: NextFun
 export const getUserStats = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     // Run total count and role breakdown in parallel — no sequential queries
-    const [totalUsers, byRole] = await Promise.all([
+    const [totalUsers, byRole, totalBookings, totalListings, revenueData] = await Promise.all([
       prisma.user.count(),
       prisma.user.groupBy({
         by: ["role"],
         _count: { role: true },
         orderBy: { _count: { role: "desc" } }
+      }),
+      prisma.booking.count(),
+      prisma.listing.count(),
+      prisma.booking.aggregate({
+        where: { status: { in: ["CONFIRMED", "COMPLETED"] as any } },
+        _sum: { totalPrice: true }
       })
     ]);
-    res.json({ totalUsers, byRole });
+    
+    res.json({ 
+      totalUsers, 
+      byRole,
+      totalBookings,
+      totalListings,
+      revenue: revenueData?._sum?.totalPrice || 0
+    });
   } catch (error) { next(error); }
 };
 

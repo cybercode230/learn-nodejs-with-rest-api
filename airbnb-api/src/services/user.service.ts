@@ -11,10 +11,24 @@ import { createUserSchema, updateUserSchema } from "../dtos/index.js";
 import { cleanObject } from "../utils/cleanObject.js";
 
 export class UserService {
-  static async getAllUsers(options: { skip: number; take: number }) {
-    // Fetch all users and count in parallel to optimize query performance
+  static async getAllUsers(options: { skip: number; take: number; role?: string; search?: string }) {
+    const where: any = {};
+    
+    if (options.role && options.role !== 'all') {
+      where.role = options.role;
+    }
+    
+    if (options.search) {
+      where.OR = [
+        { name: { contains: options.search, mode: 'insensitive' } },
+        { email: { contains: options.search, mode: 'insensitive' } },
+        { username: { contains: options.search, mode: 'insensitive' } },
+      ];
+    }
+
     const [users, total] = await Promise.all([
       prisma.user.findMany({
+        where,
         skip: options.skip,
         take: options.take,
         orderBy: { createdAt: "desc" },
@@ -31,7 +45,7 @@ export class UserService {
           _count: { select: { listings: true, bookings: true } }
         }
       }),
-      prisma.user.count()
+      prisma.user.count({ where })
     ]);
     return { data: users, total };
   }
@@ -125,7 +139,15 @@ export class UserService {
       prisma.booking.findMany({
         where: { guestId },
         include: {
-          listing: { select: { title: true, location: true, type: true, photos: true } },
+          listing: { 
+            select: { 
+              title: true, 
+              location: true, 
+              type: true, 
+              photos: true,
+              host: { select: { name: true, avatar: true } } 
+            } 
+          },
           guest: { select: { name: true, avatar: true } }
         },
         orderBy: { createdAt: "desc" },
