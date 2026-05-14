@@ -39,6 +39,7 @@ export class UserService {
           username: true,
           phone: true,
           role: true,
+          status: true,
           avatar: true,
           createdAt: true,
           updatedAt: true,
@@ -108,6 +109,7 @@ export class UserService {
       where: { id },
       data: {
         ...cleanObject(userData),
+        status: userData.status,
         // If bio is provided, update the associated profile record
         profile: bio !== undefined ? {
           update: { bio }

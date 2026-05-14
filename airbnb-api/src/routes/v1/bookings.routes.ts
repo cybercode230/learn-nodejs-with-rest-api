@@ -12,12 +12,12 @@ import {
   updateBookingStatus,
   deleteBooking
 } from "../../controllers/bookings.controller.js";
-import { requireGuest, requireAdmin } from "../../middlewares/auth.middleware.js";
+import { requireGuest, requireHost, requireAdmin,allRolesCanDoIt } from "../../middlewares/auth.middleware.js";
 
 const router = Router();
 
 // Admin-only route to view all platform bookings (paginated)
-router.get("/", requireAdmin, getAllBookings);
+router.get("/", requireAdmin,requireHost, getAllBookings);
 
 // Fetch details for a specific booking (controller handles ownership check)
 router.get("/:id", getBookingById);

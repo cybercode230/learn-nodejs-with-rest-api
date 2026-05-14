@@ -10,19 +10,20 @@ import { BookingStatus } from "@prisma/client";
 import { createBookingSchema } from "../dtos/index.js";
 
 export class BookingService {
-  static async getAllBookings(options: { skip?: number; take?: number } = {}) {
+  static async getAllBookings(options: { skip?: number; take?: number; where?: any } = {}) {
     // Fetch all bookings and count in parallel — never run sequential queries for list + count
     const [bookings, total] = await Promise.all([
       prisma.booking.findMany({
+        where: options.where,
         include: {
-          guest: { select: { name: true } },
-          listing: { select: { title: true, location: true } }
+          guest: { select: { name: true, avatar: true } },
+          listing: { select: { title: true, location: true, photos: true } }
         },
         orderBy: { createdAt: "desc" },
         skip: options.skip,
         take: options.take
       }),
-      prisma.booking.count()
+      prisma.booking.count({ where: options.where })
     ]);
 
     return { data: bookings, total };
@@ -62,6 +63,9 @@ export class BookingService {
       throw new Error("INVALID_DATES");
     }
 
+    const diffMs = checkOut.getTime() - checkIn.getTime();
+    const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+
     // ─── Overlapping date check ───────────────────────────────────────────────
     // Two date ranges [A, B] and [C, D] overlap when: A < D AND B > C
     // In Prisma terms: existingCheckIn < newCheckOut AND existingCheckOut > newCheckIn
@@ -76,15 +80,39 @@ export class BookingService {
     });
 
     if (conflictingBooking) {
-      throw new Error("BOOKING_CONFLICT");
+      // Find next available slots for this listing
+      const upcomingBookings = await prisma.booking.findMany({
+        where: {
+          listingId: validatedData.listingId,
+          status: BookingStatus.CONFIRMED,
+          checkOut: { gt: new Date() }
+        },
+        orderBy: { checkIn: "asc" },
+        select: { checkIn: true, checkOut: true }
+      });
+
+      // Suggest the first available gap or after the last booking
+      let suggestion = "Try booking after ";
+      if (upcomingBookings.length > 0) {
+        const lastBooking = upcomingBookings[upcomingBookings.length - 1]!;
+        const suggestedStart = new Date(lastBooking.checkOut);
+        suggestedStart.setDate(suggestedStart.getDate() + 1);
+        const suggestedEnd = new Date(suggestedStart);
+        suggestedEnd.setDate(suggestedEnd.getDate() + diffDays);
+        suggestion = `This listing is not available for your selected dates. You can try between ${suggestedStart.toLocaleDateString()} and ${suggestedEnd.toLocaleDateString()}.`;
+      } else {
+        suggestion = "This listing is currently unavailable for these dates.";
+      }
+
+      const error = new Error("BOOKING_CONFLICT");
+      (error as any).suggestion = suggestion;
+      throw error;
     }
     // ─────────────────────────────────────────────────────────────────────────
 
     // ─── Total price calculation ──────────────────────────────────────────────
     // Formula: totalPrice = (checkOut - checkIn in days) × listing.pricePerNight
     // Math.ceil ensures partial days count as a full night (e.g., 3.2 days = 4 nights)
-    const diffMs = checkOut.getTime() - checkIn.getTime();
-    const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
     const totalPrice = diffDays * listing.pricePerNight;
     // ─────────────────────────────────────────────────────────────────────────
 

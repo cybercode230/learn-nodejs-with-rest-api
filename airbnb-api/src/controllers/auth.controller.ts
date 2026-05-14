@@ -76,6 +76,13 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
   try {
     // Forward the login credentials to the authentication service
     const result = await AuthService.login(req.body);
+
+    // Update user status to ACTIVE on successful login
+    await prisma.user.update({
+      where: { id: result.user.id },
+      data: { status: "ACTIVE" }
+    });
+
     // Send back the resulting token and user info
     res.json(result);
   } catch (error) {
@@ -334,6 +341,31 @@ export const validateResetToken = async (req: Request, res: Response, next: Next
     if ((error as Error).message === "INVALID_OR_EXPIRED_TOKEN") {
       return res.status(400).json({ status: "error", valid: false, message: "Invalid or expired token" });
     }
+    next(error);
+  }
+};
+
+/**
+ * @swagger
+ * /api/v1/auth/logout:
+ *   post:
+ *     summary: Logout user (sets status to DEACTIVATED)
+ *     tags: [Auth]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200: { description: Logged out successfully }
+ */
+export const logout = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    if (req.userId) {
+      await prisma.user.update({
+        where: { id: req.userId },
+        data: { status: "DEACTIVATED" }
+      });
+    }
+    res.json({ status: "success", message: "Logged out successfully" });
+  } catch (error) {
     next(error);
   }
 };

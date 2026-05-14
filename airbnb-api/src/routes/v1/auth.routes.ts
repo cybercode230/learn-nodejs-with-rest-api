@@ -12,7 +12,8 @@ import {
   forgotPassword,
   resetPasswordByToken,
   validateResetToken,
-  changePassword
+  changePassword,
+  logout
 } from "../../controllers/auth.controller.js";
 import { authenticate } from "../../middlewares/auth.middleware.js";
 
@@ -23,6 +24,9 @@ router.post("/register", register);
 
 // Public — authenticate and receive a JWT token
 router.post("/login", login);
+
+// Protected — log out and clear the session/cookie
+router.post("/logout", authenticate, logout);
 
 // Protected — get the currently authenticated user's profile
 router.get("/me", authenticate, getMe);

@@ -29,7 +29,20 @@ export const getAllBookings = async (req: AuthRequest, res: Response, next: Next
     const pageInt = parseInt(req.query.page as string) || 1;
     const limitInt = parseInt(req.query.limit as string) || 10;
     const skip = (pageInt - 1) * limitInt;
-    const { data, total } = await BookingService.getAllBookings({ skip, take: limitInt });
+
+    // Build filters based on Role
+    // GUEST: Only their own bookings
+    // HOST: Only bookings for their listings
+    // ADMIN: All bookings
+    const where: any = {};
+    if (req.role === Role.GUEST) {
+      where.guestId = req.userId;
+    } else if (req.role === Role.HOST) {
+      where.listing = { hostId: req.userId };
+    }
+    // If ADMIN, where remains empty to fetch all
+
+    const { data, total } = await BookingService.getAllBookings({ skip, take: limitInt, where });
     res.json({ data, meta: { total, page: pageInt, limit: limitInt, totalPages: Math.ceil(total / limitInt) } });
   } catch (error) { next(error); }
 };
@@ -103,7 +116,10 @@ export const createBooking = async (req: AuthRequest, res: Response, next: NextF
     res.status(201).json(newBooking);
   } catch (error) {
     if ((error as Error).message === "BOOKING_CONFLICT") {
-      return res.status(409).json({ message: "These dates conflict with an existing confirmed booking" });
+      return res.status(409).json({ 
+        message: "These dates conflict with an existing confirmed booking",
+        suggestion: (error as any).suggestion 
+      });
     }
     if ((error as Error).message === "LISTING_NOT_FOUND") {
       return res.status(404).json({ message: "Listing not found" });

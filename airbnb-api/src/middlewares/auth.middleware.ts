@@ -7,6 +7,7 @@
 import { type Request, type Response, type NextFunction } from "express";
 import jwt from "jsonwebtoken";
 import { Role } from "@prisma/client";
+import prisma from "../config/prisma.js";
 
 // Load the JWT signing secret from environment variables
 const JWT_SECRET = process.env["JWT_SECRET"] || "your-secret-key";
@@ -17,7 +18,7 @@ export interface AuthRequest extends Request {
   role?: Role;
 }
 
-export const authenticate = (req: AuthRequest, res: Response, next: NextFunction) => {
+export const authenticate = async (req: AuthRequest, res: Response, next: NextFunction) => {
   // Extract the authorization header from the incoming request
   const authHeader = req.headers.authorization;
 
@@ -36,6 +37,19 @@ export const authenticate = (req: AuthRequest, res: Response, next: NextFunction
     // Attach the decoded user ID and role to the request object for downstream use
     req.userId = decoded.userId;
     req.role = decoded.role;
+
+    // Check user status in database (e.g. for suspension)
+    const user = await prisma.user.findUnique({
+      where: { id: decoded.userId },
+      select: { status: true }
+    });
+
+    if (!user || user.status === "SUSPENDED") {
+      return res.status(403).json({ 
+        status: "error", 
+        message: "Forbidden: Your account has been suspended or does not exist" 
+      });
+    }
     
     // Proceed to the next middleware or route handler
     next();
@@ -64,5 +78,6 @@ export const authorize = (...allowedRoles: Role[]) => {
 // Pre-configured authorization middlewares for specific roles
 export const requireHost = authorize(Role.HOST, Role.ADMIN);
 export const requireGuest = authorize(Role.GUEST, Role.ADMIN);
-export const requireAdmin = authorize(Role.ADMIN,Role.HOST);
+export const requireAdmin = authorize(Role.ADMIN);
+export const allRolesCanDoIt = authorize(Role.HOST, Role.GUEST, Role.ADMIN);
 

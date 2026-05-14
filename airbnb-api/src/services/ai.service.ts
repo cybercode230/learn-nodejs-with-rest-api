@@ -141,7 +141,13 @@ export class AIService {
     const filters = await searchChain.invoke({ query }) as any;
 
     const allNull = Object.values(filters).every(v => v === null);
-    if (allNull) return { filters, data: [], meta: { total: 0, page, limit, totalPages: 0 }, error: "NO_FILTERS" };
+    if (allNull) return { 
+      filters, 
+      data: [], 
+      meta: { total: 0, page, limit, totalPages: 0 }, 
+      message: "Sorry, I'm not being able to process the request due to I don't have that data",
+      error: "NO_FILTERS" 
+    };
 
     const where: any = {};
     if (filters.location) where.location = { contains: filters.location, mode: "insensitive" };
@@ -205,7 +211,7 @@ Amenities: ${listing.amenities.join(", ")}
 Description: ${listing.description}
 
 Answer questions about this listing accurately based on the details above.
-If asked something not covered by the listing details, say you don't have that information.
+If asked something not covered by the listing details, say: "Sorry, I'm not being able to process the request due to I don't have that data". Keep it clean and polite.
         `;
       }
     }

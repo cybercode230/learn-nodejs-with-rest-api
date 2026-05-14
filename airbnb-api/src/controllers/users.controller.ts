@@ -70,12 +70,17 @@ export const getAllUsers = async (req: AuthRequest, res: Response, next: NextFun
 export const getUserStats = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     // Run total count and role breakdown in parallel — no sequential queries
-    const [totalUsers, byRole, totalBookings, totalListings, revenueData] = await Promise.all([
+    const [totalUsers, byRole, byStatus, totalBookings, totalListings, revenueData] = await Promise.all([
       prisma.user.count(),
       prisma.user.groupBy({
         by: ["role"],
         _count: { role: true },
         orderBy: { _count: { role: "desc" } }
+      }),
+      prisma.user.groupBy({
+        by: ["status"],
+        _count: { status: true },
+        orderBy: { _count: { status: "desc" } }
       }),
       prisma.booking.count(),
       prisma.listing.count(),
@@ -88,6 +93,7 @@ export const getUserStats = async (req: AuthRequest, res: Response, next: NextFu
     res.json({ 
       totalUsers, 
       byRole,
+      byStatus,
       totalBookings,
       totalListings,
       revenue: revenueData?._sum?.totalPrice || 0

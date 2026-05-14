@@ -196,9 +196,10 @@ export const updateListing = async (req: AuthRequest, res: Response, next: NextF
     const id = req.params["id"] as string;
     const listing = await ListingService.getListingById(id);
     if (!listing) return res.status(404).json({ message: "Listing not found" });
-    // ADMIN bypasses ownership check
-    if (listing.hostId !== req.userId && req.role !== Role.ADMIN) {
-      return res.status(403).json({ message: "You can only edit your own listings" });
+    
+    // Only the owner (HOST) can update the listing. Admin can only DELETE.
+    if (listing.hostId !== req.userId) {
+      return res.status(403).json({ message: "Forbidden: You can only edit your own listings" });
     }
     const updatedListing = await ListingService.updateListing(id, req.body);
     res.json(updatedListing);
