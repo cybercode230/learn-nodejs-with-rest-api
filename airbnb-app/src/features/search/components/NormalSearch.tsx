@@ -79,28 +79,28 @@ const NormalSearch: React.FC<NormalSearchProps> = ({ onClose }) => {
 
   return (
     <div className="relative w-full max-w-4xl mx-auto px-4">
-      <form 
+      <form
         onSubmit={handleSearch}
         className="bg-white border border-gray-200 rounded-full shadow-lg hover:shadow-xl transition-all flex items-center p-2 h-16 divide-x divide-gray-100"
       >
         {/* Location */}
-        <div 
+        <div
           className={`flex-1 px-6 py-2 rounded-full cursor-pointer hover:bg-gray-100 transition-colors ${activeTab === 'location' ? 'bg-white shadow-md' : ''}`}
           onClick={() => setActiveTab('location')}
         >
           <label className="block text-[10px] font-black uppercase tracking-wider text-gray-900">Location</label>
-          <input 
+          <input
             type="text"
-            placeholder="Where to?" 
+            placeholder="Where to?"
             className="w-full bg-transparent border-none outline-none text-sm font-medium placeholder:text-gray-400"
             value={formData.location}
-            onChange={(e) => setFormData({...formData, location: e.target.value})}
+            onChange={(e) => setFormData({ ...formData, location: e.target.value })}
             autoFocus={activeTab === 'location'}
           />
         </div>
 
         {/* Dates */}
-        <div 
+        <div
           className={`flex-1 px-6 py-2 rounded-full cursor-pointer hover:bg-gray-100 transition-colors ${activeTab === 'dates' ? 'bg-white shadow-md' : ''}`}
           onClick={() => setActiveTab('dates')}
         >
@@ -109,7 +109,7 @@ const NormalSearch: React.FC<NormalSearchProps> = ({ onClose }) => {
         </div>
 
         {/* Price/Type Toggle (Mini) */}
-        <div 
+        <div
           className={`flex-1 px-6 py-2 rounded-full cursor-pointer hover:bg-gray-100 transition-colors ${activeTab === 'filters' ? 'bg-white shadow-md' : ''}`}
           onClick={() => setActiveTab('filters')}
         >
@@ -120,22 +120,22 @@ const NormalSearch: React.FC<NormalSearchProps> = ({ onClose }) => {
         </div>
 
         {/* Guests */}
-        <div 
+        <div
           className={`flex-1 px-6 py-2 rounded-full cursor-pointer hover:bg-gray-100 transition-colors ${activeTab === 'guests' ? 'bg-white shadow-md' : ''}`}
           onClick={() => setActiveTab('guests')}
         >
           <label className="block text-[10px] font-black uppercase tracking-wider text-gray-900">Who</label>
-          <input 
+          <input
             type="number"
             min="1"
             className="w-full bg-transparent border-none outline-none text-sm font-medium"
             value={formData.guests}
-            onChange={(e) => setFormData({...formData, guests: e.target.value})}
+            onChange={(e) => setFormData({ ...formData, guests: e.target.value })}
           />
         </div>
 
         {/* Search Button */}
-        <button 
+        <button
           type="submit"
           className="bg-airbnb text-white p-4 rounded-full hover:bg-airbnb/90 transition-all flex items-center justify-center ml-2 shadow-md hover:scale-105 active:scale-95"
         >
@@ -188,10 +188,10 @@ const NormalSearch: React.FC<NormalSearchProps> = ({ onClose }) => {
             <div className="space-y-6">
               <div>
                 <label className="block text-xs font-black uppercase tracking-widest text-gray-400 mb-2">Property Type</label>
-                <select 
+                <select
                   className="w-full p-3 rounded-xl border border-gray-200 text-sm font-bold outline-none"
                   value={formData.type}
-                  onChange={(e) => setFormData({...formData, type: e.target.value as ListingType})}
+                  onChange={(e) => setFormData({ ...formData, type: e.target.value as ListingType })}
                 >
                   <option value="">Any Stay</option>
                   <option value="APARTMENT">Apartment</option>
@@ -203,17 +203,17 @@ const NormalSearch: React.FC<NormalSearchProps> = ({ onClose }) => {
               <div>
                 <label className="block text-xs font-black uppercase tracking-widest text-gray-400 mb-2">Price Range</label>
                 <div className="flex gap-3">
-                  <input 
-                    type="number" placeholder="Min" 
+                  <input
+                    type="number" placeholder="Min"
                     className="w-full p-3 rounded-xl border border-gray-200 text-sm font-bold outline-none"
                     value={formData.minPrice}
-                    onChange={(e) => setFormData({...formData, minPrice: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, minPrice: e.target.value })}
                   />
-                  <input 
-                    type="number" placeholder="Max" 
+                  <input
+                    type="number" placeholder="Max"
                     className="w-full p-3 rounded-xl border border-gray-200 text-sm font-bold outline-none"
                     value={formData.maxPrice}
-                    onChange={(e) => setFormData({...formData, maxPrice: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, maxPrice: e.target.value })}
                   />
                 </div>
               </div>
@@ -225,8 +225,8 @@ const NormalSearch: React.FC<NormalSearchProps> = ({ onClose }) => {
 
       {/* Overlay to close modals */}
       {activeTab && (
-        <div 
-          className="fixed inset-0 z-[9998] bg-transparent" 
+        <div
+          className="fixed inset-0 z-[9998] bg-transparent"
           onClick={() => setActiveTab(null)}
         />
       )}

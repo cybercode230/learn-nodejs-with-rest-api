@@ -4,7 +4,7 @@ import {
   Users, Search, MoreVertical,
   Shield, Crown, Home, Calendar, Mail, Phone,
   ChevronLeft, ChevronRight, Download, RefreshCw,
-  Eye, Trash2, CheckCircle, AlertCircle,
+  Eye, Trash2, CheckCircle, AlertCircle, UserPlus, Ban, Unlock,X
 } from 'lucide-react';
 import api from '../../../api/axios';
 import { ENDPOINTS } from '../../../api/endpoints';
@@ -44,6 +44,7 @@ const AdminUsers: React.FC = () => {
   const [actionMenuOpen, setActionMenuOpen] = useState<string | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState<string | null>(null);
   const [showRoleModal, setShowRoleModal] = useState<{ userId: string; currentRole: string } | null>(null);
+  const [showCreateModal, setShowCreateModal] = useState(false);
   const [globalStats, setGlobalStats] = useState<any>(null);
 
   // Fetch global platform stats
@@ -65,7 +66,9 @@ const AdminUsers: React.FC = () => {
       if (role && role !== 'all') params.role = role;
 
       const response = await api.get(ENDPOINTS.USERS.BASE, { params });
-      setUsers(response.data.data || []);
+      const userData = response.data.data || [];
+      // Safety slice for frontend pagination if backend doesn't handle it
+      setUsers(userData.length > 10 ? userData.slice((page - 1) * 10, page * 10) : userData);
       setMeta(response.data.meta);
     } catch (error) {
       console.error('Failed to fetch users:', error);
@@ -146,6 +149,28 @@ const AdminUsers: React.FC = () => {
     }
   };
 
+  const handleCreateUser = async (data: any) => {
+    try {
+      await api.post('/users', data); // Assume /users POST exists for admin
+      await fetchUsers(1, searchTerm, roleFilter);
+      setShowCreateModal(false);
+    } catch (error) {
+      console.error('Failed to create user:', error);
+      alert('Failed to create user');
+    }
+  };
+
+  const toggleUserStatus = async (userId: string, currentStatus: string) => {
+    try {
+      const newStatus = currentStatus === 'SUSPENDED' ? 'ACTIVE' : 'SUSPENDED';
+      await api.patch(ENDPOINTS.USERS.BY_ID(userId), { status: newStatus });
+      await fetchUsers(meta.page, searchTerm, roleFilter);
+      setActionMenuOpen(null);
+    } catch (error) {
+      console.error('Failed to update status:', error);
+    }
+  };
+
   const getRoleBadge = (role: string) => {
     switch (role) {
       case 'ADMIN': return { label: 'Admin', color: 'bg-purple-100 text-purple-700', icon: Crown };
@@ -202,6 +227,12 @@ const AdminUsers: React.FC = () => {
             className="flex items-center gap-2 px-3 py-1.5 bg-white border border-gray-200 rounded-lg text-sm font-medium hover:bg-gray-50"
           >
             <Download size={14} /> Export
+          </button>
+          <button
+            onClick={() => setShowCreateModal(true)}
+            className="flex items-center gap-2 px-3 py-1.5 bg-gray-900 text-white rounded-lg text-sm font-medium hover:bg-gray-800"
+          >
+            <UserPlus size={14} /> Create User
           </button>
           <button
             onClick={() => fetchUsers(1, '', 'all')}
@@ -433,6 +464,15 @@ const AdminUsers: React.FC = () => {
                                 >
                                   <Eye size={12} /> View Details
                                 </button>
+                                <button
+                                  onClick={() => {
+                                    toggleUserStatus(user.id, (user as any).status);
+                                  }}
+                                  className={`w-full px-3 py-2 text-left text-xs ${(user as any).status === 'SUSPENDED' ? 'text-emerald-600' : 'text-amber-600'} hover:bg-gray-50 flex items-center gap-2`}
+                                >
+                                  {(user as any).status === 'SUSPENDED' ? <Unlock size={12} /> : <Ban size={12} />}
+                                  {(user as any).status === 'SUSPENDED' ? 'Activate User' : 'Suspend User'}
+                                </button>
                                 {user.role !== 'ADMIN' && (
                                   <button
                                     onClick={() => setShowDeleteModal(user.id)}
@@ -600,7 +640,104 @@ const AdminUsers: React.FC = () => {
           </motion.div>
         )}
       </AnimatePresence>
+      {/* Create User Modal */}
+      <AnimatePresence>
+        {showCreateModal && (
+          <CreateUserModal 
+            onClose={() => setShowCreateModal(false)}
+            onSave={handleCreateUser}
+          />
+        )}
+      </AnimatePresence>
     </div>
+  );
+};
+
+const CreateUserModal: React.FC<{ onClose: () => void; onSave: (data: any) => void }> = ({ onClose, onSave }) => {
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    username: '',
+    password: 'Password123!',
+    role: 'GUEST' as const,
+    phone: ''
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onSave(formData);
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+      className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+      onClick={onClose}
+    >
+      <motion.div
+        initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
+        className="bg-white rounded-xl max-w-md w-full p-6"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-bold text-gray-900">Create New User</h3>
+          <button onClick={onClose} className="p-1 hover:bg-gray-100 rounded-lg transition-colors">
+            <X size={18} />
+          </button>
+        </div>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="text-xs font-bold text-gray-500 block mb-1">Full Name</label>
+            <input 
+              type="text" required placeholder="John Doe"
+              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-airbnb"
+              value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})}
+            />
+          </div>
+          <div>
+            <label className="text-xs font-bold text-gray-500 block mb-1">Email Address</label>
+            <input 
+              type="email" required placeholder="john@example.com"
+              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-airbnb"
+              value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})}
+            />
+          </div>
+          <div>
+            <label className="text-xs font-bold text-gray-500 block mb-1">Username</label>
+            <input 
+              type="text" required placeholder="johndoe"
+              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-airbnb"
+              value={formData.username} onChange={e => setFormData({...formData, username: e.target.value})}
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+             <div>
+               <label className="text-xs font-bold text-gray-500 block mb-1">Role</label>
+               <select 
+                 className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-airbnb"
+                 value={formData.role} onChange={e => setFormData({...formData, role: e.target.value as any})}
+               >
+                 <option value="GUEST">Guest</option>
+                 <option value="HOST">Host</option>
+                 <option value="ADMIN">Admin</option>
+               </select>
+             </div>
+             <div>
+               <label className="text-xs font-bold text-gray-500 block mb-1">Phone</label>
+               <input 
+                 type="text" placeholder="+250..."
+                 className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-airbnb"
+                 value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})}
+               />
+             </div>
+          </div>
+          <div className="flex gap-3 pt-4">
+            <button type="button" onClick={onClose} className="flex-1 py-2.5 bg-gray-100 rounded-lg text-sm font-bold text-gray-600 hover:bg-gray-200 transition-colors">Cancel</button>
+            <button type="submit" className="flex-1 py-2.5 bg-gray-900 text-white rounded-lg text-sm font-bold hover:bg-gray-800 transition-colors">Create User</button>
+          </div>
+        </form>
+      </motion.div>
+    </motion.div>
   );
 };
 

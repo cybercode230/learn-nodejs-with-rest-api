@@ -3,10 +3,12 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   CalendarCheck, Clock, CheckCircle, XCircle, AlertCircle, 
   ChevronRight, Search, Download, Eye, MoreVertical,
-  CheckSquare, Square, Trash2, Check, X
+  CheckSquare, Square, Trash2, Check, X, Star
 } from 'lucide-react';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useBookings } from '../hooks/useBookings';
+import api from '../../../api/axios';
+import { ENDPOINTS } from '../../../api/endpoints';
 
 
 
@@ -93,7 +95,98 @@ const BookingDetailsModal: React.FC<{
             </div>
           </div>
 
-          <button className="w-full py-4 rounded-xl" onClick={onClose}>Close Details</button>
+          <button className="w-full py-4 rounded-xl border border-gray-100 hover:bg-gray-50 font-bold transition-all" onClick={onClose}>Close Details</button>
+        </div>
+      </motion.div>
+    </div>
+  );
+};
+
+const ReviewModal: React.FC<{ 
+  booking: any; 
+  isOpen: boolean; 
+  onClose: () => void;
+}> = ({ booking, isOpen, onClose }) => {
+  const [rating, setRating] = useState(5);
+  const [comment, setComment] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  if (!isOpen || !booking) return null;
+
+  const handleSubmit = async () => {
+    setIsSubmitting(true);
+    try {
+      await api.post(ENDPOINTS.LISTINGS.REVIEWS(booking.listing.id), {
+        rating,
+        comment,
+        bookingId: booking.id
+      });
+      alert('Review submitted successfully!');
+      onClose();
+    } catch (error) {
+      console.error('Failed to submit review:', error);
+      alert('Failed to submit review. You might have already reviewed this stay.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="bg-white rounded-2xl w-full max-w-md overflow-hidden shadow-2xl"
+      >
+        <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+          <h3 className="font-bold text-gray-900">Add Review & Rating</h3>
+          <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full transition-colors"><X size={18} /></button>
+        </div>
+        
+        <div className="p-6 space-y-4">
+          <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl mb-4">
+             <img src={booking.listing?.photos?.[0]?.url} className="w-12 h-12 rounded-lg object-cover" />
+             <div>
+                <p className="text-sm font-bold truncate max-w-[200px]">{booking.listing?.title}</p>
+                <p className="text-[10px] text-gray-500">Stayed {new Date(booking.checkOut).toLocaleDateString()}</p>
+             </div>
+          </div>
+
+          <div className="space-y-2">
+            <p className="text-sm font-bold text-gray-700">Rating</p>
+            <div className="flex gap-2">
+              {[1, 2, 3, 4, 5].map((s) => (
+                <button 
+                  key={s} 
+                  onClick={() => setRating(s)}
+                  className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${rating >= s ? 'bg-amber-100 text-amber-600' : 'bg-gray-50 text-gray-300'}`}
+                >
+                  <Star size={20} className={rating >= s ? 'fill-amber-600' : ''} />
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <p className="text-sm font-bold text-gray-700">Your experience</p>
+            <textarea 
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
+              placeholder="Tell others about your stay..."
+              className="w-full h-32 p-3 bg-gray-50 border border-gray-100 rounded-xl text-sm focus:outline-none focus:border-airbnb resize-none"
+            />
+          </div>
+
+          <div className="flex gap-3 pt-2">
+             <button onClick={onClose} className="flex-1 py-3 bg-gray-100 text-gray-600 rounded-xl font-bold text-sm">Cancel</button>
+             <button 
+              disabled={isSubmitting || !comment}
+              onClick={handleSubmit} 
+              className="flex-1 py-3 bg-airbnb text-white rounded-xl font-bold text-sm shadow-lg shadow-airbnb/20 disabled:opacity-50"
+            >
+               {isSubmitting ? 'Posting...' : 'Post Review'}
+             </button>
+          </div>
         </div>
       </motion.div>
     </div>
@@ -103,7 +196,8 @@ const BookingDetailsModal: React.FC<{
 const DashboardBookings: React.FC = () => {
   const { user } = useAuth();
   const role = user?.role || 'GUEST';
-  const { bookings, isLoading, updateBookingStatus, deleteBooking, getBookingStats, hasPermission } = useBookings();
+  const [viewScope, setViewScope] = useState<'me' | 'all'>(role === 'GUEST' ? 'me' : 'all');
+  const { bookings, isLoading, updateBookingStatus, deleteBooking, getBookingStats, hasPermission } = useBookings(viewScope);
   
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -111,6 +205,11 @@ const DashboardBookings: React.FC = () => {
   const [actionMenuOpen, setActionMenuOpen] = useState<string | null>(null);
   const [statusMenuOpen, setStatusMenuOpen] = useState<string | null>(null);
   const [viewingBooking, setViewingBooking] = useState<any | null>(null);
+  const [reviewingBooking, setReviewingBooking] = useState<any | null>(null);
+  
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
   const filteredBookings = bookings.filter(booking => {
     const matchesSearch = 
@@ -120,6 +219,12 @@ const DashboardBookings: React.FC = () => {
     const matchesStatus = statusFilter === 'all' || booking.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
+
+  const totalPages = Math.ceil(filteredBookings.length / itemsPerPage);
+  const paginatedBookings = filteredBookings.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
 
   const stats = getBookingStats();
 
@@ -158,8 +263,19 @@ const DashboardBookings: React.FC = () => {
     setSelectedBookings(new Set());
   };
 
+  const handleCancelBooking = async (bookingId: string) => {
+    if (window.confirm('Are you sure you want to cancel this booking?')) {
+      try {
+        await updateBookingStatus(bookingId, 'CANCELLED');
+      } catch (error) {
+        console.error('Failed to cancel booking:', error);
+      }
+    }
+    setActionMenuOpen(null);
+  };
+
   const handleDeleteBooking = async (bookingId: string) => {
-    if (window.confirm('Are you sure you want to delete this booking?')) {
+    if (window.confirm('ADMIN ALERT: Are you sure you want to PERMANENTLY DELETE this booking record? This action cannot be undone.')) {
       try {
         await deleteBooking(bookingId);
       } catch (error) {
@@ -206,6 +322,24 @@ const DashboardBookings: React.FC = () => {
         </button>
       </div>
 
+      {/* View Toggle */}
+      {(role === 'ADMIN' || role === 'HOST') && (
+        <div className="flex bg-gray-100 p-1 rounded-xl w-fit">
+          <button
+            onClick={() => setViewScope('me')}
+            className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${viewScope === 'me' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500'}`}
+          >
+            {role === 'HOST' ? 'My Trips' : 'My Items'}
+          </button>
+          <button
+            onClick={() => setViewScope('all')}
+            className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${viewScope === 'all' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500'}`}
+          >
+            {role === 'HOST' ? 'My Guests' : 'All Platform Bookings'}
+          </button>
+        </div>
+      )}
+
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
         <div className="bg-white rounded-lg p-3 border border-gray-100">
@@ -247,12 +381,14 @@ const DashboardBookings: React.FC = () => {
               {selectedBookings.size} booking{selectedBookings.size !== 1 ? 's' : ''} selected
             </span>
             <div className="flex gap-2">
-              <button
-                onClick={() => handleBulkStatusUpdate('CONFIRMED')}
-                className="px-3 py-1.5 bg-emerald-600 text-white rounded-lg text-xs font-medium hover:bg-emerald-700 transition-colors"
-              >
-                Confirm All
-              </button>
+              {hasPermission && (
+                <button
+                  onClick={() => handleBulkStatusUpdate('CONFIRMED')}
+                  className="px-3 py-1.5 bg-emerald-600 text-white rounded-lg text-xs font-medium hover:bg-emerald-700 transition-colors"
+                >
+                  Confirm All
+                </button>
+              )}
               <button
                 onClick={() => handleBulkStatusUpdate('CANCELLED')}
                 className="px-3 py-1.5 bg-rose-600 text-white rounded-lg text-xs font-medium hover:bg-rose-700 transition-colors"
@@ -341,8 +477,8 @@ const DashboardBookings: React.FC = () => {
                     </td>
                   </tr>
                 ))
-              ) : filteredBookings.length > 0 ? (
-                filteredBookings.map((booking) => (
+              ) : paginatedBookings.length > 0 ? (
+                paginatedBookings.map((booking) => (
                   <motion.tr
                     key={booking.id}
                     initial={{ opacity: 0 }}
@@ -443,16 +579,37 @@ const DashboardBookings: React.FC = () => {
                             >
                                 <button 
                                   onClick={() => { setViewingBooking(booking); setActionMenuOpen(null); }}
-                                  className="w-full px-3 py-2 text-left text-xs text-gray-700 hover:bg-gray-50 rounded-t-lg flex items-center gap-2"
+                                  className="w-full px-3 py-2 text-left text-xs text-gray-700 hover:bg-gray-50 flex items-center gap-2"
                                 >
                                   <Eye size={12} /> View Details
                                 </button>
-                              <button
-                                onClick={() => handleDeleteBooking(booking.id)}
-                                className="w-full px-3 py-2 text-left text-xs text-rose-600 hover:bg-gray-50 rounded-b-lg flex items-center gap-2"
-                              >
-                                <Trash2 size={12} /> Delete
-                              </button>
+                                
+                                {role === 'GUEST' && booking.status === 'COMPLETED' && (
+                                  <button 
+                                    onClick={() => { setReviewingBooking(booking); setActionMenuOpen(null); }}
+                                    className="w-full px-3 py-2 text-left text-xs text-airbnb hover:bg-airbnb/5 flex items-center gap-2"
+                                  >
+                                    <Star size={12} /> Add Review & Rating
+                                  </button>
+                                )}
+
+                                {(booking.status === 'PENDING' || booking.status === 'CONFIRMED') && (
+                                  <button
+                                    onClick={() => handleCancelBooking(booking.id)}
+                                    className="w-full px-3 py-2 text-left text-xs text-rose-600 hover:bg-rose-50 flex items-center gap-2"
+                                  >
+                                    <X size={12} /> Cancel Booking
+                                  </button>
+                                )}
+
+                                {role === 'ADMIN' && (
+                                  <button
+                                    onClick={() => handleDeleteBooking(booking.id)}
+                                    className="w-full px-3 py-2 text-left text-xs text-gray-400 hover:bg-gray-50 rounded-b-lg flex items-center gap-2"
+                                  >
+                                    <Trash2 size={12} /> Force Delete
+                                  </button>
+                                )}
                             </motion.div>
                           )}
                         </AnimatePresence>
@@ -473,11 +630,53 @@ const DashboardBookings: React.FC = () => {
         </div>
       </div>
 
+      {/* Pagination */}
+      {!isLoading && totalPages > 1 && (
+        <div className="flex items-center justify-between mt-6 bg-white p-4 rounded-xl border border-gray-100">
+           <div className="text-xs font-medium text-gray-500">
+              Showing <span className="text-gray-900 font-bold">{(currentPage - 1) * itemsPerPage + 1}</span> to <span className="text-gray-900 font-bold">{Math.min(currentPage * itemsPerPage, filteredBookings.length)}</span> of <span className="text-gray-900 font-bold">{filteredBookings.length}</span> results
+           </div>
+           <div className="flex gap-2">
+              <button 
+                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                disabled={currentPage === 1}
+                className="p-2 border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-50"
+              >
+                Prev
+              </button>
+              <div className="flex gap-1">
+                 {Array.from({ length: totalPages }).map((_, i) => (
+                   <button
+                    key={i}
+                    onClick={() => setCurrentPage(i + 1)}
+                    className={`w-8 h-8 rounded-lg text-xs font-bold transition-all ${currentPage === i + 1 ? 'bg-airbnb text-white shadow-md shadow-airbnb/20' : 'hover:bg-gray-50 text-gray-600'}`}
+                   >
+                     {i + 1}
+                   </button>
+                 ))}
+              </div>
+              <button 
+                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                disabled={currentPage === totalPages}
+                className="p-2 border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-50"
+              >
+                Next
+              </button>
+           </div>
+        </div>
+      )}
+
       <BookingDetailsModal 
         isOpen={!!viewingBooking} 
         onClose={() => setViewingBooking(null)} 
         booking={viewingBooking}
         role={role}
+      />
+
+      <ReviewModal 
+        isOpen={!!reviewingBooking}
+        onClose={() => setReviewingBooking(null)}
+        booking={reviewingBooking}
       />
     </div>
   );

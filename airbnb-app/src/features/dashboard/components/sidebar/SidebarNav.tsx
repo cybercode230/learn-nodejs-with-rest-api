@@ -11,6 +11,7 @@ import {
   TrendingUp,
   HelpCircle,
   Users,
+  // Star
 } from 'lucide-react';
 import SidebarNavItem from './SidebarNavItem';
 import { useAuth } from '../../../../contexts/AuthContext';
@@ -32,6 +33,7 @@ interface NavItem {
 const NAV_ITEMS: NavItem[] = [
   { to: '/dashboard', icon: <LayoutDashboard size={18} />, label: 'Overview', roles: ['ADMIN', 'HOST', 'GUEST'] },
   { to: '/dashboard/users', icon: <Users size={18} />, label: 'User Management', roles: ['ADMIN'] },
+  // { to: '/dashboard/reviews', icon: <Star size={18} />, label: 'System Reviews', roles: ['ADMIN'] },
 ];
 
 // Core features group

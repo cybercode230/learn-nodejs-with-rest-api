@@ -109,14 +109,14 @@ const DashboardOverview: React.FC = () => {
     const base = [
       {
         id: 'bookings',
-        title: role === 'GUEST' ? 'Your upcoming trips' : role === 'ADMIN' ? 'Platform Bookings' : 'Manage your bookings',
+        title: role === 'GUEST' ? 'Your upcoming bookings' : role === 'ADMIN' ? 'Platform Bookings' : 'Manage your bookings',
         description: role === 'GUEST'
-          ? 'Check your itineraries, message hosts, and manage your travel plans easily.'
+          ? 'Check your itineraries, message hosts, and manage your booking plans easily.'
           : role === 'ADMIN'
             ? 'Monitor all platform reservations, track occupancy rates and handle escalations.'
             : 'View upcoming stays, handle check-ins, and respond to reservation requests in real-time.',
         image: '/glass.png',
-        ctaText: role === 'GUEST' ? 'View My Trips' : 'Check Bookings',
+        ctaText: role === 'GUEST' ? 'View My Bookings' : 'Check Bookings',
         ctaLink: '/dashboard/bookings'
       },
       {
@@ -193,7 +193,7 @@ const DashboardOverview: React.FC = () => {
     // GUEST Stats
     return (
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <StatCard label="Upcoming Trips" value={stats?.upcomingTrips ?? '0'} icon={<MapPin size={18} className="text-blue-600" />} color="bg-blue-50" link="/dashboard/bookings" />
+        <StatCard label="Upcoming Bookings" value={stats?.upcomingTrips ?? '0'} icon={<MapPin size={18} className="text-blue-600" />} color="bg-blue-50" link="/dashboard/bookings" />
         <StatCard label="Past Bookings" value={stats?.pastBookings ?? '0'} icon={<CalendarCheck size={18} className="text-purple-600" />} color="bg-purple-50" link="/dashboard/bookings" />
         <StatCard label="Saved Places" value={stats?.savedPlaces ?? '0'} icon={<Heart size={18} className="text-rose-500" />} color="bg-rose-50" link="/dashboard/map" />
         <StatCard label="Unread Messages" value={stats?.unreadMessages ?? '0'} icon={<MessageSquare size={18} className="text-emerald-600" />} color="bg-emerald-50" link="/dashboard/messages" />
@@ -216,10 +216,11 @@ const DashboardOverview: React.FC = () => {
         ) : renderStats()}
       </section>
 
+
       <section>
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-sm font-semibold text-gray-500">
-            {role === 'GUEST' ? 'Your Recent Trips' : 'Recent Reservations'}
+            {role === 'GUEST' ? 'Your Recent Bookings' : 'Recent Reservations'}
           </h2>
           <Link to="/dashboard/bookings" className="text-xs font-medium text-airbnb hover:underline flex items-center gap-1">
             View all <ArrowUpRight size={12} />
@@ -287,7 +288,7 @@ const DashboardOverview: React.FC = () => {
             ))
           ) : (
             <div className="flex flex-col items-center justify-center py-12 text-center">
-              <p className="font-semibold text-gray-900">No {role === 'GUEST' ? 'trips' : 'reservations'} yet</p>
+              <p className="font-semibold text-gray-900">No bookings yet</p>
               <Link to="/" className="mt-4 px-4 py-2 bg-gray-900 text-white rounded-lg text-sm font-medium">
                 {role === 'GUEST' ? 'Explore Stays' : 'Manage Listings'}
               </Link>

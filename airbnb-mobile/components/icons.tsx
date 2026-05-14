@@ -24,20 +24,52 @@ import {
   Map as MapIcon,
   LogOut,
   ChevronRight,
-  Star
+  Star,
+  Briefcase,
+  MessageSquare,
+  Filter,
+  X,
+  ChevronLeft,
+  Share,
+  ArrowRight,
+  Wifi,
+  ChefHat,
+  Wind,
+  Mountain,
+  Car,
+  Waves,
+  Leaf,
+  ShieldCheck,
+  ShoppingBag,
+  Bus,
+  Sparkles,
+  MessageCircle,
+  Info,
+  MoreHorizontal,
+  Calendar,
+  Eye,
+  EyeOff,
+  Globe,
+  CheckCheck,
+  Send,
+  Tag,
+  Zap,
+  ThumbsUp,
+  HelpCircle,
+  Moon,
+  Check,
 } from 'lucide-react-native';
 
-iconInterop(Home);
-iconInterop(Search);
-iconInterop(User);
-iconInterop(Settings);
-iconInterop(Heart);
-iconInterop(Bell);
-iconInterop(Plus);
-iconInterop(MapIcon);
-iconInterop(LogOut);
-iconInterop(ChevronRight);
-iconInterop(Star);
+const icons = [
+  Home, Search, User, Settings, Heart, Bell, Plus, MapIcon, LogOut,
+  ChevronRight, Star, Briefcase, MessageSquare, Filter, X, ChevronLeft,
+  Share, ArrowRight, Wifi, ChefHat, Wind, Mountain, Car, Waves, Leaf,
+  ShieldCheck, ShoppingBag, Bus, Sparkles, MessageCircle, Info, MoreHorizontal,
+  Calendar, Eye, EyeOff, Globe, CheckCheck, Send, Tag, Zap, ThumbsUp,
+  HelpCircle, Moon, Check,
+];
+
+icons.forEach(iconInterop);
 
 export { 
   Home, 
@@ -50,5 +82,38 @@ export {
   MapIcon as Map,
   LogOut,
   ChevronRight,
-  Star
+  Star,
+  Briefcase,
+  MessageSquare,
+  Filter,
+  X,
+  ChevronLeft,
+  Share,
+  ArrowRight,
+  Wifi,
+  ChefHat,
+  Wind,
+  Mountain,
+  Car,
+  Waves,
+  Leaf,
+  ShieldCheck,
+  ShoppingBag,
+  Bus,
+  Sparkles,
+  MessageCircle,
+  Info,
+  MoreHorizontal,
+  Calendar,
+  Eye,
+  EyeOff,
+  Globe,
+  CheckCheck,
+  Send,
+  Tag,
+  Zap,
+  ThumbsUp,
+  HelpCircle,
+  Moon,
+  Check,
 };

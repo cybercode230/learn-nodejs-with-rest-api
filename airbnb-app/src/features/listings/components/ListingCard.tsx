@@ -76,12 +76,12 @@ const ListingCard: React.FC<ListingCardProps> = ({ listing }) => {
           />
           
           {/* Property Type Tag */}
-          <div className="absolute top-3 left-3 bg-white/90 backdrop-blur-md px-2 py-0.5 rounded-md text-[9px] font-black shadow-sm text-gray-900 uppercase tracking-widest border border-gray-100">
+          <div className="absolute top-3 left-3 bg-white/90 backdrop-blur-md px-2 py-0.5 rounded-md text-[9px] font-black shadow-sm text-gray-900 tracking-widest border border-gray-100">
             {propertyTypeLabel}
           </div>
 
           {listing._count && listing._count.bookings > 10 && (
-            <div className="absolute top-10 left-3 bg-airbnb px-2 py-0.5 rounded-md text-[9px] font-black shadow-sm text-white uppercase tracking-widest">
+            <div className="absolute top-10 left-3 bg-airbnb px-2 py-0.5 rounded-md text-[9px] font-black shadow-sm text-white tracking-widest">
               Guest Favorite
             </div>
           )}

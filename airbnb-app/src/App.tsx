@@ -28,6 +28,7 @@ import DashboardSettings from './features/dashboard/pages/DashboardSettings';
 import DashboardHelpCenter from './features/dashboard/pages/DashboardHelpCenter';
 import DashboardAnalytics from './features/dashboard/pages/DashboardAnalytics';
 import AdminUsers from './features/dashboard/pages/DashboardAdminUsers';
+import DashboardAdminReviews from './features/dashboard/pages/DashboardAdminReviews';
 import CreateListingPage from './features/dashboard/pages/CreateListingPage';
 
 function App() {
@@ -104,14 +105,22 @@ function App() {
                   <Route path="help" element={<DashboardHelpCenter />} />
 
                   {/* ADMIN ONLY */}
-                  <Route 
-                    path="users" 
-                    element={
-                      <ProtectedRoute allowedRoles={['ADMIN']}>
-                        <AdminUsers />
-                      </ProtectedRoute>
-                    } 
-                  />
+                    <Route 
+                      path="users" 
+                      element={
+                        <ProtectedRoute allowedRoles={['ADMIN']}>
+                          <AdminUsers />
+                        </ProtectedRoute>
+                      } 
+                    />
+                    <Route 
+                      path="reviews" 
+                      element={
+                        <ProtectedRoute allowedRoles={['ADMIN']}>
+                          <DashboardAdminReviews />
+                        </ProtectedRoute>
+                      } 
+                    />
                 </Route>
               </Routes>
             </Router>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Globe, Menu, User, Home, Settings, HelpCircle, LogOut, Heart } from 'lucide-react';
+import { Globe, Menu, User, Home, Settings, HelpCircle, LogOut } from 'lucide-react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useSearchState } from '../../../contexts/SearchContext';
@@ -153,12 +153,10 @@ const Navbar: React.FC = () => {
                     </div>
                     <div className="py-2">
                       <DropdownLink to="/dashboard" icon={<Home size={16} />} label="Dashboard" />
-                      <DropdownLink to="/trips" icon={<Settings size={16} />} label="Trips" />
-                      <DropdownLink to="/wishlists" icon={<Heart size={16} />} label="Wishlists" />
                     </div>
                     <div className="border-t border-gray-100 py-2">
-                      <DropdownLink to="/profile" icon={<Settings size={16} />} label="Account Settings" />
-                      <DropdownLink to="/help" icon={<HelpCircle size={16} />} label="Help Center" />
+                      <DropdownLink to="/dashboard/settings" icon={<Settings size={16} />} label="Account Settings" />
+                      <DropdownLink to="/dashboard/help" icon={<HelpCircle size={16} />} label="Help Center" />
                     </div>
                     <div className="border-t border-gray-100 pt-2">
                       <button 

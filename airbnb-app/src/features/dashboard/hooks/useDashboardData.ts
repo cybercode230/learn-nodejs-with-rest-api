@@ -53,11 +53,11 @@ export const useDashboardStats = () => {
       }
 
       if (role === 'HOST') {
-        const listingsRes = await api.get(ENDPOINTS.USERS.LISTINGS(user.id));
-        const listings: Listing[] = listingsRes.data || [];
+        const listingsRes = await api.get(ENDPOINTS.USERS.LISTINGS(user.id), { params: { limit: 1 } });
+        const totalListings = listingsRes.data.meta?.total || (Array.isArray(listingsRes.data) ? listingsRes.data.length : listingsRes.data.data?.length || 0);
         
         return {
-          activeListings: listings.length,
+          activeListings: totalListings,
           earnings: bookings.filter(b => b.status === 'CONFIRMED' || b.status === 'COMPLETED').reduce((sum, b) => sum + (b.totalPrice || 0), 0),
           avgRating: 4.9, // Mock for now
           pendingApprovals: bookings.filter(b => b.status === 'PENDING').length

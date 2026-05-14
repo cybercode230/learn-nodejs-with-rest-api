@@ -11,35 +11,44 @@ import type { Booking, BookingStatus } from '../../../shared/types';
  * Responsibility: Connecting the dashboard to user-specific booking endpoints.
  * Outcomes: Real-time booking lists for both guests and hosts (with backend support).
  */
-export const useBookings = () => {
+export const useBookings = (scope: 'me' | 'all' = 'all') => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const role = user?.role || 'GUEST';
 
-  // Fetch bookings based on role
+  // Fetch bookings based on role and scope
   const { 
-    data: bookings = [], 
+    data, 
     isLoading, 
     error 
-  } = useQuery<Booking[]>({
-    queryKey: ['bookings', role, user?.id],
+  } = useQuery<{ data: Booking[]; meta: any }>({
+    queryKey: ['bookings', role, user?.id, scope],
     queryFn: async () => {
-      if (!user?.id) return [];
+      if (!user?.id) return { data: [], meta: { total: 0 } };
       
       let url = ENDPOINTS.USERS.BOOKINGS(user.id);
       
       if (role === 'HOST') {
-        url = ENDPOINTS.USERS.HOST_BOOKINGS(user.id);
+        // For hosts, 'me' means my trips, 'all' means guests booking my places
+        url = scope === 'all' ? ENDPOINTS.USERS.HOST_BOOKINGS(user.id) : ENDPOINTS.USERS.BOOKINGS(user.id);
       } else if (role === 'ADMIN') {
-        url = ENDPOINTS.BOOKINGS.BASE;
+        url = scope === 'all' ? ENDPOINTS.BOOKINGS.BASE : ENDPOINTS.USERS.HOST_BOOKINGS(user.id);
       }
       
       const response = await api.get(url);
-      // Backend returns { data: [...], meta: {...} } for paginated results
-      return response.data.data || response.data || [];
+      const bookingData = response.data.data || response.data || [];
+      const meta = response.data.meta || { total: Array.isArray(bookingData) ? bookingData.length : 0 };
+      
+      return { 
+        data: Array.isArray(bookingData) ? bookingData : [], 
+        meta 
+      };
     },
     enabled: !!user,
   });
+
+  const bookings = data?.data || [];
+  const meta = data?.meta || { total: 0 };
 
   // Update booking status mutation
   const updateStatusMutation = useMutation({
@@ -64,7 +73,7 @@ export const useBookings = () => {
   });
 
   const getBookingStats = () => {
-    const total = bookings.length;
+    const total = meta.total || bookings.length;
     const confirmed = bookings.filter(b => b.status === 'CONFIRMED').length;
     const pending = bookings.filter(b => b.status === 'PENDING').length;
     const cancelled = bookings.filter(b => b.status === 'CANCELLED').length;

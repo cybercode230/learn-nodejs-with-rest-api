@@ -3,9 +3,16 @@ import { useSearchParams } from 'react-router-dom';
 import { useListings } from '../../../contexts/ListingContext';
 import ListingCard from '../components/ListingCard';
 import MapSearch from '../../search/components/MapSearch';
-import { Search, SlidersHorizontal, ChevronDown, Sparkles } from 'lucide-react';
-import { Button } from '../../../shared/components';
-import { motion, AnimatePresence } from 'framer-motion';
+import { Search, ChevronDown, X, Sparkles } from 'lucide-react';
+
+// interface FilterState {
+//   priceMin: number | null;
+//   priceMax: number | null;
+//   type: ListingType | null;
+//   location: string;
+// }
+
+type ListingType = 'APARTMENT' | 'HOUSE' | 'VILLA' | 'CABIN' | '';
 
 const FilterPill: React.FC<{ 
   label: string; 
@@ -13,17 +20,25 @@ const FilterPill: React.FC<{
   onClick?: () => void;
   dropdown?: React.ReactNode;
   isOpen?: boolean;
-}> = ({ label, active, onClick, dropdown, isOpen }) => (
+  onClear?: () => void;
+}> = ({ label, active, onClick, dropdown, isOpen, onClear }) => (
   <div className="relative">
     <button 
       onClick={onClick}
-      className={`px-4 py-2 rounded-full border text-xs font-bold transition-all whitespace-nowrap flex items-center gap-2 ${active ? 'border-black bg-gray-900 text-white' : 'border-gray-200 hover:border-black text-gray-600'} ${isOpen ? 'ring-2 ring-black border-black' : ''}`}
+      className={`px-4 py-2 rounded-full border text-xs font-medium transition-all whitespace-nowrap flex items-center gap-1.5 ${
+        active ? 'border-gray-900 bg-gray-900 text-white' : 'border-gray-300 hover:border-gray-900 text-gray-700'
+      }`}
     >
       {label}
-      <ChevronDown size={14} className={active ? 'text-white' : 'text-gray-400'} />
+      {active && onClear && (
+        <span onClick={(e) => { e.stopPropagation(); onClear(); }} className="ml-1 hover:opacity-70">
+          <X size={12} />
+        </span>
+      )}
+      {!active && <ChevronDown size={12} className={active ? 'text-white' : 'text-gray-400'} />}
     </button>
     {isOpen && dropdown && (
-      <div className="absolute top-full left-0 mt-2 z-50 animate-in fade-in zoom-in duration-200">
+      <div className="absolute top-full left-0 mt-2 z-50 bg-white rounded-xl shadow-xl border border-gray-100 min-w-[240px] animate-in fade-in zoom-in duration-150">
         {dropdown}
       </div>
     )}
@@ -34,6 +49,9 @@ const SearchResultsPage: React.FC = () => {
   const { filteredListings, loading, filters, searchListings, aiSearchListings, aiMessage } = useListings();
   const [searchParams] = useSearchParams();
   const [activeFilter, setActiveFilter] = useState<string | null>(null);
+  const [priceRange, setPriceRange] = useState<{ min: number | null; max: number | null }>({ min: null, max: null });
+  const [selectedType, setSelectedType] = useState<ListingType | null>(null);
+  const [locationInput, setLocationInput] = useState(filters.location || '');
 
   // Sync URL query with AI search
   useEffect(() => {
@@ -43,48 +61,109 @@ const SearchResultsPage: React.FC = () => {
     }
   }, [searchParams, aiSearchListings]);
 
+  // Apply all filters
+  const applyFilters = () => {
+    searchListings({
+      minPrice: priceRange.min?.toString() || '',
+      maxPrice: priceRange.max?.toString() || '',
+      type: selectedType || '',
+      location: locationInput,
+    });
+    setActiveFilter(null);
+  };
+
+  const clearPriceFilter = () => {
+    setPriceRange({ min: null, max: null });
+    searchListings({ minPrice: '', maxPrice: '', type: selectedType || '', location: locationInput });
+  };
+
+  const clearTypeFilter = () => {
+    setSelectedType(null);
+    searchListings({ type: '', minPrice: priceRange.min?.toString() || '', maxPrice: priceRange.max?.toString() || '', location: locationInput });
+  };
+
+  const clearLocationFilter = () => {
+    setLocationInput('');
+    searchListings({ location: '', minPrice: priceRange.min?.toString() || '', maxPrice: priceRange.max?.toString() || '', type: selectedType || '' });
+  };
+
+  const hasActiveFilters = !!(priceRange.min || priceRange.max || selectedType || locationInput);
+
+  const getFilterLabel = () => {
+    if (priceRange.min && priceRange.max) return `$${priceRange.min} - $${priceRange.max}`;
+    if (priceRange.min) return `From $${priceRange.min}`;
+    if (priceRange.max) return `Up to $${priceRange.max}`;
+    return 'Price';
+  };
+
   return (
     <div className="flex flex-col h-screen bg-white">
       {/* Top Filter Bar - Airbnb Style */}
-      <div className="z-40 bg-white border-b border-gray-100 px-8 py-3 shrink-0">
-        <div className="flex items-center gap-3 overflow-x-auto no-scrollbar py-1">
-          <button className="p-3 border border-gray-200 rounded-xl hover:border-black transition-all flex items-center gap-2 text-xs font-black">
-            <SlidersHorizontal size={16} />
-            Filters
-          </button>
-          <div className="w-px h-6 bg-gray-100 mx-2" />
-          
+      <div className="sticky top-0 z-40 bg-white border-b border-gray-100 px-6 py-3 shrink-0">
+        <div className="flex items-center gap-3 overflow-x-auto no-scrollbar pb-1">
+          {/* Location Filter */}
+          <div className="relative">
+            <button
+              onClick={() => setActiveFilter(activeFilter === 'location' ? null : 'location')}
+              className={`px-4 py-2 rounded-full border text-xs font-medium transition-all whitespace-nowrap flex items-center gap-1.5 ${
+                locationInput ? 'border-gray-900 bg-gray-900 text-white' : 'border-gray-300 hover:border-gray-900 text-gray-700'
+              }`}
+            >
+              {locationInput ? locationInput.substring(0, 20) : 'Location'}
+              {locationInput && (
+                <span onClick={(e) => { e.stopPropagation(); clearLocationFilter(); }} className="ml-1 hover:opacity-70">
+                  <X size={12} />
+                </span>
+              )}
+              {!locationInput && <ChevronDown size={12} />}
+            </button>
+            {activeFilter === 'location' && (
+              <div className="absolute top-full left-0 mt-2 z-50 bg-white rounded-xl shadow-xl border border-gray-100 w-72 p-4">
+                <h3 className="text-sm font-semibold text-gray-900 mb-3">Search by location</h3>
+                <input
+                  type="text"
+                  placeholder="City, region, or landmark"
+                  value={locationInput}
+                  onChange={(e) => setLocationInput(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && applyFilters()}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-gray-900"
+                />
+                <button onClick={applyFilters} className="w-full mt-3 py-2 bg-gray-900 text-white rounded-lg text-sm font-medium">
+                  Apply
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Price Filter */}
           <FilterPill 
-            label={
-              filters.minPrice && filters.maxPrice ? `$${filters.minPrice} - $${filters.maxPrice}` :
-              filters.minPrice ? `$${filters.minPrice}+` :
-              filters.maxPrice ? `Up to $${filters.maxPrice}` :
-              'Price range'
-            } 
-            active={!!(filters.minPrice || filters.maxPrice)} 
+            label={getFilterLabel()}
+            active={!!(priceRange.min || priceRange.max)}
             isOpen={activeFilter === 'price'}
             onClick={() => setActiveFilter(activeFilter === 'price' ? null : 'price')}
+            onClear={clearPriceFilter}
             dropdown={
-              <div className="bg-white border border-gray-100 shadow-2xl rounded-3xl p-6 w-80 space-y-6">
+              <div className="p-5 w-80 space-y-5">
                 <div>
-                  <h3 className="font-bold text-gray-900 mb-4">Quick Select</h3>
+                  <h3 className="font-semibold text-gray-900 mb-3 text-sm">Price per night</h3>
                   <div className="grid grid-cols-2 gap-2">
                     {[
-                      { label: 'Under $50', min: '0', max: '50' },
-                      { label: '$50 - $100', min: '50', max: '100' },
-                      { label: '$100 - $200', min: '100', max: '200' },
-                      { label: '$200+', min: '200', max: '' }
+                      { label: 'Under $50', min: 0, max: 50 },
+                      { label: '$50 - $100', min: 50, max: 100 },
+                      { label: '$100 - $200', min: 100, max: 200 },
+                      { label: '$200+', min: 200, max: null }
                     ].map((range) => (
                       <button
                         key={range.label}
                         onClick={() => {
-                          searchListings({ minPrice: range.min, maxPrice: range.max });
+                          setPriceRange({ min: range.min, max: range.max });
+                          searchListings({ minPrice: range.min?.toString() || '', maxPrice: range.max?.toString() || '', type: selectedType || '', location: locationInput });
                           setActiveFilter(null);
                         }}
-                        className={`p-3 rounded-xl border text-xs font-bold transition-all ${
-                          filters.minPrice === range.min && filters.maxPrice === range.max
-                            ? 'border-black bg-gray-900 text-white'
-                            : 'border-gray-100 hover:border-black text-gray-600'
+                        className={`p-2.5 rounded-lg border text-xs font-medium transition-all ${
+                          priceRange.min === range.min && priceRange.max === range.max
+                            ? 'border-gray-900 bg-gray-900 text-white'
+                            : 'border-gray-200 hover:border-gray-900 text-gray-700'
                         }`}
                       >
                         {range.label}
@@ -92,178 +171,155 @@ const SearchResultsPage: React.FC = () => {
                     ))}
                   </div>
                 </div>
-
-                <div className="w-full h-px bg-gray-50" />
-
-                <div>
-                  <h3 className="font-bold text-gray-900 mb-4">Custom Range</h3>
+                <div className="border-t border-gray-100 pt-4">
+                  <h3 className="font-semibold text-gray-900 mb-3 text-sm">Custom range</h3>
                   <div className="flex items-center gap-2">
-                    <div className="flex-1 p-3 border border-gray-200 rounded-xl">
-                      <span className="text-[10px] text-gray-400 font-bold block uppercase">Min</span>
+                    <div className="flex-1">
                       <input 
-                        type="number" placeholder="$0" 
-                        className="w-full text-sm font-bold outline-none bg-transparent"
-                        value={filters.minPrice}
-                        onChange={(e) => searchListings({ minPrice: e.target.value })}
+                        type="number" 
+                        placeholder="Min" 
+                        className="w-full p-2.5 border border-gray-200 rounded-lg text-sm outline-none focus:border-gray-900"
+                        value={priceRange.min || ''}
+                        onChange={(e) => setPriceRange({ ...priceRange, min: e.target.value ? parseInt(e.target.value) : null })}
                       />
                     </div>
-                    <div className="flex-1 p-3 border border-gray-200 rounded-xl">
-                      <span className="text-[10px] text-gray-400 font-bold block uppercase">Max</span>
+                    <span className="text-gray-400">—</span>
+                    <div className="flex-1">
                       <input 
-                        type="number" placeholder="$500+" 
-                        className="w-full text-sm font-bold outline-none bg-transparent"
-                        value={filters.maxPrice}
-                        onChange={(e) => searchListings({ maxPrice: e.target.value })}
+                        type="number" 
+                        placeholder="Max" 
+                        className="w-full p-2.5 border border-gray-200 rounded-lg text-sm outline-none focus:border-gray-900"
+                        value={priceRange.max || ''}
+                        onChange={(e) => setPriceRange({ ...priceRange, max: e.target.value ? parseInt(e.target.value) : null })}
                       />
                     </div>
                   </div>
+                  <button onClick={applyFilters} className="w-full mt-3 py-2 bg-gray-900 text-white rounded-lg text-sm font-medium">
+                    Apply
+                  </button>
                 </div>
-                
-                <button onClick={() => setActiveFilter(null)} className="w-full py-4 bg-gray-900 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:scale-[1.02] active:scale-[0.98] transition-all">
-                  Apply Filters
-                </button>
               </div>
             }
           />
 
+          {/* Type Filter */}
           <FilterPill 
-            label={filters.type || 'Type of place'} 
-            active={!!filters.type} 
+            label={selectedType ? selectedType.toLowerCase() : 'Property type'}
+            active={!!selectedType}
             isOpen={activeFilter === 'type'}
             onClick={() => setActiveFilter(activeFilter === 'type' ? null : 'type')}
+            onClear={clearTypeFilter}
             dropdown={
-              <div className="bg-white border border-gray-100 shadow-2xl rounded-2xl p-4 w-60 space-y-1">
-                {['APARTMENT', 'HOUSE', 'VILLA', 'CABIN'].map((t) => (
+              <div className="p-2 w-52">
+                {(['APARTMENT', 'HOUSE', 'VILLA', 'CABIN'] as ListingType[]).map((type) => (
                   <button
-                    key={t}
+                    key={type}
                     onClick={() => {
-                      searchListings({ type: t as any });
+                      setSelectedType(type);
+                      searchListings({ type: type, minPrice: priceRange.min?.toString() || '', maxPrice: priceRange.max?.toString() || '', location: locationInput });
                       setActiveFilter(null);
                     }}
-                    className={`w-full text-left p-3 rounded-xl text-sm font-bold transition-colors ${filters.type === t ? 'bg-gray-900 text-white' : 'hover:bg-gray-50 text-gray-700'}`}
+                    className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
+                      selectedType === type ? 'bg-gray-100 text-gray-900 font-medium' : 'text-gray-600 hover:bg-gray-50'
+                    }`}
                   >
-                    {t.charAt(0) + t.slice(1).toLowerCase()}
+                    {type.charAt(0) + type.slice(1).toLowerCase()}
                   </button>
                 ))}
               </div>
             }
           />
 
-          <FilterPill label="Rooms & beds" />
-          <FilterPill label="Amenities" />
-          <FilterPill label="Guest favorites" />
-          <FilterPill label="Instant Book" />
+          {/* Clear all filters button */}
+          {hasActiveFilters && (
+            <button
+              onClick={() => {
+                setPriceRange({ min: null, max: null });
+                setSelectedType(null);
+                setLocationInput('');
+                searchListings({ minPrice: '', maxPrice: '', type: '', location: '' });
+              }}
+              className="px-3 py-2 text-xs font-medium text-gray-500 hover:text-gray-900 underline-offset-4 hover:underline"
+            >
+              Clear all
+            </button>
+          )}
         </div>
       </div>
 
       <div className="flex flex-1 overflow-hidden">
-        {/* Left Side: Results List */}
-        <div className="w-full lg:w-[60%] flex flex-col bg-white">
-          <div className="p-8 pb-4">
-            <div className="flex items-center justify-between mb-2">
-              <h1 className="text-sm font-medium text-gray-500">
-                Over {filteredListings.length} stays found
-              </h1>
-            </div>
-            
-            <div className="space-y-4">
-              <h2 className="text-2xl font-black text-gray-900 tracking-tight">
-                Stays in {filters.location || 'selected area'}
-              </h2>
-              
-              {aiMessage && (
-                <motion.div 
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  className="p-4 bg-airbnb/5 border border-airbnb/10 rounded-2xl flex gap-3"
-                >
-                  <div className="text-airbnb mt-0.5">
-                    <Sparkles size={18} className="fill-airbnb/20" />
-                  </div>
-                  <p className="text-sm text-gray-700 font-medium leading-relaxed italic">
-                    {aiMessage}
-                  </p>
-                </motion.div>
-              )}
-            </div>
+        {/* Left Side: Results List - 3 columns on large screens */}
+        <div className="w-full lg:w-[55%] xl:w-[60%] flex flex-col bg-white overflow-hidden">
+          <div className="px-6 py-4 border-b border-gray-100">
+            <p className="text-sm text-gray-500">
+              <span className="font-semibold text-gray-900">{filteredListings.length}</span> stays found
+            </p>
           </div>
 
-          <div className="flex-1 relative overflow-hidden">
-            <AnimatePresence mode="wait">
-              {loading ? (
-                <motion.div 
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  className="p-8 grid grid-cols-1 gap-12"
-                >
-                  {[...Array(3)].map((_, i) => (
-                    <div key={i} className="flex gap-8 animate-pulse">
-                      <div className="w-64 h-44 bg-gray-100 rounded-3xl" />
-                      <div className="flex-1 space-y-4">
-                        <div className="h-3 bg-gray-100 rounded-full w-1/4" />
-                        <div className="h-6 bg-gray-100 rounded-xl w-3/4" />
-                        <div className="h-3 bg-gray-100 rounded-full w-full" />
-                        <div className="h-8 bg-gray-100 rounded-xl w-1/2 mt-auto" />
-                      </div>
-                    </div>
+          <div className="flex-1 overflow-y-auto px-6 py-4">
+            {aiMessage && (
+              <div className="mb-6 p-4 bg-purple-50 border border-purple-100 rounded-xl flex gap-3">
+                <div className="text-purple-600 shrink-0">
+                  <Sparkles size={18} />
+                </div>
+                <p className="text-sm text-gray-700 leading-relaxed italic">
+                  {aiMessage}
+                </p>
+              </div>
+            )}
+
+            {loading ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                {[...Array(6)].map((_, i) => (
+                  <div key={i} className="animate-pulse">
+                    <div className="aspect-square bg-gray-100 rounded-xl mb-3" />
+                    <div className="h-3 bg-gray-100 rounded w-3/4 mb-2" />
+                    <div className="h-2 bg-gray-100 rounded w-1/2 mb-2" />
+                    <div className="h-2 bg-gray-100 rounded w-1/4" />
+                  </div>
+                ))}
+              </div>
+            ) : filteredListings.length > 0 ? (
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+                  {filteredListings.map((listing) => (
+                    <ListingCard key={listing.id} listing={listing} />
                   ))}
-                </motion.div>
-              ) : filteredListings.length > 0 ? (
-                <motion.div 
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="h-full w-full overflow-y-auto px-8 py-8 scrollbar-hide"
-                >
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    {filteredListings.map((listing) => (
-                      <ListingCard key={listing.id} listing={listing} />
-                    ))}
-                  </div>
-                  
-                  <div className="py-20 text-center border-t border-gray-100 mt-20">
-                     <p className="text-gray-400 text-sm font-medium">You've reached the end of the results</p>
-                  </div>
-                </motion.div>
-              ) : (
-                <motion.div 
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  className="flex flex-col items-center justify-center h-full p-12 text-center"
-                >
-                  <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mb-6">
-                    <Search size={32} className="text-gray-200" />
-                  </div>
-                  <h3 className="text-xl font-bold text-gray-900">{aiMessage ? 'AI Assistant' : 'No exact matches'}</h3>
-                  <p className="text-gray-500 max-w-sm mt-2">
-                    {aiMessage || 'Try changing or removing some of your filters or adjusting your search area.'}
-                  </p>
-                  <Button 
-                    variant="outline" 
-                    className="mt-8 rounded-xl px-8"
+                </div>
+                <div className="py-12 text-center">
+                  <p className="text-xs text-gray-400">End of results</p>
+                </div>
+              </>
+            ) : (
+              <div className="flex flex-col items-center justify-center h-full py-20 text-center">
+                <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                  <Search size={24} className="text-gray-400" />
+                </div>
+                <h3 className="text-base font-semibold text-gray-900 mb-1">No properties found</h3>
+                <p className="text-sm text-gray-500 max-w-xs">
+                  Try adjusting your search or removing some filters
+                </p>
+                {hasActiveFilters && (
+                  <button
                     onClick={() => {
-                      searchListings({ location: '' });
+                      setPriceRange({ min: null, max: null });
+                      setSelectedType(null);
+                      setLocationInput('');
+                      searchListings({ minPrice: '', maxPrice: '', type: '', location: '' });
                     }}
+                    className="mt-4 px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium hover:border-gray-900"
                   >
-                    {aiMessage ? 'Try normal search' : 'Clear all filters'}
-                  </Button>
-                </motion.div>
-              )}
-            </AnimatePresence>
+                    Clear all filters
+                  </button>
+                )}
+              </div>
+            )}
           </div>
         </div>
 
         {/* Right Side: Map */}
-        <div className="hidden lg:block lg:w-[40%] h-full relative">
+        <div className="hidden lg:block lg:w-[45%] xl:w-[40%] h-full sticky top-0">
           <MapSearch height="h-full" rounded="rounded-none" />
-          <div className="absolute top-6 left-1/2 -translate-x-1/2 z-20">
-            <button 
-              onClick={() => searchListings({})} // Triggers a refresh of the current area
-              className="bg-white px-6 py-3 rounded-full shadow-2xl border border-gray-100 text-sm font-black text-gray-900 hover:scale-105 active:scale-95 transition-all flex items-center gap-2"
-            >
-              Search this area
-            </button>
-          </div>
         </div>
       </div>
     </div>

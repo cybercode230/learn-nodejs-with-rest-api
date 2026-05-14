@@ -3,7 +3,7 @@ import { useState, useCallback } from 'react';
 import api from '../../../api/axios';
 import { ENDPOINTS } from '../../../api/endpoints';
 import { useAuth } from '../../../contexts/AuthContext';
-import type { ListingPhoto } from '../../../shared/types';
+// import type { ListingPhoto } from '../../../shared/types';
 
 interface UpdateListingData {
   title?: string;
@@ -15,10 +15,10 @@ interface UpdateListingData {
   type?: string;
 }
 
-interface UploadPhotoResponse {
-  success: boolean;
-  photo: ListingPhoto;
-}
+// interface UploadPhotoResponse {
+//   success: boolean;
+//   photo: ListingPhoto;
+// }
 
 export const useListingsManagement = () => {
   const { user, token } = useAuth();
@@ -100,31 +100,48 @@ export const useListingsManagement = () => {
     }
   }, [hasPermission, token]);
 
-  // Upload photo to listing
-  const uploadPhoto = useCallback(async (listingId: string, file: File): Promise<UploadPhotoResponse> => {
+  // Upload photos to listing
+  const uploadPhotos = useCallback(async (listingId: string, files: File[]): Promise<{ success: boolean; error?: string }> => {
     if (!hasPermission) {
       setError('You do not have permission to upload photos');
-      return { success: false, error: 'Permission denied' } as any;
+      return { success: false, error: 'Permission denied' };
     }
 
     setIsLoading(true);
     setError(null);
 
     const formData = new FormData();
-    formData.append('photos', file);
+    files.forEach(file => formData.append('photos', file));
 
     try {
-      const response = await api.post(ENDPOINTS.LISTINGS.PHOTOS(listingId), formData, {
+      await api.post(ENDPOINTS.LISTINGS.PHOTOS(listingId), formData, {
         headers: { 
           Authorization: `Bearer ${token}`,
           'Content-Type': 'multipart/form-data'
         }
       });
-      return { success: true, photo: response.data };
+      return { success: true };
     } catch (err: any) {
-      const errorMessage = err.response?.data?.message || 'Failed to upload photo';
+      const errorMessage = err.response?.data?.message || 'Failed to upload photos';
       setError(errorMessage);
-      return { success: false, error: errorMessage } as any;
+      return { success: false, error: errorMessage };
+    } finally {
+      setIsLoading(false);
+    }
+  }, [hasPermission, token]);
+
+  // Generate AI description
+  const generateDescription = useCallback(async (listingId: string, tone: 'professional' | 'casual' | 'enthusiastic' = 'professional') => {
+    if (!hasPermission) return { success: false, error: 'Permission denied' };
+    
+    setIsLoading(true);
+    try {
+      const response = await api.post(`/ai/listings/${listingId}/generate-description`, { tone }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      return { success: true, description: response.data.description };
+    } catch (err: any) {
+      return { success: false, error: err.response?.data?.message || 'AI generation failed' };
     } finally {
       setIsLoading(false);
     }
@@ -177,7 +194,8 @@ export const useListingsManagement = () => {
     createListing,
     updateListing,
     deleteListing,
-    uploadPhoto,
+    uploadPhotos,
+    generateDescription,
     deletePhoto,
     getReviews,
     isLoading,

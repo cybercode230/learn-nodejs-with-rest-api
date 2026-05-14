@@ -1,0 +1,145 @@
+[
+  {
+    "id": "1",
+    "name": "Modern Apartment with Kigali View",
+    "location": "Kigali City Center, Rwanda",
+    "type": "Entire rental unit",
+    "category": "Apartments",
+    "price": 50,
+    "rating": 4.85,
+    "reviewsCount": 124,
+    "image": "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=1200&q=80",
+    "description": "Experience the heart of Kigali from this stunning modern apartment. Featuring floor-to-ceiling windows with panoramic city views, high-end finishes, and a central location that puts you within walking distance of the best cafes, restaurants, and cultural attractions.",
+    "distance": "2 kilometers away",
+    "dates": "May 15 - 20",
+    "host": {
+      "name": "Jean Paul",
+      "image": "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=200&q=80",
+      "yearsHosting": 5,
+      "isSuperhost": true
+    },
+    "details": {
+      "guests": 2,
+      "bedrooms": 1,
+      "beds": 1,
+      "baths": 1
+    },
+    "amenities": [
+      {"id": "wifi", "name": "Fast Wi-Fi", "icon": "Wifi"},
+      {"id": "kitchen", "name": "Fully equipped kitchen", "icon": "ChefHat"},
+      {"id": "ac", "name": "Air conditioning", "icon": "Wind"},
+      {"id": "view", "name": "City skyline view", "icon": "Mountain"},
+      {"id": "parking", "name": "Free parking", "icon": "Car"},
+      {"id": "workspace", "name": "Dedicated workspace", "icon": "Briefcase"}
+    ],
+    "aiSummary": "Guests consistently praise the breathtaking city views and the host's exceptional hospitality. The location is highly rated for its proximity to Kigali's business hub, though some noted evening traffic noise.",
+    "reviews": [
+      {
+        "id": "r1",
+        "user": "Sarah M.",
+        "rating": 5,
+        "date": "March 2024",
+        "comment": "Absolutely stunning view! The apartment was spotless and Jean Paul was so helpful with local tips."
+      }
+    ],
+    "relatedIds": ["2", "3"]
+  },
+  {
+    "id": "2",
+    "name": "Luxury Villa in Nyarutarama",
+    "location": "Nyarutarama, Kigali",
+    "type": "Private Villa",
+    "category": "Villas",
+    "price": 120,
+    "rating": 4.98,
+    "reviewsCount": 86,
+    "image": "https://images.unsplash.com/photo-1613490493576-7fde63acd811?auto=format&fit=crop&w=1200&q=80",
+    "description": "A spacious luxury villa featuring a private pool and manicured gardens. Perfect for families or groups seeking privacy in Kigali's most exclusive neighborhood.",
+    "distance": "5 kilometers away",
+    "dates": "Jun 1 - 7",
+    "host": {
+      "name": "Alice U.",
+      "image": "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&w=200&q=80",
+      "yearsHosting": 3,
+      "isSuperhost": true
+    },
+    "details": {
+      "guests": 6,
+      "bedrooms": 3,
+      "beds": 4,
+      "baths": 3
+    },
+    "amenities": [
+      {"id": "pool", "name": "Private pool", "icon": "Waves"},
+      {"id": "garden", "name": "Large garden", "icon": "Leaf"},
+      {"id": "security", "name": "24/7 Security", "icon": "ShieldCheck"}
+    ],
+    "aiSummary": "Known for its tranquility and high-end security. Perfect for long stays.",
+    "reviews": [],
+    "relatedIds": ["1", "3"]
+  },
+  {
+    "id": "3",
+    "name": "Cozy Studio near Kimironko Market",
+    "location": "Kimironko, Kigali",
+    "type": "Studio Apartment",
+    "category": "Apartments",
+    "price": 25,
+    "rating": 4.75,
+    "reviewsCount": 42,
+    "image": "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=1200&q=80",
+    "description": "Live like a local in this cozy studio just steps away from the vibrant Kimironko Market. Authentic Kigali experience guaranteed.",
+    "distance": "3 kilometers away",
+    "dates": "Jul 10 - 15",
+    "host": {
+      "name": "Emmanuel B.",
+      "image": "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=200&q=80",
+      "yearsHosting": 2,
+      "isSuperhost": false
+    },
+    "details": {
+      "guests": 2,
+      "bedrooms": 1,
+      "beds": 1,
+      "baths": 1
+    },
+    "amenities": [
+      {"id": "market", "name": "Near market", "icon": "ShoppingBag"}
+    ],
+    "aiSummary": "Budget-friendly and authentic.",
+    "reviews": [],
+    "relatedIds": ["1", "2"]
+  },
+  {
+    "id": "4",
+    "name": "Lakefront Cabin in Rubavu",
+    "location": "Rubavu, Lake Kivu",
+    "type": "Wooden Cabin",
+    "category": "Cabins",
+    "price": 75,
+    "rating": 4.9,
+    "reviewsCount": 30,
+    "image": "https://images.unsplash.com/photo-1499793983690-e29da59ef1c2?auto=format&fit=crop&w=1200&q=80",
+    "description": "Rustic wooden cabin right on the shores of Lake Kivu. Wake up to the sound of waves.",
+    "distance": "150 kilometers away",
+    "dates": "Aug 1 - 5",
+    "host": {
+      "name": "Jean de Dieu",
+      "image": "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=200&q=80",
+      "yearsHosting": 4,
+      "isSuperhost": true
+    },
+    "details": {
+      "guests": 4,
+      "bedrooms": 2,
+      "beds": 2,
+      "baths": 1
+    },
+    "amenities": [
+      {"id": "view", "name": "Lake view", "icon": "Waves"}
+    ],
+    "aiSummary": "Highly recommended for nature lovers.",
+    "reviews": [],
+    "relatedIds": ["1"]
+  }
+]

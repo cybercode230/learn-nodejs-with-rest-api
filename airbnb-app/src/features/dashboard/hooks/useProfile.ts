@@ -62,7 +62,7 @@ export const useProfile = () => {
     setIsLoading(true);
     setError(null);
     const formData = new FormData();
-    formData.append('avatar', file);
+    formData.append('image', file);
 
     try {
       const response = await api.post(ENDPOINTS.USERS.AVATAR(user.id), formData, {

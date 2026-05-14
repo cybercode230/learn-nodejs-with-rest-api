@@ -6,7 +6,7 @@ import { ENDPOINTS } from '../../../api/endpoints';
 import { 
   Star, Share, Heart, Wifi, Car, Home, 
   Bath,Check, ChevronRight, ChevronLeft, Info,
-  User, Award, Minus, Plus, Laptop, Tv, Tent, Utensils,X, Sparkles, Trophy, Copy, Globe, Mail, MessageCircle, Wind
+  User, Award, Minus, Plus, Laptop, Tv, Tent, Utensils,X, Sparkles, Trophy, Copy, Globe, Mail, MessageCircle, Wind, Trash2, Edit3
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button, Card, ImageGalleryModal, AIChatWidget } from '../../../shared/components';
@@ -79,7 +79,7 @@ const BookingModal: React.FC<{
                 <div key={s} className={`h-1 rounded-full transition-all ${step === 'done' || (s === 'summary' || (s === 'message' && step === 'message')) ? 'w-6 bg-airbnb' : 'w-2 bg-gray-100'}`} />
               ))}
             </div>
-            <span className="text-[10px] font-black uppercase text-gray-400 ml-2">
+            <span className="text-[10px] font-black text-gray-400 ml-2">
               {step === 'done' ? 'Completed' : `Step ${currentStepIdx + 1} of 2`}
             </span>
           </div>
@@ -102,11 +102,11 @@ const BookingModal: React.FC<{
                 </div>
                 <div className="grid grid-cols-2 gap-4 py-6 border-y border-gray-100">
                   <div>
-                    <p className="text-[10px] font-black uppercase text-gray-400">Check-in</p>
+                    <p className="text-[10px] font-black text-gray-400">Check-in</p>
                     <p className="font-bold">{dayjs(dates.checkIn).format('MMM D, YYYY')}</p>
                   </div>
                   <div>
-                    <p className="text-[10px] font-black uppercase text-gray-400">Checkout</p>
+                    <p className="text-[10px] font-black text-gray-400">Checkout</p>
                     <p className="font-bold">{dayjs(dates.checkOut).format('MMM D, YYYY')}</p>
                   </div>
                 </div>
@@ -154,7 +154,7 @@ const BookingModal: React.FC<{
                    <p className="text-gray-500 mt-2 text-sm">{conflictData?.message}</p>
                 </div>
                 <div className="p-6 bg-amber-50 rounded-2xl text-left border border-amber-100">
-                   <p className="text-xs font-black uppercase text-amber-600 tracking-widest mb-2">Our AI Suggestion</p>
+                   <p className="text-xs font-black text-amber-600 tracking-widest mb-2">Our AI Suggestion</p>
                    <p className="text-sm text-amber-900 font-medium leading-relaxed">{conflictData?.suggestion}</p>
                 </div>
                 <div className="flex gap-3">
@@ -174,7 +174,7 @@ const BookingModal: React.FC<{
                   <p className="text-gray-500 mt-2">Your booking request for {listing.title} has been sent to the host.</p>
                 </div>
                 <div className="p-6 bg-gray-50 rounded-3xl text-left space-y-2 border border-gray-100">
-                  <p className="text-xs font-bold text-gray-400 uppercase">What happens next?</p>
+                  <p className="text-xs font-bold text-gray-400">What happens next?</p>
                   <p className="text-sm text-gray-600">The host will review your request and confirm the dates. You'll receive an email notification once they take action.</p>
                 </div>
                 <Button className="w-full py-4 rounded-2xl" onClick={onClose}>Done</Button>
@@ -190,7 +190,7 @@ const BookingModal: React.FC<{
 const ListingDetailsPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   
   // -- HOOK DATA --
   const { 
@@ -284,13 +284,25 @@ const ListingDetailsPage: React.FC = () => {
     }
   };
 
+  const handleDelete = async () => {
+    if (!window.confirm('Are you sure you want to delete this listing? This action cannot be undone.')) return;
+    try {
+      await api.delete(ENDPOINTS.LISTINGS.DETAILS(id!));
+      alert('Listing deleted successfully');
+      navigate('/dashboard/listings');
+    } catch (err) {
+      console.error('Delete failed:', err);
+      alert('Failed to delete listing');
+    }
+  };
+
 
 
   if (loading) return (
     <div className="min-h-screen flex items-center justify-center bg-white">
       <div className="flex flex-col items-center gap-4">
         <div className="w-12 h-12 border-4 border-gray-200 border-t-airbnb rounded-full animate-spin" />
-        <p className="text-sm font-bold text-gray-400 uppercase tracking-widest">Loading Stay...</p>
+        <p className="text-sm font-bold text-gray-400 tracking-widest">Loading Stay...</p>
       </div>
     </div>
   );
@@ -353,19 +365,38 @@ const ListingDetailsPage: React.FC = () => {
               </button>
             </div>
           </div>
-          <div className="flex items-center gap-2 text-sm font-semibold">
-            <div className="flex items-center gap-1">
-              <Star size={14} className="fill-gray-900" />
-              <span>{reviews.length > 0 ? reviewStats.overall : 'New'}</span>
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="flex items-center gap-2 text-sm font-semibold">
+              <div className="flex items-center gap-1">
+                <Star size={14} className="fill-gray-900" />
+                <span>{reviews.length > 0 ? reviewStats.overall : 'New'}</span>
+              </div>
+              {reviews.length > 0 && (
+                <>
+                  <span>•</span>
+                  <span className="underline cursor-pointer">{reviews.length} reviews</span>
+                </>
+              )}
+              <span>•</span>
+              <span className="underline cursor-pointer">{listing.location}</span>
             </div>
-            {reviews.length > 0 && (
-              <>
-                <span>•</span>
-                <span className="underline cursor-pointer">{reviews.length} reviews</span>
-              </>
+            
+            {(isAuthenticated && (user?.role === 'ADMIN' || user?.id === listing.host?.id)) && (
+              <div className="flex gap-2">
+                <button 
+                  onClick={() => navigate(`/dashboard/listings`)}
+                  className="flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-lg text-sm font-bold hover:bg-gray-50 transition-all"
+                >
+                  <Edit3 size={14} /> Edit Listing
+                </button>
+                <button 
+                  onClick={handleDelete}
+                  className="flex items-center gap-2 px-4 py-2 bg-rose-50 text-rose-600 rounded-lg text-sm font-bold hover:bg-rose-100 transition-all"
+                >
+                  <Trash2 size={14} /> Delete
+                </button>
+              </div>
             )}
-            <span>•</span>
-            <span className="underline cursor-pointer">{listing.location}</span>
           </div>
         </div>
 
@@ -445,7 +476,7 @@ const ListingDetailsPage: React.FC = () => {
                       </div>
                       <div>
                         <h2 className="text-2xl font-black text-gray-900 tracking-tight">Guest Insights</h2>
-                        <p className="text-xs font-black uppercase text-airbnb/60 tracking-widest mt-0.5">AI-Powered Review Summary</p>
+                        <p className="text-xs font-black text-airbnb/60 tracking-widest mt-0.5">AI-Powered Review Summary</p>
                       </div>
                     </div>
 
@@ -483,7 +514,7 @@ const ListingDetailsPage: React.FC = () => {
 
                         <div className="space-y-8">
                           <div>
-                            <h4 className="text-[10px] font-black uppercase text-gray-400 tracking-[0.2em] mb-4">What guests loved</h4>
+                            <h4 className="text-[10px] font-black text-gray-400 tracking-[0.2em] mb-4">What guests loved</h4>
                             <div className="flex flex-wrap gap-2">
                               {aiSummary.positives?.map((p: string, i: number) => (
                                 <div key={i} className="flex items-center gap-2 bg-white px-4 py-2 rounded-full border border-gray-100 shadow-sm text-sm font-bold text-gray-700">
@@ -498,7 +529,7 @@ const ListingDetailsPage: React.FC = () => {
 
                           {aiSummary.negatives && aiSummary.negatives.length > 0 && (
                             <div>
-                              <h4 className="text-[10px] font-black uppercase text-gray-400 tracking-[0.2em] mb-4">Things to note</h4>
+                              <h4 className="text-[10px] font-black text-gray-400 tracking-[0.2em] mb-4">Things to note</h4>
                               <div className="flex flex-wrap gap-2">
                                 {aiSummary.negatives.map((n: string, i: number) => (
                                   <div key={i} className="flex items-center gap-2 bg-white/50 px-4 py-2 rounded-full border border-gray-100 text-sm font-medium text-gray-600">
@@ -588,9 +619,9 @@ const ListingDetailsPage: React.FC = () => {
                   
                   <div className="flex-1 space-y-6">
                     <div className="grid grid-cols-3 gap-4 text-center md:text-left">
-                      <div><p className="text-xl font-bold">286</p><p className="text-[10px] font-black uppercase text-gray-400">Reviews</p></div>
-                      <div><p className="text-xl font-bold">4.8</p><p className="text-[10px] font-black uppercase text-gray-400">Rating</p></div>
-                      <div><p className="text-xl font-bold">5</p><p className="text-[10px] font-black uppercase text-gray-400">Years hosting</p></div>
+                      <div><p className="text-xl font-bold">286</p><p className="text-[10px] font-black text-gray-400">Reviews</p></div>
+                      <div><p className="text-xl font-bold">4.8</p><p className="text-[10px] font-black text-gray-400">Rating</p></div>
+                      <div><p className="text-xl font-bold">5</p><p className="text-[10px] font-black text-gray-400">Years hosting</p></div>
                     </div>
                     
                     <p className="text-gray-700 leading-relaxed text-sm">
@@ -629,27 +660,36 @@ const ListingDetailsPage: React.FC = () => {
                 <div className="border border-gray-400 rounded-xl overflow-hidden mb-4">
                    <div className="grid grid-cols-2 divide-x divide-gray-400 border-b border-gray-400">
                       <div className="p-3 text-left">
-                        <p className="text-[9px] font-black uppercase">Check-in</p>
+                        <p className="text-[9px] font-black">Check-in</p>
                         <input 
                           type="date" 
                           className="text-xs bg-transparent border-none outline-none w-full p-0 cursor-pointer"
                           value={checkIn ? dayjs(checkIn).format('YYYY-MM-DD') : ''}
-                          onChange={(e) => setCheckIn(new Date(e.target.value))}
+                          min={dayjs().format('YYYY-MM-DD')}
+                          onChange={(e) => {
+                            const newCheckIn = new Date(e.target.value);
+                            setCheckIn(newCheckIn);
+                            // Ensure checkout is at least 1 day after check-in
+                            if (checkOut && dayjs(checkOut).isBefore(dayjs(newCheckIn).add(1, 'day'))) {
+                              setCheckOut(dayjs(newCheckIn).add(1, 'day').toDate());
+                            }
+                          }}
                         />
                       </div>
                       <div className="p-3 text-left">
-                        <p className="text-[9px] font-black uppercase">Checkout</p>
+                        <p className="text-[9px] font-black">Checkout</p>
                         <input 
                           type="date" 
                           className="text-xs bg-transparent border-none outline-none w-full p-0 cursor-pointer"
                           value={checkOut ? dayjs(checkOut).format('YYYY-MM-DD') : ''}
+                          min={checkIn ? dayjs(checkIn).add(1, 'day').format('YYYY-MM-DD') : dayjs().add(1, 'day').format('YYYY-MM-DD')}
                           onChange={(e) => setCheckOut(new Date(e.target.value))}
                         />
                       </div>
                    </div>
                    <div className="p-3 flex justify-between items-center bg-white">
                       <div>
-                        <p className="text-[9px] font-black uppercase">Guests</p>
+                        <p className="text-[9px] font-black">Guests</p>
                         <p className="text-xs">{totalGuests} guests</p>
                         {totalGuests >= listing.guests && (
                           <p className="text-[9px] text-airbnb font-bold mt-0.5">Max capacity reached</p>

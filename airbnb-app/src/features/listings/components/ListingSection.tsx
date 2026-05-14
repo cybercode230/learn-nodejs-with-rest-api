@@ -145,7 +145,7 @@ const ListingSection: React.FC<ListingSectionProps> = ({
 
   if (variant === 'grid') {
     return (
-      <div className="py-8 md:py-12">
+      <div className="py-6 md:py-8">
         <div className="flex items-center justify-between mb-10">
           <div>
             <h2 className="text-[28px] font-black text-gray-900 tracking-tighter">{title}</h2>
@@ -164,11 +164,11 @@ const ListingSection: React.FC<ListingSectionProps> = ({
 
   if (variant === 'discovery') {
     return (
-      <div className="py-12 bg-gray-50/50 -mx-4 px-4 sm:-mx-8 sm:px-8 md:-mx-10 md:px-10 lg:-mx-20 lg:px-20 overflow-hidden">
+      <div className="py-8 bg-gray-50/50 -mx-4 px-4 sm:-mx-8 sm:px-8 md:-mx-10 md:px-10 lg:-mx-20 lg:px-20 overflow-hidden">
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h2 className="text-[26px] font-black text-gray-900 tracking-tighter">Curated Collections</h2>
-            <p className="text-gray-400 font-bold text-[10px] uppercase tracking-[0.2em] mt-1">Handpicked for your next adventure</p>
+            <h2 className="text-[26px] font-black text-gray-900">Curated Collections</h2>
+            <p className="text-gray-400 font-bold text-[10px]  mt-1">Handpicked for your next adventure</p>
           </div>
           <div className="flex gap-2">
             <button onClick={() => scroll('left')} className="w-10 h-10 rounded-full border border-gray-200 bg-white flex items-center justify-center hover:bg-gray-50 transition-all shadow-sm active:scale-90"><ChevronLeft size={18}/></button>
@@ -195,7 +195,7 @@ const ListingSection: React.FC<ListingSectionProps> = ({
   }
 
   return (
-    <div className="py-8 relative group/section">
+    <div className="py-6 relative group/section">
       <div className="flex items-center justify-between mb-8 px-1">
         <div className="flex items-center gap-4">
           <h2 className="text-3xl font-black text-gray-900 tracking-tight">{title}</h2>
@@ -225,7 +225,7 @@ const ListingSection: React.FC<ListingSectionProps> = ({
           ) : (
             <>
               {displayListings.map((listing) => (
-                <div key={listing.id} className="min-w-[240px] sm:min-w-[280px] max-w-[300px] snap-start">
+                <div key={listing.id} className="min-w-[200px] sm:min-w-[240px] max-w-[260px] snap-start">
                   <ListingCard listing={listing} />
                 </div>
               ))}
@@ -236,7 +236,7 @@ const ListingSection: React.FC<ListingSectionProps> = ({
                       <ChevronRight size={24} className="text-airbnb" />
                     </div>
                     <span className="font-black text-base text-gray-900">Show all</span>
-                    <span className="text-xs text-gray-400 font-bold uppercase tracking-widest mt-1">Stays</span>
+                    <span className="text-xs text-gray-400 font-bold tracking-widest mt-1">Stays</span>
                   </div>
                 </div>
               )}

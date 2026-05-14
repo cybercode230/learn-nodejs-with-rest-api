@@ -5,7 +5,7 @@ import {
   Search, AlertCircle, CheckSquare, Square,
   MapPin, Star, Upload, X,
   Users, Wifi, Coffee, ParkingCircle, Wind, Waves, Tv, Utensils,
-  Building2, CalendarCheck, Download, ChevronLeft, ChevronRight
+  Building2, CalendarCheck, Download, ChevronLeft, ChevronRight, Sparkles
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useListings } from '../../../contexts/ListingContext';
@@ -123,7 +123,25 @@ const EditListingModal: React.FC<{
   const [newAmenity, setNewAmenity] = useState('');
   const [uploading, setUploading] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [isGeneratingAi, setIsGeneratingAi] = useState(false);
+  const [aiTone, setAiTone] = useState<'professional' | 'casual' | 'enthusiastic'>('professional');
+  
+  const { generateDescription } = useListingsManagement();
   const photos = listing.photos || [];
+
+  const handleAiGenerate = async () => {
+    setIsGeneratingAi(true);
+    try {
+      const result = await generateDescription(listing.id, aiTone);
+      if (result.success) {
+        setFormData({ ...formData, description: result.description });
+      }
+    } catch (err) {
+      console.error('AI generation failed');
+    } finally {
+      setIsGeneratingAi(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -221,7 +239,29 @@ const EditListingModal: React.FC<{
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-sm font-medium text-gray-700">Description</label>
+                  <div className="flex items-center gap-2">
+                    <select 
+                      value={aiTone} 
+                      onChange={(e) => setAiTone(e.target.value as any)}
+                      className="text-[10px] bg-white border border-gray-200 rounded px-1 py-0.5 focus:outline-none"
+                    >
+                      <option value="professional">Professional</option>
+                      <option value="casual">Casual</option>
+                      <option value="enthusiastic">Enthusiastic</option>
+                    </select>
+                    <button
+                      type="button"
+                      onClick={handleAiGenerate}
+                      disabled={isGeneratingAi}
+                      className="flex items-center gap-1 text-[10px] font-bold text-airbnb hover:text-airbnb-dark disabled:opacity-50"
+                    >
+                      <Sparkles size={10} className="fill-airbnb" />
+                      {isGeneratingAi ? 'Regenerate with AI' : 'AI Rewrite'}
+                    </button>
+                  </div>
+                </div>
                 <textarea
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
@@ -353,7 +393,7 @@ const EditListingModal: React.FC<{
 const DashboardListings: React.FC = () => {
   const { user } = useAuth();
   const { refreshListings } = useListings();
-  const { updateListing, deleteListing, uploadPhoto, deletePhoto, isLoading: isActionLoading } = useListingsManagement();
+  const { updateListing, deleteListing, uploadPhotos, deletePhoto, isLoading: isActionLoading } = useListingsManagement();
   
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedListings, setSelectedListings] = useState<Set<string>>(new Set());
@@ -367,8 +407,9 @@ const DashboardListings: React.FC = () => {
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const [, setTotalItems] = useState(0);
+  const [totalItems, setTotalItems] = useState(0);
   const [itemsPerPage] = useState(10);
+  const [viewScope, setViewScope] = useState<'me' | 'all'>(user?.role === 'ADMIN' ? 'all' : 'me');
 
   // Fetch listings with pagination
   const fetchListings = useCallback(async (page: number, search?: string) => {
@@ -384,15 +425,22 @@ const DashboardListings: React.FC = () => {
         params.search = search;
       }
       
-      // Use the user-specific listings endpoint
-      const response = await api.get(ENDPOINTS.USERS.LISTINGS(user.id), { params });
+      const endpoint = viewScope === 'all' && user?.role === 'ADMIN' 
+        ? ENDPOINTS.LISTINGS.BASE 
+        : ENDPOINTS.USERS.LISTINGS(user.id);
+
+      const response = await api.get(endpoint, { params });
       
       // Backend returns different structure for /users/:id/listings than global search
-      // Assuming it returns the array directly or in .data
       const listingsData = response.data.data || response.data;
       const meta = response.data.meta || { total: listingsData.length };
       
-      setListings(listingsData);
+      // Sort by newest first (id descending usually works if auto-increment, otherwise use createdAt)
+      const sortedListings = [...listingsData].sort((a, b) => 
+        new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()
+      );
+      
+      setListings(sortedListings);
       setTotalPages(Math.ceil(meta.total / itemsPerPage));
       setTotalItems(meta.total);
     } catch (error) {
@@ -400,19 +448,23 @@ const DashboardListings: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [user?.id, itemsPerPage]);
+  }, [user?.id, itemsPerPage, viewScope]);
 
-  // Fetch listings on page change or search
+  // Fetch listings on page change, search, or view scope change
   useEffect(() => {
     fetchListings(currentPage, searchTerm);
-  }, [currentPage, searchTerm, fetchListings]);
+  }, [currentPage, searchTerm, viewScope, fetchListings]);
 
   // Reset to page 1 when search changes
   useEffect(() => {
     setCurrentPage(1);
   }, [searchTerm]);
 
-  const filteredListings = listings;
+  // Safety slice for frontend pagination if backend doesn't handle it
+  // If we have more than itemsPerPage, it means the backend returned the full list
+  const filteredListings = listings.length > itemsPerPage 
+    ? listings.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage) 
+    : listings;
 
   // Calculate stats from all host listings (not just current page)
   const [allListingsStats, setAllListingsStats] = useState({ total: 0, avgPrice: 0, totalBookings: 0, totalReviews: 0 });
@@ -423,6 +475,7 @@ const DashboardListings: React.FC = () => {
       try {
         const response = await api.get(ENDPOINTS.USERS.LISTINGS(user.id), { params: { limit: 100 } });
         const allListings = response.data.data || response.data;
+        const total = response.data.meta?.total || (Array.isArray(allListings) ? allListings.length : 0);
         
         const avgPrice = allListings.length > 0 
           ? Math.round(allListings.reduce((sum: number, l: Listing) => sum + (l.pricePerNight || 0), 0) / allListings.length)
@@ -431,7 +484,7 @@ const DashboardListings: React.FC = () => {
         const totalReviews = allListings.reduce((sum: number, l: Listing) => sum + (l._count?.reviews || 0), 0);
         
         setAllListingsStats({
-          total: allListings.length,
+          total,
           avgPrice,
           totalBookings,
           totalReviews,
@@ -489,7 +542,7 @@ const DashboardListings: React.FC = () => {
 
   const handleUploadPhoto = async (listingId: string, file: File) => {
     setIsUploading(true);
-    const result = await uploadPhoto(listingId, file);
+    const result = await uploadPhotos(listingId, [file]);
     if (result.success) {
       await fetchListings(currentPage, searchTerm);
     }
@@ -542,6 +595,24 @@ const DashboardListings: React.FC = () => {
         </div>
       </div>
 
+      {/* Admin View Toggle */}
+      {user?.role === 'ADMIN' && (
+        <div className="flex bg-gray-100 p-1 rounded-xl w-fit">
+          <button
+            onClick={() => setViewScope('me')}
+            className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${viewScope === 'me' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500'}`}
+          >
+            My Listings
+          </button>
+          <button
+            onClick={() => setViewScope('all')}
+            className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${viewScope === 'all' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500'}`}
+          >
+            All Platform Listings
+          </button>
+        </div>
+      )}
+
       {/* Stats Summary */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <div className="bg-white rounded-lg p-3 border border-gray-100">
@@ -593,15 +664,20 @@ const DashboardListings: React.FC = () => {
       </AnimatePresence>
 
       {/* Search */}
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
-        <input
-          type="text"
-          placeholder="Search by title or location..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full pl-9 pr-3 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-airbnb focus:ring-1 focus:ring-airbnb"
-        />
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+          <input
+            type="text"
+            placeholder="Search by title or location..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-9 pr-3 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-airbnb focus:ring-1 focus:ring-airbnb"
+          />
+        </div>
+        <div className="text-xs text-gray-500 font-medium">
+          Found {totalItems} listing{totalItems !== 1 ? 's' : ''}
+        </div>
       </div>
 
       {/* Table */}
