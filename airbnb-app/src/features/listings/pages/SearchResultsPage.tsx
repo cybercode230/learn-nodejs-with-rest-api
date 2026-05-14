@@ -1,9 +1,9 @@
-import React, { useMemo, useState } from 'react';
-import { List } from 'react-window';
+import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useListings } from '../../../contexts/ListingContext';
 import ListingCard from '../components/ListingCard';
 import MapSearch from '../../search/components/MapSearch';
-import { Search, SlidersHorizontal, ChevronDown } from 'lucide-react';
+import { Search, SlidersHorizontal, ChevronDown, Sparkles } from 'lucide-react';
 import { Button } from '../../../shared/components';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -31,34 +31,17 @@ const FilterPill: React.FC<{
 );
 
 const SearchResultsPage: React.FC = () => {
-  const { filteredListings, loading, filters, searchListings } = useListings();
+  const { filteredListings, loading, filters, searchListings, aiSearchListings, aiMessage } = useListings();
+  const [searchParams] = useSearchParams();
   const [activeFilter, setActiveFilter] = useState<string | null>(null);
 
-  // Create pairs for virtualization (2 columns)
-  const rows = useMemo(() => {
-    const res = [];
-    for (let i = 0; i < filteredListings.length; i += 2) {
-      res.push(filteredListings.slice(i, i + 2));
+  // Sync URL query with AI search
+  useEffect(() => {
+    const query = searchParams.get('q');
+    if (query) {
+      aiSearchListings(query);
     }
-    return res;
-  }, [filteredListings]);
-
-
-  const RowComponent = ({ index, style }: any) => {
-    const pair = rows[index];
-    if (!pair) return null;
-    
-    return (
-      <div style={style} className="flex gap-8 px-8 py-6">
-        {pair.map((listing: any) => (
-          <div key={listing.id} className="flex-1 min-w-0">
-            <ListingCard listing={listing} variant="search" />
-          </div>
-        ))}
-        {pair.length === 1 && <div className="flex-1" />}
-      </div>
-    );
-  };
+  }, [searchParams, aiSearchListings]);
 
   return (
     <div className="flex flex-col h-screen bg-white">
@@ -182,9 +165,27 @@ const SearchResultsPage: React.FC = () => {
                 Over {filteredListings.length} stays found
               </h1>
             </div>
-            <h2 className="text-2xl font-black text-gray-900 tracking-tight">
-              Stays in {filters.location || 'selected area'}
-            </h2>
+            
+            <div className="space-y-4">
+              <h2 className="text-2xl font-black text-gray-900 tracking-tight">
+                Stays in {filters.location || 'selected area'}
+              </h2>
+              
+              {aiMessage && (
+                <motion.div 
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  className="p-4 bg-airbnb/5 border border-airbnb/10 rounded-2xl flex gap-3"
+                >
+                  <div className="text-airbnb mt-0.5">
+                    <Sparkles size={18} className="fill-airbnb/20" />
+                  </div>
+                  <p className="text-sm text-gray-700 font-medium leading-relaxed italic">
+                    {aiMessage}
+                  </p>
+                </motion.div>
+              )}
+            </div>
           </div>
 
           <div className="flex-1 relative overflow-hidden">
@@ -212,15 +213,17 @@ const SearchResultsPage: React.FC = () => {
                 <motion.div 
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
-                  className="h-full w-full"
+                  className="h-full w-full overflow-y-auto px-8 py-8 scrollbar-hide"
                 >
-                  <List
-                    rowCount={rows.length}
-                    rowHeight={420} // Increased to fit search variant card details
-                    rowProps={rows}
-                    rowComponent={RowComponent}
-                    className="scrollbar-hide"
-                  />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    {filteredListings.map((listing) => (
+                      <ListingCard key={listing.id} listing={listing} />
+                    ))}
+                  </div>
+                  
+                  <div className="py-20 text-center border-t border-gray-100 mt-20">
+                     <p className="text-gray-400 text-sm font-medium">You've reached the end of the results</p>
+                  </div>
                 </motion.div>
               ) : (
                 <motion.div 
@@ -231,16 +234,18 @@ const SearchResultsPage: React.FC = () => {
                   <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mb-6">
                     <Search size={32} className="text-gray-200" />
                   </div>
-                  <h3 className="text-xl font-bold text-gray-900">No exact matches</h3>
+                  <h3 className="text-xl font-bold text-gray-900">{aiMessage ? 'AI Assistant' : 'No exact matches'}</h3>
                   <p className="text-gray-500 max-w-sm mt-2">
-                    Try changing or removing some of your filters or adjusting your search area.
+                    {aiMessage || 'Try changing or removing some of your filters or adjusting your search area.'}
                   </p>
                   <Button 
                     variant="outline" 
                     className="mt-8 rounded-xl px-8"
-                    onClick={() => searchListings({ location: '' })}
+                    onClick={() => {
+                      searchListings({ location: '' });
+                    }}
                   >
-                    Clear all filters
+                    {aiMessage ? 'Try normal search' : 'Clear all filters'}
                   </Button>
                 </motion.div>
               )}

@@ -1,10 +1,14 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import {
   TrendingUp, Calendar, DollarSign,
   Star,
   Download, RefreshCw,
   Building2,
+  Users,
+  ShieldCheck,
+  UserX,
+  LogOut
 } from 'lucide-react';
 import { AreaChart, Area, PieChart, Pie,
   Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
@@ -12,6 +16,8 @@ import { AreaChart, Area, PieChart, Pie,
 import { useAuth } from '../../../contexts/AuthContext';
 import { useListings } from '../../../contexts/ListingContext';
 import { useBookings } from '../hooks/useBookings';
+import api from '../../../api/axios';
+import { ENDPOINTS } from '../../../api/endpoints';
 
 // Custom Tooltip
 const CustomTooltip = ({ active, payload, label, valuePrefix = '$' }: any) => {
@@ -38,6 +44,8 @@ const DashboardAnalytics: React.FC = () => {
   const [timeRange, setTimeRange] = useState<'week' | 'month' | 'year'>('month');
   const [selectedMetric, setSelectedMetric] = useState<'revenue' | 'bookings'>('revenue');
   const [isExporting, setIsExporting] = useState(false);
+  const [adminStats, setAdminStats] = useState<any>(null);
+  const [loadingAdminStats, setLoadingAdminStats] = useState(false);
 
   const isAdmin = user?.role === 'ADMIN';
   
@@ -47,11 +55,27 @@ const DashboardAnalytics: React.FC = () => {
   }, [listings, isAdmin, user?.id]);
 
   const relevantBookings = useMemo(() => {
-    // If admin, use all bookings. If host, use only bookings for their listings.
     if (isAdmin) return bookings;
     const myListingIds = new Set(relevantListings.map(l => l.id));
     return bookings.filter(b => myListingIds.has(b.listingId));
   }, [bookings, relevantListings, isAdmin]);
+
+  useEffect(() => {
+    if (isAdmin) {
+      const fetchAdminStats = async () => {
+        setLoadingAdminStats(true);
+        try {
+          const res = await api.get(ENDPOINTS.USERS.STATS);
+          setAdminStats(res.data);
+        } catch (err) {
+          console.error("Failed to fetch admin stats:", err);
+        } finally {
+          setLoadingAdminStats(false);
+        }
+      };
+      fetchAdminStats();
+    }
+  }, [isAdmin]);
 
   // Main analytics calculation engine
   const analyticsData = useMemo(() => {
@@ -69,7 +93,6 @@ const DashboardAnalytics: React.FC = () => {
     const trendMap = new Map<string, { label: string; revenue: number; bookings: number }>();
     
     if (timeRange === 'week') {
-      // Days of week
       for (let i = 6; i >= 0; i--) {
         const d = new Date();
         d.setDate(now.getDate() - i);
@@ -85,7 +108,6 @@ const DashboardAnalytics: React.FC = () => {
         }
       });
     } else {
-      // Months
       months.forEach(m => trendMap.set(m, { label: m, revenue: 0, bookings: 0 }));
       filteredBookings.forEach(b => {
         const label = months[new Date(b.createdAt).getMonth()];
@@ -200,7 +222,7 @@ const DashboardAnalytics: React.FC = () => {
     setIsExporting(false);
   };
 
-  const isLoading = listingsLoading || bookingsLoading;
+  const isLoading = listingsLoading || bookingsLoading || loadingAdminStats;
 
   if (isLoading) {
     return (
@@ -280,6 +302,39 @@ const DashboardAnalytics: React.FC = () => {
           <p className="text-2xl font-black text-gray-900">{analyticsData.avgRating}</p>
         </motion.div>
       </div>
+
+      {isAdmin && adminStats && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+           <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm flex items-center gap-4">
+              <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center"><Users size={24} /></div>
+              <div>
+                <p className="text-[10px] font-black uppercase text-gray-400 tracking-widest">Total Users</p>
+                <p className="text-xl font-black text-gray-900">{adminStats.totalUsers}</p>
+              </div>
+           </div>
+           <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm flex items-center gap-4">
+              <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center"><ShieldCheck size={24} /></div>
+              <div>
+                <p className="text-[10px] font-black uppercase text-gray-400 tracking-widest">Active Now</p>
+                <p className="text-xl font-black text-gray-900">{adminStats.byStatus?.find((s: any) => s.status === 'ACTIVE')?._count?.status || 0}</p>
+              </div>
+           </div>
+           <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm flex items-center gap-4">
+              <div className="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center"><LogOut size={24} /></div>
+              <div>
+                <p className="text-[10px] font-black uppercase text-gray-400 tracking-widest">Deactivated</p>
+                <p className="text-xl font-black text-gray-900">{adminStats.byStatus?.find((s: any) => s.status === 'DEACTIVATED')?._count?.status || 0}</p>
+              </div>
+           </div>
+           <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm flex items-center gap-4">
+              <div className="w-12 h-12 rounded-2xl bg-red-50 text-red-600 flex items-center justify-center"><UserX size={24} /></div>
+              <div>
+                <p className="text-[10px] font-black uppercase text-gray-400 tracking-widest">Suspended</p>
+                <p className="text-xl font-black text-gray-900">{adminStats.byStatus?.find((s: any) => s.status === 'SUSPENDED')?._count?.status || 0}</p>
+              </div>
+           </div>
+        </div>
+      )}
 
       {analyticsData.totalBookings > 0 ? (
         <div className="grid lg:grid-cols-2 gap-6">

@@ -27,7 +27,7 @@ const AISearch: React.FC<AISearchProps> = ({ onClose }) => {
     setIsThinking(true);
     try {
       await aiSearchListings(prompt);
-      navigate('/search-results');
+      navigate(`/search-results?q=${encodeURIComponent(prompt)}`);
       if (onClose) onClose();
     } catch (error) {
       console.error('AI search failed:', error);

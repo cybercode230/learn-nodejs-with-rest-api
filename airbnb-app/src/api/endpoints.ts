@@ -12,6 +12,7 @@ export const ENDPOINTS = {
     VALIDATE_RESET_TOKEN: (token: string) => `/auth/validate-reset-token/${token}`,
     RESET_PASSWORD: (token: string) => `/auth/reset-password/${token}`,
     CHANGE_PASSWORD: '/auth/change-password',
+    LOGOUT: '/auth/logout',
   },
   LISTINGS: {
     BASE: '/listings',
@@ -37,6 +38,7 @@ export const ENDPOINTS = {
   },
   USERS: {
     BASE: '/users',
+    STATS: '/users/stats',
     PROFILE: (id: string) => `/users/${id}`,
     BY_ID: (id: string) => `/users/${id}`,
     AVATAR: (id: string) => `/users/${id}/avatar`,

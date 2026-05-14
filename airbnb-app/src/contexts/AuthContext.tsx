@@ -70,11 +70,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.setItem('user', encryptedUser);
   };
 
-  const logout = () => {
-    setToken(null);
-    setUser(null);
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
+  const logout = async () => {
+    try {
+      if (token) {
+        await api.post(ENDPOINTS.AUTH.LOGOUT);
+      }
+    } catch (err) {
+      console.warn('Logout sync failed:', err);
+    } finally {
+      setToken(null);
+      setUser(null);
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+    }
   };
 
   return (

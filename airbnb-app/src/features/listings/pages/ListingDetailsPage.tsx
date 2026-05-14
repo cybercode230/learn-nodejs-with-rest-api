@@ -24,11 +24,10 @@ const BookingModal: React.FC<{
   total: number;
 }> = ({ isOpen, onClose, listing, dates, total }) => {
   const navigate = useNavigate();
-  const [step, setStep] = useState<'summary' | 'message' | 'done'>('summary');
+  const [step, setStep] = useState<'summary' | 'message' | 'done' | 'conflict'>('summary');
   const [message, setMessage] = useState('');
   const [isBooking, setIsBooking] = useState(false);
-
-  if (!isOpen) return null;
+  const [conflictData, setConflictData] = useState<{ message: string, suggestion: string } | null>(null);
 
   const handleBooking = async () => {
     setIsBooking(true);
@@ -45,6 +44,9 @@ const BookingModal: React.FC<{
       if (err.response?.status === 401) {
         alert('Your session has expired. Please log in again.');
         navigate('/login');
+      } else if (err.response?.status === 409) {
+        setStep('conflict');
+        setConflictData(err.response.data);
       } else {
         alert(err.response?.data?.message || 'Failed to send booking request. Please try again.');
       }
@@ -52,6 +54,8 @@ const BookingModal: React.FC<{
       setIsBooking(false);
     }
   };
+
+  if (!isOpen) return null;
 
   const steps = ['summary', 'message', 'done'];
   const currentStepIdx = steps.indexOf(step);
@@ -140,6 +144,26 @@ const BookingModal: React.FC<{
               </motion.div>
             )}
 
+            {step === 'conflict' && (
+              <motion.div key="conflict" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="text-center py-6 space-y-6">
+                <div className="w-20 h-20 bg-amber-50 rounded-full flex items-center justify-center text-amber-500 mx-auto">
+                   <Info size={40} />
+                </div>
+                <div>
+                   <h2 className="text-2xl font-bold text-gray-900">Dates are unavailable</h2>
+                   <p className="text-gray-500 mt-2 text-sm">{conflictData?.message}</p>
+                </div>
+                <div className="p-6 bg-amber-50 rounded-2xl text-left border border-amber-100">
+                   <p className="text-xs font-black uppercase text-amber-600 tracking-widest mb-2">Our AI Suggestion</p>
+                   <p className="text-sm text-amber-900 font-medium leading-relaxed">{conflictData?.suggestion}</p>
+                </div>
+                <div className="flex gap-3">
+                   <Button variant="outline" className="flex-1 py-4" onClick={() => setStep('summary')}>Change Dates</Button>
+                   <Button className="flex-1 py-4" onClick={onClose}>Close</Button>
+                </div>
+              </motion.div>
+            )}
+
             {step === 'done' && (
               <motion.div key="done" initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="text-center py-10 space-y-6">
                 <div className="w-24 h-24 bg-emerald-500 rounded-full flex items-center justify-center text-white mx-auto shadow-2xl shadow-emerald-500/30">
@@ -194,8 +218,25 @@ const ListingDetailsPage: React.FC = () => {
   const [showMoreDesc, setShowMoreDesc] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
+  const [aiSummary, setAiSummary] = useState<any>(null);
+  const [loadingAiSummary, setLoadingAiSummary] = useState(false);
 
   useEffect(() => {
+    const fetchAiSummary = async () => {
+      if (!reviews || reviews.length === 0) return;
+      
+      setLoadingAiSummary(true);
+      try {
+        const res = await api.get(ENDPOINTS.AI.REVIEW_SUMMARY(id!));
+        setAiSummary(res.data);
+      } catch (err) {
+        console.error("Failed to fetch AI summary:", err);
+      } finally {
+        setLoadingAiSummary(false);
+      }
+    };
+    fetchAiSummary();
+
     const saved = JSON.parse(localStorage.getItem('saved_listings') || '[]');
     setIsSaved(saved.includes(id));
   }, [id]);
@@ -390,6 +431,97 @@ const ListingDetailsPage: React.FC = () => {
                 </button>
               )}
             </div>
+
+            {/* SECTION AI SUMMARY: PREMUIM LOOK */}
+            {aiSummary && (
+              <div className="py-12 border-b border-gray-100">
+                <div className="bg-gradient-to-br from-airbnb/5 to-purple-50 rounded-[2.5rem] p-10 border border-airbnb/10 relative overflow-hidden group">
+                  <div className="absolute -top-12 -right-12 w-48 h-48 bg-white/40 rounded-full blur-3xl group-hover:scale-110 transition-transform duration-1000" />
+                  
+                  <div className="relative z-10">
+                    <div className="flex items-center gap-3 mb-8">
+                      <div className="w-12 h-12 rounded-2xl bg-white shadow-sm flex items-center justify-center text-airbnb">
+                        <Sparkles size={24} className="fill-current" />
+                      </div>
+                      <div>
+                        <h2 className="text-2xl font-black text-gray-900 tracking-tight">Guest Insights</h2>
+                        <p className="text-xs font-black uppercase text-airbnb/60 tracking-widest mt-0.5">AI-Powered Review Summary</p>
+                      </div>
+                    </div>
+
+                    {loadingAiSummary ? (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-12 animate-pulse">
+                        <div className="space-y-6">
+                          <div className="h-32 bg-white/40 rounded-3xl" />
+                          <div className="h-8 w-48 bg-gray-100 rounded-full" />
+                        </div>
+                        <div className="space-y-8">
+                          <div className="h-24 bg-white/40 rounded-3xl" />
+                          <div className="h-24 bg-white/40 rounded-3xl" />
+                        </div>
+                      </div>
+                    ) : aiSummary ? (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+                        <div className="space-y-6">
+                          <div className="p-6 bg-white/60 backdrop-blur-md rounded-3xl border border-white/40 shadow-sm">
+                            <p className="text-lg font-medium text-gray-800 leading-relaxed italic">
+                              "{aiSummary.summary}"
+                            </p>
+                          </div>
+                          
+                          <div className="flex items-center gap-4 px-2">
+                             <div className="flex -space-x-2">
+                                {[1,2,3].map(i => (
+                                  <div key={i} className="w-8 h-8 rounded-full border-2 border-white bg-gray-100 overflow-hidden">
+                                    <img src={`https://i.pravatar.cc/100?u=${i+10}`} alt="" />
+                                  </div>
+                                ))}
+                             </div>
+                             <p className="text-xs font-bold text-gray-500">Based on {aiSummary.totalReviews} guest reviews</p>
+                          </div>
+                        </div>
+
+                        <div className="space-y-8">
+                          <div>
+                            <h4 className="text-[10px] font-black uppercase text-gray-400 tracking-[0.2em] mb-4">What guests loved</h4>
+                            <div className="flex flex-wrap gap-2">
+                              {aiSummary.positives?.map((p: string, i: number) => (
+                                <div key={i} className="flex items-center gap-2 bg-white px-4 py-2 rounded-full border border-gray-100 shadow-sm text-sm font-bold text-gray-700">
+                                  <div className="w-5 h-5 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600">
+                                    <Check size={12} strokeWidth={4} />
+                                  </div>
+                                  {p}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+
+                          {aiSummary.negatives && aiSummary.negatives.length > 0 && (
+                            <div>
+                              <h4 className="text-[10px] font-black uppercase text-gray-400 tracking-[0.2em] mb-4">Things to note</h4>
+                              <div className="flex flex-wrap gap-2">
+                                {aiSummary.negatives.map((n: string, i: number) => (
+                                  <div key={i} className="flex items-center gap-2 bg-white/50 px-4 py-2 rounded-full border border-gray-100 text-sm font-medium text-gray-600">
+                                    <div className="w-5 h-5 rounded-full bg-amber-100 flex items-center justify-center text-amber-600">
+                                      <Info size={12} strokeWidth={3} />
+                                    </div>
+                                    {n}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="py-12 text-center bg-white/40 rounded-3xl border border-dashed border-gray-200">
+                        <p className="text-gray-400 font-medium">No review insights available yet.</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* SECTION 6: REVIEWS (SIMPLIFIED) */}
             <div className="py-12 border-b border-gray-100">

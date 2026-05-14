@@ -24,6 +24,7 @@ interface ListingContextType {
   aiSearchListings: (query: string) => Promise<void>;
   searchHistory: Filters[];
   clearSearchHistory: () => void;
+  aiMessage: string | null;
 }
 
 const ListingContext = createContext<ListingContextType | undefined>(undefined);
@@ -41,6 +42,7 @@ export const ListingProvider: React.FC<{ children: React.ReactNode }> = ({ child
     guests: '1',
   });
   const [searchHistory, setSearchHistory] = useState<Filters[]>([]);
+  const [aiMessage, setAiMessage] = useState<string | null>(null);
 
   const fetchListings = useCallback(async () => {
     setLoading(true);
@@ -121,16 +123,7 @@ export const ListingProvider: React.FC<{ children: React.ReactNode }> = ({ child
       saveSearchToHistory(newFilters);
     } catch (error) {
       console.error('Search failed:', error);
-      // Local fallback
-      const filtered = listings.filter(listing => {
-        const matchesLocation = !newFilters.location || 
-          listing.location.toLowerCase().includes(newFilters.location.toLowerCase()) ||
-          listing.title.toLowerCase().includes(newFilters.location.toLowerCase());
-        const matchesType = !newFilters.type || listing.type === newFilters.type;
-        const matchesGuests = !newFilters.guests || listing.guests >= Number(newFilters.guests);
-        return matchesLocation && matchesType && matchesGuests;
-      });
-      setFilteredListings(filtered);
+      setFilteredListings([]);
     } finally {
       setLoading(false);
     }
@@ -138,12 +131,17 @@ export const ListingProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   const aiSearchListings = useCallback(async (query: string) => {
     setLoading(true);
+    setAiMessage(null);
     try {
       const response = await api.post(ENDPOINTS.AI.SEARCH, { query });
-      const { data, filters: aiFilters } = response.data;
+      const { data, filters: aiFilters, message } = response.data;
       
       // Update listings with AI results
       setFilteredListings(data || []);
+      
+      if (message) {
+        setAiMessage(message);
+      }
       
       // Sync filters if AI returned them
       if (aiFilters) {
@@ -155,8 +153,10 @@ export const ListingProvider: React.FC<{ children: React.ReactNode }> = ({ child
           guests: aiFilters.guests?.toString() || '1',
         });
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('AI Search failed:', error);
+      setFilteredListings([]);
+      setAiMessage(error.response?.data?.message || "Sorry, I'm not being able to process the request due to I don't have that data");
     } finally {
       setLoading(false);
     }
@@ -180,15 +180,6 @@ export const ListingProvider: React.FC<{ children: React.ReactNode }> = ({ child
       localStorage.setItem('searchHistory', JSON.stringify(updated));
       return updated;
     });
-
-    // 2. Sync to server if logged in
-    if (localStorage.getItem('token')) {
-      try {
-        await api.post(ENDPOINTS.LISTINGS.SEARCH + '/history', newFilters);
-      } catch (error) {
-        console.warn('Failed to persist search history to server:', error);
-      }
-    }
   }, []);
 
   return (
@@ -204,6 +195,7 @@ export const ListingProvider: React.FC<{ children: React.ReactNode }> = ({ child
       searchListings,
       aiSearchListings,
       searchHistory,
+      aiMessage,
       clearSearchHistory: () => {
         setSearchHistory([]);
         localStorage.removeItem('searchHistory');
