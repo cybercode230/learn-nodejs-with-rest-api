@@ -93,6 +93,7 @@ export const startServer = async () => {
   await connectDB();
 
   // Start listening on the designated port
+  // return app.listen(PORT, "192.168.1.176", () => {
   return app.listen(PORT, () => {
     logger.info(`🚀 Server is running on http://localhost:${PORT}`);
     logger.info(`📖 Swagger docs available at http://localhost:${PORT}/api-docs`);

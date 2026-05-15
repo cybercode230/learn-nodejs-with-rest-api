@@ -58,6 +58,13 @@ import {
   HelpCircle,
   Moon,
   Check,
+  Clock,
+  Flag,
+  ShieldAlert,
+  List,
+  LayoutDashboard,
+  Image,
+  Trash2,
 } from 'lucide-react-native';
 
 const icons = [
@@ -66,7 +73,8 @@ const icons = [
   Share, ArrowRight, Wifi, ChefHat, Wind, Mountain, Car, Waves, Leaf,
   ShieldCheck, ShoppingBag, Bus, Sparkles, MessageCircle, Info, MoreHorizontal,
   Calendar, Eye, EyeOff, Globe, CheckCheck, Send, Tag, Zap, ThumbsUp,
-  HelpCircle, Moon, Check,
+  HelpCircle, Moon, Check, Clock, Flag, ShieldAlert, List, LayoutDashboard,
+  Image, Trash2,
 ];
 
 icons.forEach(iconInterop);
@@ -116,4 +124,11 @@ export {
   HelpCircle,
   Moon,
   Check,
+  Clock,
+  Flag,
+  ShieldAlert,
+  List,
+  LayoutDashboard,
+  Image as ImageIcon,
+  Trash2,
 };

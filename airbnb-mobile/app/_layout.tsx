@@ -4,13 +4,14 @@ import { StatusBar } from 'expo-status-bar';
 import { useFonts } from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect, useState } from 'react';
+import { Alert } from 'react-native';
 import 'react-native-reanimated';
 import "../global.css";
 
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import OnboardingScreen from '@/components/onboarding-screen';
 import CustomSplashScreen from '@/components/custom-splash-screen';
-import { AuthProvider } from '@/hooks/use-auth';
+import { AuthProvider, useAuth } from '@/hooks/use-auth';
 import { PreferencesProvider, usePreferences } from '@/hooks/use-preferences';
 import { WishlistProvider } from '@/hooks/use-wishlist';
 import { SearchProvider } from '@/hooks/use-search';
@@ -21,9 +22,16 @@ import { InboxProvider } from '@/hooks/use-inbox';
 // We will manage the transition manually with our CustomSplashScreen.
 SplashScreen.preventAutoHideAsync();
 
-export const unstable_settings = {
-  anchor: '(tabs)',
-};
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 2,
+      staleTime: 1000 * 60 * 5, // 5 minutes
+    },
+  },
+});
 
 /**
  * Root Layout Component.
@@ -53,30 +61,69 @@ export default function RootLayout() {
   if (!loaded) return null;
 
   return (
-    <AuthProvider>
-      <PreferencesProvider>
-        <WishlistProvider>
-          <SearchProvider>
-            <ReservationsProvider>
-              <InboxProvider>
-                {!appIsReady ? (
-                  <CustomSplashScreen />
-                ) : !isOnboardingFinished ? (
-                  <OnboardingScreen onFinish={() => setIsOnboardingFinished(true)} />
-                ) : (
-                  <RootLayoutNav />
-                )}
-              </InboxProvider>
-            </ReservationsProvider>
-          </SearchProvider>
-        </WishlistProvider>
-      </PreferencesProvider>
-    </AuthProvider>
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <PreferencesProvider>
+          <WishlistProvider>
+            <SearchProvider>
+              <ReservationsProvider>
+                <InboxProvider>
+                  {!appIsReady ? (
+                    <CustomSplashScreen />
+                  ) : !isOnboardingFinished ? (
+                    <OnboardingScreen onFinish={() => setIsOnboardingFinished(true)} />
+                  ) : (
+                    <RootLayoutNav />
+                  )}
+                </InboxProvider>
+              </ReservationsProvider>
+            </SearchProvider>
+          </WishlistProvider>
+        </PreferencesProvider>
+      </AuthProvider>
+    </QueryClientProvider>
   );
 }
 
+import { useSegments, useRouter } from 'expo-router';
+
 function RootLayoutNav() {
   const { isDark } = usePreferences();
+  const { isAuthenticated, isLoading, user, logout } = useAuth();
+  const segments = useSegments();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (isLoading) return;
+
+    const inAuthGroup = segments[0] === 'auth';
+
+    // ── GUEST AND HOST GUARD ──────────────────────────────────────────────
+    // This mobile app is for guests and hosts.
+    // ADMIN accounts must use the web platform.
+    if (isAuthenticated && user && user.role !== 'GUEST' && user.role !== 'HOST') {
+      Alert.alert(
+        'Access Restricted',
+        `This app is for guests and hosts only.\n\nADMIN accounts must use the Airbnb web platform to manage the application.`,
+        [
+          {
+            text: 'OK',
+            onPress: () => logout(),
+          },
+        ],
+        { cancelable: false }
+      );
+      return;
+    }
+    // ─────────────────────────────────────────────────────────────────
+
+    // Authenticated users who land on auth screens → bounce to tabs
+    if (isAuthenticated && inAuthGroup) {
+      router.replace('/(tabs)');
+    }
+    // Unauthenticated users can freely browse Explore and listing detail.
+    // Protected screens (Wishlist, Trips, Inbox, Profile) handle their own auth walls.
+  }, [isAuthenticated, segments, isLoading, user]);
 
   return (
     <ThemeProvider value={isDark ? DarkTheme : DefaultTheme}>

@@ -13,14 +13,15 @@ import { ms } from 'react-native-size-matters';
 
 export default function PersonalInfoScreen() {
   const router = useRouter();
-  const { user, updatePersonalInfo } = useProfile();
+  const { user, profile, updatePersonalInfo } = useProfile();
   
   const [name, setName] = useState(user?.name || '');
   const [email, setEmail] = useState(user?.email || '');
-  const [bio, setBio] = useState(user?.bio || '');
+  const [bio, setBio] = useState(profile?.bio || '');
+  const [phone, setPhone] = useState(user?.phone || '');
 
-  const handleSave = () => {
-    updatePersonalInfo({ name, email, bio });
+  const handleSave = async () => {
+    await updatePersonalInfo({ name, email, bio, phone });
     router.back();
   };
 
@@ -64,6 +65,18 @@ export default function PersonalInfoScreen() {
               placeholder="Your email"
               keyboardType="email-address"
               autoCapitalize="none"
+            />
+          </View>
+ 
+          {/* Phone Field */}
+          <View className="mb-6">
+            <ThemedText className="text-[14px] font-figtree-semibold text-[#717171] mb-2">Phone number</ThemedText>
+            <TextInput
+              value={phone}
+              onChangeText={setPhone}
+              className="border border-[#CCCCCC] rounded-lg px-4 py-3 text-[16px] font-figtree text-[#222222]"
+              placeholder="Your phone number"
+              keyboardType="phone-pad"
             />
           </View>
 

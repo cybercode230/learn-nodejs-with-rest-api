@@ -12,6 +12,7 @@ import { useRouter } from 'expo-router';
 import { Bell, MessageSquare } from '@/components/icons';
 import { ThemedText } from '@/components/themed-text';
 import { useInbox, formatRelativeTime } from '@/hooks/use-inbox';
+import { useAuth } from '@/hooks/use-auth';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -24,6 +25,7 @@ type Tab = 'messages' | 'notifications';
  */
 export default function InboxScreen() {
   const router = useRouter();
+  const { isAuthenticated } = useAuth();
   const {
     conversations,
     notifications,
@@ -35,6 +37,41 @@ export default function InboxScreen() {
 
   const [activeTab, setActiveTab] = useState<Tab>('messages');
   const scrollRef = useRef<ScrollView>(null);
+
+  // ── AUTH WALL ────────────────────────────────────────────────────────
+  if (!isAuthenticated) {
+    return (
+      <SafeAreaView className="flex-1 bg-white">
+        <View className="px-6 pt-8 pb-2">
+          <ThemedText type="title" className="leading-tight">Inbox</ThemedText>
+        </View>
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: ms(40) }}>
+          <View style={{ width: ms(80), height: ms(80), borderRadius: ms(40), backgroundColor: '#F7F7F7', alignItems: 'center', justifyContent: 'center', marginBottom: ms(20) }}>
+            <MessageSquare size={ms(40)} color="#717171" />
+          </View>
+          <ThemedText style={{ fontSize: ms(22), fontFamily: 'Figtree-Bold', color: '#222222', textAlign: 'center', marginBottom: ms(8) }}>
+            Log in to see your inbox
+          </ThemedText>
+          <ThemedText style={{ fontSize: ms(14), fontFamily: 'Figtree-Regular', color: '#717171', textAlign: 'center', lineHeight: ms(22), marginBottom: ms(32) }}>
+            Your messages and notifications will appear here once you're logged in.
+          </ThemedText>
+          <TouchableOpacity
+            style={{ backgroundColor: '#FF385C', borderRadius: ms(8), paddingVertical: ms(14), width: '100%', alignItems: 'center', marginBottom: ms(16) }}
+            onPress={() => router.push('/auth/login')}
+          >
+            <ThemedText style={{ color: '#FFFFFF', fontSize: ms(16), fontFamily: 'Figtree-Bold' }}>Log in</ThemedText>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => router.push('/auth/signup')}>
+            <ThemedText style={{ fontSize: ms(14), fontFamily: 'Figtree-Regular', color: '#717171' }}>
+              Don't have an account?{' '}
+              <ThemedText style={{ fontFamily: 'Figtree-Bold', color: '#222222', textDecorationLine: 'underline' }}>Sign up</ThemedText>
+            </ThemedText>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
+  // ────────────────────────────────────────────────────────────────────
 
   const handleConversationPress = (id: string) => {
     markConversationRead(id);

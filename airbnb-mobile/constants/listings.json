@@ -8,7 +8,15 @@
     "price": 50,
     "rating": 4.85,
     "reviewsCount": 124,
-    "image": "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=1200&q=80",
+    "images": [
+      "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=1200&q=80",
+      "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=1200&q=80",
+      "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?auto=format&fit=crop&w=1200&q=80"
+    ],
+    "coordinates": {
+      "latitude": -1.9441,
+      "longitude": 30.0619
+    },
     "description": "Experience the heart of Kigali from this stunning modern apartment. Featuring floor-to-ceiling windows with panoramic city views, high-end finishes, and a central location that puts you within walking distance of the best cafes, restaurants, and cultural attractions.",
     "distance": "2 kilometers away",
     "dates": "May 15 - 20",
@@ -37,9 +45,34 @@
       {
         "id": "r1",
         "user": "Sarah M.",
+        "userImage": "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=200&q=80",
         "rating": 5,
         "date": "March 2024",
-        "comment": "Absolutely stunning view! The apartment was spotless and Jean Paul was so helpful with local tips."
+        "comment": "Absolutely stunning view! The apartment was spotless and Jean Paul was so helpful with local tips.",
+        "scores": {
+          "cleanliness": 5.0,
+          "accuracy": 4.9,
+          "communication": 5.0,
+          "location": 5.0,
+          "checkin": 4.8,
+          "value": 4.9
+        }
+      },
+      {
+        "id": "r2",
+        "user": "Mike R.",
+        "userImage": "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=200&q=80",
+        "rating": 4.5,
+        "date": "February 2024",
+        "comment": "Great location, though a bit noisy at night. The view is definitely worth it though!",
+        "scores": {
+          "cleanliness": 4.5,
+          "accuracy": 4.8,
+          "communication": 4.5,
+          "location": 5.0,
+          "checkin": 5.0,
+          "value": 4.5
+        }
       }
     ],
     "relatedIds": ["2", "3"]
@@ -53,7 +86,15 @@
     "price": 120,
     "rating": 4.98,
     "reviewsCount": 86,
-    "image": "https://images.unsplash.com/photo-1613490493576-7fde63acd811?auto=format&fit=crop&w=1200&q=80",
+    "images": [
+      "https://images.unsplash.com/photo-1613490493576-7fde63acd811?auto=format&fit=crop&w=1200&q=80",
+      "https://images.unsplash.com/photo-1580587771525-78b9dba3b914?auto=format&fit=crop&w=1200&q=80",
+      "https://images.unsplash.com/photo-1600585154340-be6191da95b8?auto=format&fit=crop&w=1200&q=80"
+    ],
+    "coordinates": {
+      "latitude": -1.9351,
+      "longitude": 30.0891
+    },
     "description": "A spacious luxury villa featuring a private pool and manicured gardens. Perfect for families or groups seeking privacy in Kigali's most exclusive neighborhood.",
     "distance": "5 kilometers away",
     "dates": "Jun 1 - 7",
@@ -87,7 +128,14 @@
     "price": 25,
     "rating": 4.75,
     "reviewsCount": 42,
-    "image": "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=1200&q=80",
+    "images": [
+      "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=1200&q=80",
+      "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?auto=format&fit=crop&w=1200&q=80"
+    ],
+    "coordinates": {
+      "latitude": -1.9521,
+      "longitude": 30.1251
+    },
     "description": "Live like a local in this cozy studio just steps away from the vibrant Kimironko Market. Authentic Kigali experience guaranteed.",
     "distance": "3 kilometers away",
     "dates": "Jul 10 - 15",
@@ -119,7 +167,14 @@
     "price": 75,
     "rating": 4.9,
     "reviewsCount": 30,
-    "image": "https://images.unsplash.com/photo-1499793983690-e29da59ef1c2?auto=format&fit=crop&w=1200&q=80",
+    "images": [
+      "https://images.unsplash.com/photo-1499793983690-e29da59ef1c2?auto=format&fit=crop&w=1200&q=80",
+      "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=1200&q=80"
+    ],
+    "coordinates": {
+      "latitude": -1.6917,
+      "longitude": 29.4117
+    },
     "description": "Rustic wooden cabin right on the shores of Lake Kivu. Wake up to the sound of waves.",
     "distance": "150 kilometers away",
     "dates": "Aug 1 - 5",

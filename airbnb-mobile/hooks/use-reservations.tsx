@@ -1,5 +1,8 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Listing } from './use-listings';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import apiClient from '@/lib/api-client';
+import { useAuth } from './use-auth';
 
 export interface Reservation {
   id: string;
@@ -67,31 +70,51 @@ const INITIAL_MOCK: Reservation[] = [
 ];
 
 export function ReservationsProvider({ children }: { children: React.ReactNode }) {
-  const [reservations, setReservations] = useState<Reservation[]>(INITIAL_MOCK);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
 
-  useEffect(() => {
-    loadReservations();
-  }, []);
+  /**
+   * Fetch Real Bookings (Reservations)
+   */
+  const { data: reservations = [], isLoading: loading } = useQuery({
+    queryKey: ['reservations'],
+    queryFn: async () => {
+      const response = await apiClient.get('/bookings');
+      // Map API response to UI format
+      return response.data.map((b: any) => ({
+        id: b.id,
+        listingId: b.listingId,
+        name: b.listing?.title || 'Trip',
+        location: b.listing?.location || 'Unknown',
+        image: b.listing?.photos?.[0]?.url || 'https://images.unsplash.com/photo-1580587771525-78b9dba3b914',
+        checkIn: new Date(b.checkIn).toLocaleDateString(),
+        checkOut: new Date(b.checkOut).toLocaleDateString(),
+        guests: 1,
+        totalPrice: b.totalPrice,
+        status: b.status.toLowerCase(),
+        createdAt: b.createdAt,
+      }));
+    },
+    enabled: !!user,
+  });
 
-  /** Load persisted reservations, fall back to mock data if storage unavailable. */
-  const loadReservations = async () => {
-    try {
-      const stored = await storage.getItem(STORAGE_KEY);
-      if (stored) {
-        setReservations(JSON.parse(stored));
-      } else {
-        // Persist the initial mock so future opens restore it
-        await storage.setItem(STORAGE_KEY, JSON.stringify(INITIAL_MOCK));
-      }
-    } catch (error) {
-      // Keep in-memory defaults — no crash
-    } finally {
-      setLoading(false);
-    }
-  };
+  /**
+   * Add Reservation (POST /api/v1/bookings)
+   */
+  const bookingMutation = useMutation({
+    mutationFn: async ({ listingId, checkIn, checkOut }: any) => {
+      const response = await apiClient.post('/bookings', {
+        listingId,
+        checkIn,
+        checkOut,
+      });
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['reservations'] });
+    },
+  });
 
-  /** Add a new reservation and persist it. */
   const addReservation = async (
     listing: Listing,
     checkIn: string,
@@ -99,28 +122,11 @@ export function ReservationsProvider({ children }: { children: React.ReactNode }
     guests: number,
   ): Promise<boolean> => {
     try {
-      const newReservation: Reservation = {
-        id: `res_${Date.now()}`,
+      await bookingMutation.mutateAsync({
         listingId: listing.id,
-        name: listing.name,
-        location: listing.location,
-        image: listing.image,
         checkIn,
         checkOut,
-        guests,
-        totalPrice: listing.price * 5,
-        status: 'upcoming',
-        createdAt: new Date().toISOString(),
-      };
-
-      // Update in-memory state immediately — UI is always responsive
-      setReservations(prev => {
-        const updated = [newReservation, ...prev];
-        // Persist async, but don't block the UI on it
-        storage.setItem(STORAGE_KEY, JSON.stringify(updated));
-        return updated;
       });
-
       return true;
     } catch (error) {
       console.error('Failed to add reservation:', error);
@@ -128,13 +134,9 @@ export function ReservationsProvider({ children }: { children: React.ReactNode }
     }
   };
 
-  /** Cancel (remove) a reservation by ID. */
+  /** Cancel (not implemented in API yet, but kept as stub) */
   const cancelReservation = async (id: string): Promise<void> => {
-    setReservations(prev => {
-      const updated = prev.filter(r => r.id !== id);
-      storage.setItem(STORAGE_KEY, JSON.stringify(updated));
-      return updated;
-    });
+    console.warn('Cancel reservation not implemented in API');
   };
 
   return (
@@ -142,6 +144,50 @@ export function ReservationsProvider({ children }: { children: React.ReactNode }
       {children}
     </ReservationsContext.Provider>
   );
+}
+
+/**
+ * Hook for Host to manage received reservations
+ */
+export function useReceivedReservations() {
+  const queryClient = useQueryClient();
+
+  const { data: reservations = [], isLoading: loading } = useQuery({
+    queryKey: ['received-reservations'],
+    queryFn: async () => {
+      const response = await apiClient.get('/bookings/host'); // Assuming this endpoint for host bookings
+      return response.data.map((b: any) => ({
+        id: b.id,
+        listingId: b.listingId,
+        listingName: b.listing?.title || 'Trip',
+        guestName: b.user?.name || 'Guest',
+        guestAvatar: b.user?.avatar,
+        checkIn: new Date(b.checkIn).toLocaleDateString(),
+        checkOut: new Date(b.checkOut).toLocaleDateString(),
+        totalPrice: b.totalPrice,
+        status: b.status.toLowerCase(), // confirmed, pending, cancelled
+        createdAt: b.createdAt,
+      }));
+    },
+  });
+
+  const updateStatusMutation = useMutation({
+    mutationFn: async ({ id, status }: { id: string; status: string }) => {
+      const response = await apiClient.patch(`/bookings/${id}/status`, { status });
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['received-reservations'] });
+    },
+  });
+
+  return {
+    reservations,
+    loading,
+    confirmReservation: (id: string) => updateStatusMutation.mutateAsync({ id, status: 'CONFIRMED' }),
+    cancelReservation: (id: string) => updateStatusMutation.mutateAsync({ id, status: 'CANCELLED' }),
+    isUpdating: updateStatusMutation.isPending,
+  };
 }
 
 export function useReservations() {

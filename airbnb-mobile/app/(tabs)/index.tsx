@@ -1,18 +1,19 @@
-import React from 'react';
-import { View, FlatList, StatusBar, StyleSheet, ActivityIndicator } from 'react-native';
+import React, { useState } from 'react';
+import { View, FlatList, StatusBar, StyleSheet, ActivityIndicator, TouchableOpacity, Modal } from 'react-native';
 import { ListingCard } from '@/components/listing-card';
 import { SearchHeader } from '@/components/search-header';
 import { CategoryFilter } from '@/components/category-filter';
-import { useListings } from '@/hooks/use-listings';
+import { useListings, Listing } from '@/hooks/use-listings';
 import { ThemedText } from '@/components/themed-text';
 import { Search } from '@/components/icons';
+import { useRouter } from 'expo-router';
 
 /**
  * HomeScreen (Explore) - The primary entry point for discovery.
- * Uses FlatList for native performance and memory management.
  */
 export default function HomeScreen() {
   const { listings, loading, selectedCategory, setSelectedCategory } = useListings();
+  const router = useRouter();
 
   const renderEmptyState = () => (
     <View style={styles.emptyContainer}>
@@ -72,7 +73,7 @@ const styles = StyleSheet.create({
   },
   listContent: {
     paddingHorizontal: 20,
-    paddingBottom: 100,
+    paddingBottom: 40,
     paddingTop: 20,
   },
   emptyContainer: {

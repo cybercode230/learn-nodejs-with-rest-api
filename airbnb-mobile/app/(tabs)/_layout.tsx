@@ -1,8 +1,10 @@
 import { Tabs } from 'expo-router';
 import React from 'react';
 import { View, Text } from 'react-native';
-import { Search, Heart, Briefcase, MessageSquare, User } from '@/components/icons';
+import { ms, s, vs } from 'react-native-size-matters';
+import { Search, Heart, Briefcase, MessageSquare, User, LayoutDashboard } from '@/components/icons';
 import { useInbox } from '@/hooks/use-inbox';
+import { useAuth } from '@/hooks/use-auth';
 
 /**
  * Inbox tab icon with a live red badge showing total unread count.
@@ -12,30 +14,30 @@ function InboxTabIcon({ color }: { color: string }) {
   const { totalUnread } = useInbox();
   return (
     <View style={{ position: 'relative' }}>
-      <MessageSquare size={24} color={color} />
+      <MessageSquare size={ms(24)} color={color} />
       {totalUnread > 0 && (
         <View
           style={{
             position: 'absolute',
-            top: -6,
-            right: -8,
+            top: ms(-6),
+            right: ms(-8),
             backgroundColor: '#FF385C',
-            borderRadius: 10,
-            minWidth: 18,
-            height: 18,
+            borderRadius: ms(10),
+            minWidth: ms(18),
+            height: ms(18),
             alignItems: 'center',
             justifyContent: 'center',
-            paddingHorizontal: 4,
-            borderWidth: 1.5,
+            paddingHorizontal: ms(4),
+            borderWidth: ms(1.5),
             borderColor: '#FFFFFF',
           }}
         >
           <Text
             style={{
               color: '#FFFFFF',
-              fontSize: 10,
+              fontSize: ms(10),
               fontFamily: 'Figtree-Bold',
-              lineHeight: 13,
+              lineHeight: ms(13),
             }}
           >
             {totalUnread > 99 ? '99+' : String(totalUnread)}
@@ -51,6 +53,9 @@ function InboxTabIcon({ color }: { color: string }) {
  * Configured with professional styling and native feel.
  */
 export default function TabLayout() {
+  const { user } = useAuth();
+  const isHost = user?.role === 'HOST';
+
   return (
     <Tabs
       screenOptions={{
@@ -62,14 +67,18 @@ export default function TabLayout() {
           borderTopColor: '#DDDDDD',
           elevation: 0,
           shadowOpacity: 0,
-          height: 65,
-          paddingBottom: 12,
-          paddingTop: 8,
+          height: vs(60),
+          paddingBottom: vs(8),
+          paddingTop: vs(8),
           backgroundColor: '#FFFFFF',
         },
         tabBarLabelStyle: {
           fontFamily: 'Figtree-Medium',
-          fontSize: 10,
+          fontSize: ms(10),
+          marginTop: vs(-2),
+        },
+        tabBarIconStyle: {
+          marginBottom: vs(-2),
         },
       }}
     >
@@ -77,21 +86,30 @@ export default function TabLayout() {
         name="index"
         options={{
           title: 'Explore',
-          tabBarIcon: ({ color }) => <Search size={24} color={color} />,
+          tabBarIcon: ({ color }) => <Search size={ms(24)} color={color} />,
         }}
       />
       <Tabs.Screen
         name="wishlist"
         options={{
           title: 'Wishlists',
-          tabBarIcon: ({ color }) => <Heart size={24} color={color} />,
+          href: isHost ? null : '/wishlist',
+          tabBarIcon: ({ color }) => <Heart size={ms(24)} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="host"
+        options={{
+          title: 'Host',
+          href: isHost ? '/host' : null,
+          tabBarIcon: ({ color }) => <LayoutDashboard size={ms(24)} color={color} />,
         }}
       />
       <Tabs.Screen
         name="trips"
         options={{
           title: 'Trips',
-          tabBarIcon: ({ color }) => <Briefcase size={24} color={color} />,
+          tabBarIcon: ({ color }) => <Briefcase size={ms(24)} color={color} />,
         }}
       />
       <Tabs.Screen
@@ -105,7 +123,7 @@ export default function TabLayout() {
         name="profile"
         options={{
           title: 'Profile',
-          tabBarIcon: ({ color }) => <User size={24} color={color} />,
+          tabBarIcon: ({ color }) => <User size={ms(24)} color={color} />,
         }}
       />
     </Tabs>

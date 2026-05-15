@@ -1,18 +1,18 @@
 import React from 'react';
-import { View, StyleSheet, TouchableOpacity, ScrollView, Share as RNShare } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, ScrollView, Share as RNShare, Modal, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { ChevronLeft, Share, MoreHorizontal, Heart, Star } from '@/components/icons';
+import { ChevronLeft, Share, MoreHorizontal, Heart, Star, Map as MapIcon } from '@/components/icons';
 import { ThemedText } from '@/components/themed-text';
 import { useWishlist, WishlistItem } from '@/hooks/use-wishlist';
 import { Image } from 'expo-image';
-
 import { ms } from 'react-native-size-matters';
+import { ListingMap } from '@/components/listing-map';
 
 /**
  * Reusable Header for screens like Wishlist Category or Listing Detail.
  */
-export function ScreenHeader({ onBack, title, showRightIcons = true }: { onBack: () => void, title?: string, showRightIcons?: boolean }) {
+export function ScreenHeader({ onBack, title, showRightIcons = true, onMapPress }: { onBack: () => void, title?: string, showRightIcons?: boolean, onMapPress?: () => void }) {
   const handleShare = async () => {
     try {
       await RNShare.share({
@@ -29,16 +29,23 @@ export function ScreenHeader({ onBack, title, showRightIcons = true }: { onBack:
         <ChevronLeft size={ms(24)} color="#222222" />
       </TouchableOpacity>
       
-      {showRightIcons && (
-        <View style={styles.rightIcons}>
-          <TouchableOpacity onPress={handleShare} style={styles.iconButton}>
-            <Share size={ms(20)} color="#222222" />
+      <View style={styles.rightIcons}>
+        {onMapPress && Platform.OS !== 'web' && (
+          <TouchableOpacity onPress={onMapPress} style={[styles.iconButton, { marginRight: ms(8) }]}>
+            <MapIcon size={ms(20)} color="#222222" />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.iconButton}>
-            <MoreHorizontal size={ms(20)} color="#222222" />
-          </TouchableOpacity>
-        </View>
-      )}
+        )}
+        {showRightIcons && (
+          <>
+            <TouchableOpacity onPress={handleShare} style={styles.iconButton}>
+              <Share size={ms(20)} color="#222222" />
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.iconButton}>
+              <MoreHorizontal size={ms(20)} color="#222222" />
+            </TouchableOpacity>
+          </>
+        )}
+      </View>
     </View>
   );
 }
@@ -48,6 +55,7 @@ export default function WishlistCategoryScreen() {
   const router = useRouter();
   const { wishlists, removeFromWishlist } = useWishlist();
   const [sortType, setSortType] = React.useState<'date' | 'type'>('date');
+  const [mapVisible, setMapVisible] = React.useState(false);
 
   const category = wishlists.find(c => c.name === name);
   const items = React.useMemo(() => {
@@ -59,6 +67,19 @@ export default function WishlistCategoryScreen() {
     }
     return result;
   }, [category, sortType]);
+
+  // Convert WishlistItems back to Listing format for the Map
+  const mapListings = React.useMemo(() => {
+    return items.map(item => ({
+      id: item.listingId,
+      name: item.name,
+      location: item.location,
+      price: item.price,
+      rating: item.rating,
+      images: [item.image],
+      coordinates: item.coordinates || { latitude: -1.9441, longitude: 30.0619 },
+    }));
+  }, [items]);
 
   const groupItemsByDate = (items: WishlistItem[]) => {
     const groups: { [key: string]: WishlistItem[] } = {};
@@ -109,7 +130,11 @@ export default function WishlistCategoryScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScreenHeader onBack={() => router.back()} title={name} />
+      <ScreenHeader 
+        onBack={() => router.back()} 
+        title={name} 
+        onMapPress={() => setMapVisible(true)}
+      />
       
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         <ThemedText style={styles.pageTitle}>{name}</ThemedText>
@@ -150,6 +175,29 @@ export default function WishlistCategoryScreen() {
           </View>
         )}
       </ScrollView>
+
+      {/* Floating Map Button */}
+      {/* <TouchableOpacity 
+        className="absolute bottom-10 self-center bg-[#222222] flex-row items-center px-6 py-3 rounded-full shadow-lg z-10"
+        onPress={() => setMapVisible(true)}
+      >
+        <ThemedText className="text-white font-[Figtree-Bold] mr-2">Map</ThemedText>
+        <MapIcon size={18} color="#FFFFFF" />
+      </TouchableOpacity> */}
+
+      {/* Map Modal — native only */}
+      {Platform.OS !== 'web' && (
+        <Modal visible={mapVisible} animationType="slide">
+          <ListingMap 
+            listings={mapListings as any} 
+            onClose={() => setMapVisible(false)} 
+            onSelectListing={(listing) => {
+              setMapVisible(false);
+              router.push(`/listing/${listing.id}`);
+            }}
+          />
+        </Modal>
+      )}
     </SafeAreaView>
   );
 }

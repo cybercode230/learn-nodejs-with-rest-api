@@ -1,512 +1,592 @@
-import React from 'react';
-import { View, ScrollView, TouchableOpacity, Dimensions, SafeAreaView, Modal } from 'react-native';
+import React, { useState, useMemo, useRef } from 'react';
+import { View, ScrollView, TouchableOpacity, Dimensions, Modal, FlatList, TextInput,SafeAreaView } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Image } from 'expo-image';
-import { ChevronLeft, Share, Heart, Star, Map, User, X } from '@/components/icons';
+import { 
+  ChevronLeft, Share, Heart, Star, Map as MapIcon, User, X, 
+  ChevronRight, Wifi, Car, Wind, Mountain, Briefcase, ChefHat, 
+  ShieldAlert, ShieldCheck, Flag, Search, Check, Clock, Calendar
+} from '@/components/icons';
 import { ThemedText } from '@/components/themed-text';
-import { ms } from 'react-native-size-matters';
-import { useListings, Listing } from '@/hooks/use-listings';
+import { ms, vs } from 'react-native-size-matters';
+import { useListings, useListingDetail, Listing, Review } from '@/hooks/use-listings';
 import { useAuth } from '@/hooks/use-auth';
 import { useReservations } from '@/hooks/use-reservations';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
-const DAYS = ['Su','Mo','Tu','We','Th','Fr','Sa'];
 
 function formatDate(d: Date): string {
   return `${MONTHS[d.getMonth()].slice(0,3)} ${d.getDate()}, ${d.getFullYear()}`;
 }
 
-function daysInMonth(year: number, month: number): number {
-  return new Date(year, month + 1, 0).getDate();
-}
-
-function firstDayOfMonth(year: number, month: number): number {
-  return new Date(year, month, 1).getDay();
-}
-
+/**
+ * PropertyDetails — Highly immersive, feature-rich listing detail page.
+ * Implements Airbnb-style image swiping, AI reviews, and detailed property sections.
+ */
 export default function PropertyDetails() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
-  const { getListingById } = useListings();
-  const { user } = useAuth();
+  const { listing: property, loading: isPropertyLoading } = useListingDetail(id);
+  const { user, isAuthenticated } = useAuth();
   const { addReservation } = useReservations();
+  
+  // UI States
+  const [activeImageIndex, setActiveImageIndex] = useState(0);
+  const [imageGridVisible, setImageGridVisible] = useState(false);
+  const [selectedViewerImage, setSelectedViewerImage] = useState<string | null>(null);
+  const [descModalVisible, setDescModalVisible] = useState(false);
+  const [reviewsModalVisible, setReviewsModalVisible] = useState(false);
+  const [amenitiesModalVisible, setAmenitiesModalVisible] = useState(false);
+  const [reportModalVisible, setReportModalVisible] = useState(false);
+  const [reportStep, setReportStep] = useState(1);
+  const [searchReview, setSearchReview] = useState('');
 
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  // Booking states
+  const [bookingModalVisible, setBookingModalVisible] = useState(false);
+  const [checkIn, setCheckIn] = useState<Date | null>(null);
+  const [checkOut, setCheckOut] = useState<Date | null>(null);
 
-  const [bookingModalVisible, setBookingModalVisible] = React.useState(false);
-  const [successModalVisible, setSuccessModalVisible] = React.useState(false);
-  const [isBooking, setIsBooking] = React.useState(false);
-  // Step: 'dates' | 'guests' | 'confirm'
-  const [bookingStep, setBookingStep] = React.useState<'dates' | 'guests' | 'confirm'>('dates');
-
-  // Calendar state
-  const [calMonth, setCalMonth] = React.useState(today.getMonth());
-  const [calYear, setCalYear] = React.useState(today.getFullYear());
-  const [checkIn, setCheckIn] = React.useState<Date | null>(null);
-  const [checkOut, setCheckOut] = React.useState<Date | null>(null);
-
-  // Guests
-  const [adults, setAdults] = React.useState(1);
-  const [children, setChildren] = React.useState(0);
-
-  const totalGuests = adults + children;
-  const nights = checkIn && checkOut
-    ? Math.round((checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24))
-    : 0;
-
-  const property = getListingById(id) as Listing;
-  const propertyData = property || {
-    id: id,
-    name: 'Modern Apartment with Kigali View',
-    location: 'Kigali City Center, Rwanda',
-    price: 50,
-    rating: 4.8,
-    reviewsCount: 124,
-    image: 'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=1200&q=80',
-    description: 'Experience the heart of Kigali from this stunning modern apartment. Featuring floor-to-ceiling windows with panoramic city views, high-end finishes, and a central location that puts you within walking distance of the best cafes, restaurants, and cultural attractions.',
-    host: { name: 'Jean Paul', image: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=200&q=80', yearsHosting: 5, isSuperhost: true },
-    details: { guests: 6, bedrooms: 1, beds: 1, baths: 1 }
+  const onImageScroll = (event: any) => {
+    const slideSize = event.nativeEvent.layoutMeasurement.width;
+    const index = event.nativeEvent.contentOffset.x / slideSize;
+    setActiveImageIndex(Math.round(index));
   };
 
-  const handleDayPress = (day: number) => {
-    const selected = new Date(calYear, calMonth, day);
-    if (selected < today) return; // Block past dates
-    if (!checkIn || (checkIn && checkOut)) {
-      setCheckIn(selected);
-      setCheckOut(null);
-    } else {
-      if (selected <= checkIn) {
-        setCheckIn(selected);
-      } else {
-        setCheckOut(selected);
+  const filteredReviews = useMemo(() => {
+    if (!property?.reviews) return [];
+    if (!searchReview) return property.reviews;
+    return property.reviews.filter((r: Review) => 
+      r.comment.toLowerCase().includes(searchReview.toLowerCase()) ||
+      r.user.toLowerCase().includes(searchReview.toLowerCase())
+    );
+  }, [property?.reviews, searchReview]);
+
+  // Average Scores Calculation
+  const avgScores = useMemo(() => {
+    if (!property?.reviews?.length) return null;
+    const totals = { cleanliness: 0, accuracy: 0, communication: 0, location: 0, checkin: 0, value: 0 };
+    property.reviews.forEach((r: Review) => {
+      if (r.scores) {
+        totals.cleanliness += r.scores.cleanliness;
+        totals.accuracy += r.scores.accuracy;
+        totals.communication += r.scores.communication;
+        totals.location += r.scores.location;
+        totals.checkin += r.scores.checkin;
+        totals.value += r.scores.value;
       }
-    }
-  };
+    });
+    const count = property.reviews.filter((r: Review) => r.scores).length || 1;
+    return {
+      cleanliness: (totals.cleanliness / count).toFixed(1),
+      accuracy: (totals.accuracy / count).toFixed(1),
+      communication: (totals.communication / count).toFixed(1),
+      location: (totals.location / count).toFixed(1),
+      checkin: (totals.checkin / count).toFixed(1),
+      value: (totals.value / count).toFixed(1),
+    };
+  }, [property?.reviews]);
 
-  const getDayState = (day: number): 'past' | 'today' | 'checkIn' | 'checkOut' | 'inRange' | 'future' => {
-    const d = new Date(calYear, calMonth, day);
-    if (d < today) return 'past';
-    if (d.getTime() === today.getTime()) return 'today';
-    if (checkIn && d.getTime() === checkIn.getTime()) return 'checkIn';
-    if (checkOut && d.getTime() === checkOut.getTime()) return 'checkOut';
-    if (checkIn && checkOut && d > checkIn && d < checkOut) return 'inRange';
-    return 'future';
-  };
+  if (isPropertyLoading) {
+    return (
+      <View className="flex-1 bg-white items-center justify-center">
+        <ThemedText>Loading...</ThemedText>
+      </View>
+    );
+  }
 
-  const handleReserve = () => {
-    if (!user) { router.push('/auth/login'); return; }
-    setBookingStep('dates');
-    setBookingModalVisible(true);
-  };
-
-  const confirmBooking = async () => {
-    if (!checkIn || !checkOut) return;
-    setIsBooking(true);
-    setTimeout(async () => {
-      const success = await addReservation(
-        propertyData as any,
-        formatDate(checkIn),
-        formatDate(checkOut),
-        totalGuests
-      );
-      setIsBooking(false);
-      setBookingModalVisible(false);
-      if (success) setSuccessModalVisible(true);
-    }, 1500);
-  };
-
-  const bookingBarLabel = checkIn && checkOut
-    ? `${formatDate(checkIn)} → ${formatDate(checkOut)}`
-    : 'Select dates';
-
+  if (!property) return null;
+ 
+  const ScoreBar = ({ label, score }: { label: string, score: any }) => (
+    <View className="flex-row items-center justify-between mb-4">
+      <View className="flex-1">
+        <ThemedText className="text-[14px] font-[Figtree-Regular] text-[#222222]">{label}</ThemedText>
+      </View>
+      <View className="flex-row items-center gap-3">
+        <View className="w-32 h-1 bg-[#EEEEEE] rounded-full overflow-hidden">
+          <View 
+            className="h-full bg-[#222222] rounded-full" 
+            style={{ width: `${(parseFloat(score) / 5) * 100}%` }} 
+          />
+        </View>
+        <ThemedText className="text-[12px] font-[Figtree-Bold] text-[#222222] w-6">{score}</ThemedText>
+      </View>
+    </View>
+  );
 
   return (
     <View className="flex-1 bg-white">
       <ScrollView showsVerticalScrollIndicator={false}>
+        {/* ── IMAGE CAROUSEL ────────────────────────────────── */}
         <View className="relative">
-          <Image
-            source={{ uri: propertyData.image }}
-            style={{ width: SCREEN_WIDTH, height: ms(300) }}
-            contentFit="cover"
+          <FlatList
+            data={property.images}
+            horizontal
+            pagingEnabled
+            showsHorizontalScrollIndicator={false}
+            onScroll={onImageScroll}
+            scrollEventThrottle={16}
+            renderItem={({ item }) => (
+              <TouchableOpacity activeOpacity={1} onPress={() => setImageGridVisible(true)}>
+                <Image
+                  source={{ uri: item }}
+                  style={{ width: SCREEN_WIDTH, height: ms(300) }}
+                  contentFit="cover"
+                />
+              </TouchableOpacity>
+            )}
           />
 
-          <SafeAreaView className="absolute top-5 left-0 right-0">
+          {/* Top Controls */}
+          <SafeAreaView className="absolute top-0 left-0 right-0 z-20">
             <View className="flex-row justify-between px-5 py-4">
-              <TouchableOpacity
-                onPress={() => router.back()}
-                className="bg-white/90 p-2 rounded-full shadow-sm"
+              <TouchableOpacity 
+                onPress={() => router.back()} 
+                className="bg-white p-2 rounded-full shadow-md items-center justify-center"
+                style={{ width: ms(40), height: ms(40) }}
               >
-                <ChevronLeft size={ms(24)} color="#000000" />
+                <ChevronLeft size={ms(22)} color="#000000" />
               </TouchableOpacity>
-
               <View className="flex-row gap-3">
-                <TouchableOpacity className="bg-white/90 p-2 rounded-full shadow-sm">
+                <TouchableOpacity 
+                  className="bg-white p-2 rounded-full shadow-md items-center justify-center"
+                  style={{ width: ms(40), height: ms(40) }}
+                >
                   <Share size={ms(18)} color="#000000" />
                 </TouchableOpacity>
-                <TouchableOpacity className="bg-white/90 p-2 rounded-full shadow-sm">
+                <TouchableOpacity 
+                  className="bg-white p-2 rounded-full shadow-md items-center justify-center"
+                  style={{ width: ms(40), height: ms(40) }}
+                >
                   <Heart size={ms(18)} color="#000000" />
                 </TouchableOpacity>
               </View>
             </View>
           </SafeAreaView>
+
+          {/* Image Count Indicator */}
+          <View className="absolute bottom-4 right-4 bg-black/60 px-3 py-1 rounded-md z-10">
+            <ThemedText className="text-white text-[12px] font-[Figtree-SemiBold]">
+              {activeImageIndex + 1} / {property.images.length}
+            </ThemedText>
+          </View>
         </View>
 
+        {/* ── MAIN CONTENT ────────────────────────────────── */}
         <View className="px-6 py-6">
-          <ThemedText className="text-[28px] font-figtree-bold text-[#222222] leading-9">
-            {propertyData.name}
+          <ThemedText className="text-[28px] font-[Figtree-Bold] text-[#222222] leading-9">
+            {property.name}
           </ThemedText>
 
           <View className="flex-row items-center mt-2 gap-1">
             <Star size={ms(14)} color="#000000" fill="#000000" />
-            <ThemedText className="text-[14px] font-figtree-semibold text-[#222222]">
-              {propertyData.rating} · {propertyData.reviewsCount} reviews
+            <ThemedText className="text-[14px] font-[Figtree-SemiBold] text-[#222222]">
+              {property.rating} · {property.reviewsCount} reviews
             </ThemedText>
-            <ThemedText className="text-[14px] font-figtree text-[#717171]">
-              · {propertyData.location}
+            <ThemedText className="text-[14px] font-[Figtree-Regular] text-[#717171]">
+              · {property.location}
             </ThemedText>
           </View>
 
           <View className="h-[1px] bg-[#F0F0F0] my-6" />
 
+          {/* Host Info */}
           <View className="flex-row justify-between items-center">
             <View className="flex-1">
-              <ThemedText className="text-[18px] font-figtree-semibold text-[#222222]">
-                Entire rental unit hosted by {propertyData.host.name}
+              <ThemedText className="text-[18px] font-[Figtree-SemiBold] text-[#222222]">
+                {property.type} hosted by {property.host.name}
               </ThemedText>
-              <ThemedText className="text-[14px] font-figtree text-[#717171] mt-1">
-                {propertyData.details.guests} guests · {propertyData.details.bedrooms} bedroom · {propertyData.details.beds} bed · {propertyData.details.baths} bath
+              <ThemedText className="text-[14px] font-[Figtree-Regular] text-[#717171] mt-1">
+                {property.details.guests} guests · {property.details.bedrooms} bedroom · {property.details.beds} bed · {property.details.baths} bath
               </ThemedText>
             </View>
-            <Image
-              source={{ uri: propertyData.host.image }}
-              className="w-12 h-12 rounded-full"
-            />
+            <Image source={{ uri: property.host.image }} className="w-12 h-12 rounded-full" />
           </View>
 
           <View className="h-[1px] bg-[#F0F0F0] my-6" />
 
-          <View className="gap-6">
-            <View className="flex-row items-center gap-4">
-              <Map size={ms(24)} color="#222222" />
-              <View className="flex-1">
-                <ThemedText className="text-[16px] font-figtree-semibold text-[#222222]">Great location</ThemedText>
-                <ThemedText className="text-[14px] font-figtree text-[#717171] mt-1">95% of recent guests gave the location a 5-star rating.</ThemedText>
-              </View>
-            </View>
-            <View className="flex-row items-center gap-4">
-              <User size={ms(24)} color="#222222" />
-              <View className="flex-1">
-                <ThemedText className="text-[16px] font-figtree-semibold text-[#222222]">Experienced host</ThemedText>
-                <ThemedText className="text-[14px] font-figtree text-[#717171] mt-1">{propertyData.host.name} has been hosting for {propertyData.host.yearsHosting} years.</ThemedText>
-              </View>
-            </View>
-          </View>
-
-          <View className="h-[1px] bg-[#F0F0F0] my-6" />
-
-          <ThemedText className="text-[16px] font-figtree text-[#222222] leading-6">
-            {propertyData.description}
+          {/* Description */}
+          <ThemedText className="text-[16px] font-[Figtree-Regular] text-[#222222] leading-6" numberOfLines={3}>
+            {property.description}
           </ThemedText>
+          <TouchableOpacity onPress={() => setDescModalVisible(true)} className="mt-2 flex-row items-center gap-1">
+            <ThemedText className="text-[16px] font-[Figtree-Bold] text-[#222222] underline">Show more</ThemedText>
+            <ChevronRight size={16} color="#222222" />
+          </TouchableOpacity>
+
+          <View className="h-[1px] bg-[#F0F0F0] my-6" />
+
+          {/* AI Summary Section */}
+          <View className="bg-[#F7F7F7] p-5 rounded-2xl border border-[#EBEBEB]">
+            <View className="flex-row items-center gap-2 mb-3">
+              <View className="bg-[#FF385C] p-1.5 rounded-lg">
+                <Star size={16} color="#FFFFFF" fill="#FFFFFF" />
+              </View>
+              <ThemedText className="text-[16px] font-[Figtree-Bold] text-[#222222]">AI-powered summary</ThemedText>
+            </View>
+            <ThemedText className="text-[14px] font-[Figtree-Regular] text-[#484848] italic leading-5">
+              "{property.aiSummary}"
+            </ThemedText>
+          </View>
+
+          <View className="h-[1px] bg-[#F0F0F0] my-8" />
+
+          {/* Reviews Preview */}
+          <View className="flex-row items-center justify-between mb-4">
+            <View className="flex-row items-center gap-2">
+              <Star size={ms(18)} color="#222222" fill="#222222" />
+              <ThemedText className="text-[20px] font-[Figtree-Bold] text-[#222222]">
+                {property.rating} · {property.reviewsCount} reviews
+              </ThemedText>
+            </View>
+            <TouchableOpacity onPress={() => setReviewsModalVisible(true)}>
+              <ThemedText className="text-[14px] font-[Figtree-Bold] text-[#222222] underline">Show all</ThemedText>
+            </TouchableOpacity>
+          </View>
+
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} className="-mx-6 px-6">
+            {property.reviews.slice(0, 5).map((review: Review) => (
+              <View key={review.id} className="w-72 mr-4 p-5 rounded-2xl border border-[#EBEBEB] bg-white">
+                <View className="flex-row items-center gap-3 mb-3">
+                  <Image source={{ uri: review.userImage || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=100&q=80' }} className="w-10 h-10 rounded-full" />
+                  <View>
+                    <ThemedText className="text-[15px] font-[Figtree-Bold] text-[#222222]">{review.user}</ThemedText>
+                    <ThemedText className="text-[12px] font-[Figtree-Regular] text-[#717171]">{review.date}</ThemedText>
+                  </View>
+                </View>
+                <ThemedText className="text-[14px] font-[Figtree-Regular] text-[#222222] leading-5" numberOfLines={3}>
+                  {review.comment}
+                </ThemedText>
+              </View>
+            ))}
+          </ScrollView>
+
+          <View className="h-[1px] bg-[#F0F0F0] my-8" />
+
+          {/* Amenities Section */}
+          <ThemedText className="text-[20px] font-[Figtree-Bold] text-[#222222] mb-5">What this place offers</ThemedText>
+          <View className="gap-4">
+            {property.amenities.slice(0, 5).map((amenity: any) => (
+              <View key={amenity.id} className="flex-row items-center gap-4">
+                <View className="w-6 items-center"><ThemedText>✨</ThemedText></View>
+                <ThemedText className="text-[16px] font-[Figtree-Regular] text-[#222222]">{amenity.name}</ThemedText>
+              </View>
+            ))}
+          </View>
+          <TouchableOpacity onPress={() => setAmenitiesModalVisible(true)} className="mt-6 py-3 px-6 border border-[#222222] rounded-xl self-start">
+            <ThemedText className="text-[14px] font-[Figtree-Bold] text-[#222222]">Show all {property.amenities.length} amenities</ThemedText>
+          </TouchableOpacity>
+
+          <View className="h-[1px] bg-[#F0F0F0] my-8" />
+
+          {/* Safety & Property */}
+          <ThemedText className="text-[20px] font-[Figtree-Bold] text-[#222222] mb-5">Safety & property</ThemedText>
+          <View className="gap-4">
+            <View className="flex-row items-center gap-4">
+              <ShieldCheck size={20} color="#222222" />
+              <ThemedText className="text-[16px] font-[Figtree-Regular] text-[#222222]">Carbon monoxide alarm</ThemedText>
+            </View>
+            <View className="flex-row items-center gap-4">
+              <ShieldAlert size={20} color="#222222" />
+              <ThemedText className="text-[16px] font-[Figtree-Regular] text-[#222222]">Smoke alarm not reported</ThemedText>
+            </View>
+          </View>
+
+          <View className="h-[1px] bg-[#F0F0F0] my-8" />
+
+          {/* Report Listing */}
+          <TouchableOpacity onPress={() => setReportModalVisible(true)} className="flex-row items-center gap-3">
+            <Flag size={20} color="#717171" />
+            <ThemedText className="text-[14px] font-[Figtree-SemiBold] text-[#717171] underline">Report this listing</ThemedText>
+          </TouchableOpacity>
+
         </View>
 
         <View className="h-32" />
       </ScrollView>
 
-      {/* Booking Modal — Multi-step */}
-      <Modal
-        visible={bookingModalVisible}
-        transparent={true}
-        animationType="slide"
-        onRequestClose={() => setBookingModalVisible(false)}
-      >
-        <View className="flex-1 bg-black/50 justify-end">
-          <View className="bg-white rounded-t-[28px]" style={{ maxHeight: '90%' }}>
-            {/* Modal Header */}
-            <View className="flex-row justify-between items-center px-6 pt-5 pb-4 border-b border-[#F0F0F0]">
-              <TouchableOpacity onPress={() => {
-                if (bookingStep === 'dates') setBookingModalVisible(false);
-                else if (bookingStep === 'guests') setBookingStep('dates');
-                else setBookingStep('guests');
-              }}>
-                <X size={ms(20)} color="#222222" />
-              </TouchableOpacity>
-              <ThemedText className="text-[16px] font-figtree-bold text-[#222222]">
-                {bookingStep === 'dates' ? 'Select dates' : bookingStep === 'guests' ? 'Add guests' : 'Confirm your stay'}
-              </ThemedText>
-              <View className="w-5" />
-            </View>
-
-            {/* Step Indicators */}
-            <View className="flex-row px-6 pt-3 gap-2">
-              {(['dates','guests','confirm'] as const).map((step, i) => (
-                <View key={step} className={`h-1 flex-1 rounded-full ${bookingStep === step || (i < (['dates','guests','confirm'] as const).indexOf(bookingStep)) ? 'bg-[#FF385C]' : 'bg-[#EEEEEE]'}`} />
-              ))}
-            </View>
-
-            <ScrollView showsVerticalScrollIndicator={false} className="pb-4">
-              {/* ── STEP 1: DATE PICKER ── */}
-              {bookingStep === 'dates' && (
-                <View className="px-5 pt-5 pb-2">
-                  {/* Selected range summary */}
-                  <View className="flex-row gap-3 mb-5">
-                    <View className={`flex-1 p-3 rounded-xl border-2 ${checkIn ? 'border-[#FF385C] bg-[#FFF0F3]' : 'border-[#DDDDDD]'}`}>
-                      <ThemedText className="text-[11px] font-figtree-bold text-[#717171] uppercase">Check-in</ThemedText>
-                      <ThemedText className={`text-[14px] font-figtree-semibold mt-1 ${checkIn ? 'text-[#222222]' : 'text-[#AAAAAA]'}`}>
-                        {checkIn ? formatDate(checkIn) : 'Add date'}
-                      </ThemedText>
-                    </View>
-                    <View className={`flex-1 p-3 rounded-xl border-2 ${checkOut ? 'border-[#FF385C] bg-[#FFF0F3]' : 'border-[#DDDDDD]'}`}>
-                      <ThemedText className="text-[11px] font-figtree-bold text-[#717171] uppercase">Check-out</ThemedText>
-                      <ThemedText className={`text-[14px] font-figtree-semibold mt-1 ${checkOut ? 'text-[#222222]' : 'text-[#AAAAAA]'}`}>
-                        {checkOut ? formatDate(checkOut) : 'Add date'}
-                      </ThemedText>
-                    </View>
-                  </View>
-
-                  {/* Month navigation */}
-                  <View className="flex-row justify-between items-center mb-3">
-                    <TouchableOpacity
-                      className="p-2"
-                      onPress={() => {
-                        if (calMonth === 0) { setCalMonth(11); setCalYear(y => y - 1); }
-                        else setCalMonth(m => m - 1);
-                      }}
-                    >
-                      <ThemedText className="text-[20px] text-[#222222]">‹</ThemedText>
-                    </TouchableOpacity>
-                    <ThemedText className="text-[17px] font-figtree-bold text-[#222222]">
-                      {MONTHS[calMonth]} {calYear}
-                    </ThemedText>
-                    <TouchableOpacity
-                      className="p-2"
-                      onPress={() => {
-                        if (calMonth === 11) { setCalMonth(0); setCalYear(y => y + 1); }
-                        else setCalMonth(m => m + 1);
-                      }}
-                    >
-                      <ThemedText className="text-[20px] text-[#222222]">›</ThemedText>
-                    </TouchableOpacity>
-                  </View>
-
-                  {/* Day headers */}
-                  <View className="flex-row mb-1">
-                    {DAYS.map(d => (
-                      <ThemedText key={d} className="flex-1 text-center text-[12px] font-figtree-bold text-[#717171]">{d}</ThemedText>
-                    ))}
-                  </View>
-
-                  {/* Calendar grid */}
-                  <View className="flex-row flex-wrap">
-                    {/* Empty offset cells */}
-                    {Array.from({ length: firstDayOfMonth(calYear, calMonth) }).map((_, i) => (
-                      <View key={`empty-${i}`} style={{ width: '14.28%', aspectRatio: 1 }} />
-                    ))}
-                    {/* Day cells */}
-                    {Array.from({ length: daysInMonth(calYear, calMonth) }).map((_, i) => {
-                      const day = i + 1;
-                      const state = getDayState(day);
-                      const isSelected = state === 'checkIn' || state === 'checkOut';
-                      const isPast = state === 'past';
-                      const isRange = state === 'inRange';
-                      const isToday = state === 'today';
-
-                      return (
-                        <TouchableOpacity
-                          key={day}
-                          onPress={() => handleDayPress(day)}
-                          disabled={isPast}
-                          style={{ width: '14.28%', aspectRatio: 1, justifyContent: 'center', alignItems: 'center' }}
-                        >
-                          <View className={`w-9 h-9 rounded-full items-center justify-center
-                            ${isSelected ? 'bg-[#222222]' : ''}
-                            ${isRange ? 'bg-[#F5F5F5]' : ''}
-                          `}>
-                            <ThemedText className={`text-[14px] font-figtree-medium
-                              ${isPast ? 'text-[#CCCCCC]' : ''}
-                              ${isSelected ? 'text-white font-figtree-bold' : ''}
-                              ${isToday && !isSelected ? 'text-[#FF385C] font-figtree-bold' : ''}
-                              ${!isPast && !isSelected && !isToday ? 'text-[#222222]' : ''}
-                            `}>
-                              {day}
-                            </ThemedText>
-                          </View>
-                        </TouchableOpacity>
-                      );
-                    })}
-                  </View>
-
-                  <ThemedText className="text-[12px] font-figtree text-[#717171] text-center mt-3">
-                    Tap a date to set check-in, tap again to set check-out
-                  </ThemedText>
-                </View>
-              )}
-
-              {/* ── STEP 2: GUEST PICKER ── */}
-              {bookingStep === 'guests' && (
-                <View className="px-6 pt-5 pb-2 gap-4">
-                  {[
-                    { label: 'Adults', sub: 'Ages 13+', value: adults, min: 1, max: propertyData.details.guests, set: setAdults },
-                    { label: 'Children', sub: 'Ages 2–12', value: children, min: 0, max: Math.max(0, propertyData.details.guests - adults), set: setChildren },
-                  ].map(({ label, sub, value, min, max, set }) => (
-                    <View key={label} className="flex-row justify-between items-center py-4 border-b border-[#F0F0F0]">
-                      <View>
-                        <ThemedText className="text-[16px] font-figtree-semibold text-[#222222]">{label}</ThemedText>
-                        <ThemedText className="text-[14px] font-figtree text-[#717171]">{sub}</ThemedText>
-                      </View>
-                      <View className="flex-row items-center gap-4">
-                        <TouchableOpacity
-                          onPress={() => set(v => Math.max(min, v - 1))}
-                          className={`w-9 h-9 rounded-full border items-center justify-center ${value <= min ? 'border-[#DDDDDD]' : 'border-[#222222]'}`}
-                        >
-                          <ThemedText className={`text-[18px] ${value <= min ? 'text-[#DDDDDD]' : 'text-[#222222]'}`}>−</ThemedText>
-                        </TouchableOpacity>
-                        <ThemedText className="text-[16px] font-figtree-semibold text-[#222222] w-5 text-center">{value}</ThemedText>
-                        <TouchableOpacity
-                          onPress={() => set(v => Math.min(max, v + 1))}
-                          className={`w-9 h-9 rounded-full border items-center justify-center ${value >= max ? 'border-[#DDDDDD]' : 'border-[#222222]'}`}
-                        >
-                          <ThemedText className={`text-[18px] ${value >= max ? 'text-[#DDDDDD]' : 'text-[#222222]'}`}>+</ThemedText>
-                        </TouchableOpacity>
-                      </View>
-                    </View>
-                  ))}
-                  <ThemedText className="text-[12px] font-figtree text-[#717171] mt-2">
-                    This place allows up to {propertyData.details.guests} guests.
-                  </ThemedText>
-                </View>
-              )}
-
-              {/* ── STEP 3: CONFIRM ── */}
-              {bookingStep === 'confirm' && (
-                <View className="px-6 pt-5 pb-2">
-                  <View className="flex-row gap-4 mb-5">
-                    <Image source={{ uri: propertyData.image }} className="w-20 h-20 rounded-xl" />
-                    <View className="flex-1 justify-center">
-                      <ThemedText className="text-[15px] font-figtree-semibold text-[#222222]" numberOfLines={2}>{propertyData.name}</ThemedText>
-                      <ThemedText className="text-[13px] font-figtree text-[#717171] mt-1">{propertyData.location}</ThemedText>
-                    </View>
-                  </View>
-
-                  <View className="bg-[#F7F7F7] rounded-xl p-4 gap-3 mb-5">
-                    <View className="flex-row justify-between">
-                      <ThemedText className="text-[14px] font-figtree-semibold text-[#222222]">Check-in</ThemedText>
-                      <ThemedText className="text-[14px] font-figtree text-[#717171]">{checkIn ? formatDate(checkIn) : '—'}</ThemedText>
-                    </View>
-                    <View className="flex-row justify-between">
-                      <ThemedText className="text-[14px] font-figtree-semibold text-[#222222]">Check-out</ThemedText>
-                      <ThemedText className="text-[14px] font-figtree text-[#717171]">{checkOut ? formatDate(checkOut) : '—'}</ThemedText>
-                    </View>
-                    <View className="flex-row justify-between">
-                      <ThemedText className="text-[14px] font-figtree-semibold text-[#222222]">Guests</ThemedText>
-                      <ThemedText className="text-[14px] font-figtree text-[#717171]">{totalGuests} guest{totalGuests !== 1 ? 's' : ''}</ThemedText>
-                    </View>
-                  </View>
-
-                  <View className="gap-3">
-                    <ThemedText className="text-[18px] font-figtree-bold text-[#222222] mb-1">Price details</ThemedText>
-                    <View className="flex-row justify-between">
-                      <ThemedText className="text-[15px] font-figtree text-[#222222]">${propertyData.price} × {nights} night{nights !== 1 ? 's' : ''}</ThemedText>
-                      <ThemedText className="text-[15px] font-figtree text-[#222222]">${propertyData.price * nights}</ThemedText>
-                    </View>
-                    <View className="flex-row justify-between pt-3 border-t border-[#F0F0F0]">
-                      <ThemedText className="text-[16px] font-figtree-bold text-[#222222]">Total (USD)</ThemedText>
-                      <ThemedText className="text-[16px] font-figtree-bold text-[#222222]">${propertyData.price * nights}</ThemedText>
-                    </View>
-                  </View>
-                </View>
-              )}
-            </ScrollView>
-
-            {/* Modal Footer Button */}
-            <View className="px-6 pb-10 pt-3 border-t border-[#F0F0F0]">
-              {bookingStep === 'dates' && (
-                <TouchableOpacity
-                  className={`py-4 rounded-xl items-center ${checkIn && checkOut ? 'bg-[#FF385C]' : 'bg-[#DDDDDD]'}`}
-                  disabled={!checkIn || !checkOut}
-                  onPress={() => setBookingStep('guests')}
-                >
-                  <ThemedText className="text-white font-figtree-bold text-[16px]">
-                    {checkIn && checkOut ? `${nights} night${nights !== 1 ? 's' : ''} selected — Next` : 'Select check-in & check-out'}
-                  </ThemedText>
-                </TouchableOpacity>
-              )}
-              {bookingStep === 'guests' && (
-                <TouchableOpacity
-                  className="py-4 rounded-xl items-center bg-[#FF385C]"
-                  onPress={() => setBookingStep('confirm')}
-                >
-                  <ThemedText className="text-white font-figtree-bold text-[16px]">
-                    {totalGuests} guest{totalGuests !== 1 ? 's' : ''} — Continue
-                  </ThemedText>
-                </TouchableOpacity>
-              )}
-              {bookingStep === 'confirm' && (
-                <TouchableOpacity
-                  className={`py-4 rounded-xl items-center ${isBooking ? 'bg-[#FF385C]/70' : 'bg-[#FF385C]'}`}
-                  onPress={confirmBooking}
-                  disabled={isBooking}
-                >
-                  <ThemedText className="text-white font-figtree-bold text-[16px]">
-                    {isBooking ? 'Confirming...' : 'Confirm and pay'}
-                  </ThemedText>
-                </TouchableOpacity>
-              )}
-            </View>
+      {/* ── FOOTER BOOKING BAR ──────────────────────────── */}
+      <View className="absolute bottom-0 left-0 right-0 bg-white border-t border-[#F0F0F0] px-6 pt-4 pb-10 flex-row items-center justify-between shadow-2xl">
+        <View>
+          <View className="flex-row items-center">
+            <ThemedText className="text-[18px] font-[Figtree-Bold] text-[#222222]">${property.price}</ThemedText>
+            <ThemedText className="text-[16px] font-[Figtree-Regular] text-[#222222]"> night</ThemedText>
           </View>
+          <ThemedText className="text-[12px] font-[Figtree-SemiBold] mt-0.5 underline text-[#717171]">
+            {property.dates}
+          </ThemedText>
         </View>
-      </Modal>
 
-      {/* Success Modal */}
-      <Modal
-        visible={successModalVisible}
-        transparent={true}
-        animationType="fade"
-      >
-        <View className="flex-1 bg-black/80 justify-center items-center p-6">
-           <View className="bg-white rounded-[24px] p-8 w-full items-center">
-              <View className="w-20 h-20 rounded-full bg-[#FF385C] items-center justify-center mb-6">
-                 <Star size={ms(40)} color="#FFFFFF" fill="#FFFFFF" />
+        <TouchableOpacity className="bg-[#FF385C] px-8 py-4 rounded-xl" onPress={() => {
+          if (!isAuthenticated) {
+            router.push('/auth/login');
+            return;
+          }
+          setBookingModalVisible(true);
+        }}>
+          <ThemedText className="text-white font-[Figtree-Bold] text-[16px]">Reserve</ThemedText>
+        </TouchableOpacity>
+      </View>
+
+      {/* ── MODALS ─────────────────────────────────────── */}
+
+      {/* 0. Booking Modal */}
+      <Modal visible={bookingModalVisible} animationType="slide" transparent>
+        <View className="flex-1 bg-black/50 justify-end">
+          <View className="bg-white rounded-t-[28px] p-6 h-[70%]">
+            <View className="flex-row justify-between items-center mb-6">
+              <TouchableOpacity onPress={() => setBookingModalVisible(false)}>
+                <X size={24} color="#222222" />
+              </TouchableOpacity>
+              <ThemedText className="text-[16px] font-[Figtree-Bold]">Confirm and pay</ThemedText>
+              <View className="w-6" />
+            </View>
+
+            <ScrollView showsVerticalScrollIndicator={false}>
+              <View className="flex-row gap-4 mb-6 pb-6 border-b border-[#EBEBEB]">
+                <Image source={{ uri: property.images[0] }} className="w-24 h-24 rounded-xl" />
+                <View className="flex-1 justify-center">
+                  <ThemedText className="text-[12px] font-[Figtree-Regular] text-[#717171]">{property.type} in {property.location}</ThemedText>
+                  <ThemedText className="text-[16px] font-[Figtree-Bold] text-[#222222] mt-1">{property.name}</ThemedText>
+                  <ThemedText className="text-[14px] font-[Figtree-Regular] text-[#222222] mt-2">⭐ {property.rating} ({property.reviewsCount} reviews)</ThemedText>
+                </View>
               </View>
-              <ThemedText className="text-[24px] font-figtree-bold text-[#222222] text-center">Reservation successful!</ThemedText>
-              <ThemedText className="text-[16px] font-figtree text-[#717171] text-center mt-2 mb-8">Your trip to {propertyData.location} is booked.</ThemedText>
+
+              <ThemedText className="text-[20px] font-[Figtree-Bold] text-[#222222] mb-4">Your trip</ThemedText>
+              
+              <View className="flex-row justify-between mb-4">
+                <View>
+                  <ThemedText className="text-[16px] font-[Figtree-Bold] text-[#222222]">Dates</ThemedText>
+                  <ThemedText className="text-[14px] font-[Figtree-Regular] text-[#717171]">Oct 15 - Oct 20</ThemedText>
+                </View>
+                <TouchableOpacity><ThemedText className="text-[14px] font-[Figtree-Bold] underline text-[#222222]">Edit</ThemedText></TouchableOpacity>
+              </View>
+
+              <View className="flex-row justify-between mb-6 pb-6 border-b border-[#EBEBEB]">
+                <View>
+                  <ThemedText className="text-[16px] font-[Figtree-Bold] text-[#222222]">Guests</ThemedText>
+                  <ThemedText className="text-[14px] font-[Figtree-Regular] text-[#717171]">1 guest</ThemedText>
+                </View>
+                <TouchableOpacity><ThemedText className="text-[14px] font-[Figtree-Bold] underline text-[#222222]">Edit</ThemedText></TouchableOpacity>
+              </View>
+
+              <ThemedText className="text-[20px] font-[Figtree-Bold] text-[#222222] mb-4">Price details</ThemedText>
+              <View className="flex-row justify-between mb-2">
+                <ThemedText className="text-[16px] font-[Figtree-Regular] text-[#222222]">${property.price} x 5 nights</ThemedText>
+                <ThemedText className="text-[16px] font-[Figtree-Regular] text-[#222222]">${property.price * 5}</ThemedText>
+              </View>
+              <View className="flex-row justify-between mb-4 pb-4 border-b border-[#EBEBEB]">
+                <ThemedText className="text-[16px] font-[Figtree-Regular] underline text-[#222222]">Airbnb service fee</ThemedText>
+                <ThemedText className="text-[16px] font-[Figtree-Regular] text-[#222222]">$45</ThemedText>
+              </View>
+
+              <View className="flex-row justify-between mb-8">
+                <ThemedText className="text-[16px] font-[Figtree-Bold] text-[#222222]">Total (USD)</ThemedText>
+                <ThemedText className="text-[16px] font-[Figtree-Bold] text-[#222222]">${property.price * 5 + 45}</ThemedText>
+              </View>
+
               <TouchableOpacity 
-                className="bg-[#222222] py-4 rounded-xl w-full items-center"
-                onPress={() => {
-                  setSuccessModalVisible(false);
-                  router.push('/(tabs)/trips');
+                className="bg-[#FF385C] py-4 rounded-xl items-center"
+                onPress={async () => {
+                  try {
+                    // Use real Booking API format: ISO strings
+                    const checkInDate = "2025-08-01T14:00:00Z";
+                    const checkOutDate = "2025-08-07T11:00:00Z";
+                    
+                    const success = await addReservation(property, checkInDate, checkOutDate, 1);
+                    if (success) {
+                      setBookingModalVisible(false);
+                      router.push('/(tabs)/trips');
+                    }
+                  } catch (error) {
+                    console.error("Booking failed", error);
+                  }
                 }}
               >
-                <ThemedText className="text-white font-figtree-bold text-[16px]">See my trips</ThemedText>
+                <ThemedText className="text-white font-[Figtree-Bold] text-[16px]">Confirm and pay</ThemedText>
               </TouchableOpacity>
-           </View>
+              <View className="h-10" />
+            </ScrollView>
+          </View>
         </View>
       </Modal>
 
-      {!bookingModalVisible && (
-        <View className="absolute bottom-0 left-0 right-0 bg-white border-t border-[#F0F0F0] px-6 pt-4 pb-10 flex-row items-center justify-between shadow-2xl">
-          <View>
-            <View className="flex-row items-center">
-              <ThemedText className="text-[18px] font-figtree-bold text-[#222222]">${propertyData.price}</ThemedText>
-              <ThemedText className="text-[16px] font-figtree text-[#222222]"> night</ThemedText>
-            </View>
-            <TouchableOpacity onPress={handleReserve}>
-              <ThemedText className={`text-[12px] font-figtree-semibold mt-0.5 underline ${checkIn && checkOut ? 'text-[#FF385C]' : 'text-[#717171]'}`}>
-                {bookingBarLabel}
-              </ThemedText>
+      {/* 1. Image Grid Modal */}
+      <Modal visible={imageGridVisible} animationType="slide">
+        <SafeAreaView className="flex-1 bg-white">
+          <View className="px-5 py-4 flex-row items-center justify-between border-b border-[#F0F0F0]">
+            <TouchableOpacity onPress={() => setImageGridVisible(false)}>
+              <ChevronLeft size={24} color="#222222" />
             </TouchableOpacity>
+            <ThemedText className="text-[16px] font-[Figtree-Bold]">All images</ThemedText>
+            <View className="w-6" />
           </View>
+          <ScrollView className="p-2">
+            <View className="flex-row flex-wrap">
+              {property.images.map((img: string, idx: number) => (
+                <TouchableOpacity 
+                  key={idx} 
+                  style={{ width: '50%', aspectRatio: 1, padding: 2 }}
+                  onPress={() => setSelectedViewerImage(img)}
+                >
+                  <Image source={{ uri: img }} style={{ flex: 1, borderRadius: 8 }} />
+                </TouchableOpacity>
+              ))}
+            </View>
+          </ScrollView>
+        </SafeAreaView>
+      </Modal>
 
-          <TouchableOpacity className="bg-[#FF385C] px-8 py-4 rounded-xl" onPress={handleReserve}>
-            <ThemedText className="text-white font-figtree-bold text-[16px]">
-              {checkIn && checkOut ? `Reserve · ${nights}n` : 'Reserve'}
-            </ThemedText>
-          </TouchableOpacity>
+      {/* 2. Swipable Image Viewer */}
+      <Modal visible={!!selectedViewerImage} transparent animationType="fade">
+        <View className="flex-1 bg-black justify-center">
+          <SafeAreaView className="absolute top-0 left-0 right-0 z-20">
+             <TouchableOpacity onPress={() => setSelectedViewerImage(null)} className="p-5">
+                <X size={28} color="#FFFFFF" />
+             </TouchableOpacity>
+          </SafeAreaView>
+          
+          <FlatList
+            data={property.images}
+            horizontal
+            pagingEnabled
+            initialScrollIndex={property.images.indexOf(selectedViewerImage || '')}
+            getItemLayout={(data, index) => ({
+              length: SCREEN_WIDTH,
+              offset: SCREEN_WIDTH * index,
+              index,
+            })}
+            showsHorizontalScrollIndicator={false}
+            renderItem={({ item }) => (
+              <View style={{ width: SCREEN_WIDTH, height: SCREEN_HEIGHT, justifyContent: 'center' }}>
+                <Image 
+                  source={{ uri: item }} 
+                  style={{ width: SCREEN_WIDTH, height: SCREEN_HEIGHT / 1.5 }} 
+                  contentFit="contain" 
+                />
+              </View>
+            )}
+          />
         </View>
-      )}
+      </Modal>
+
+      {/* 3. Description Modal */}
+      <Modal visible={descModalVisible} animationType="slide" transparent>
+        <View className="flex-1 bg-black/50 justify-end">
+          <View className="bg-white rounded-t-[28px] h-[80%] p-6">
+            <TouchableOpacity onPress={() => setDescModalVisible(false)} className="mb-6">
+              <X size={24} color="#222222" />
+            </TouchableOpacity>
+            <ScrollView showsVerticalScrollIndicator={false}>
+               <ThemedText className="text-[24px] font-[Figtree-Bold] text-[#222222] mb-4">About this space</ThemedText>
+               <ThemedText className="text-[16px] font-[Figtree-Regular] text-[#222222] leading-7">{property.description}</ThemedText>
+               <View className="h-10" />
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      {/* 4. Full Reviews Modal */}
+      <Modal visible={reviewsModalVisible} animationType="slide">
+        <SafeAreaView className="flex-1 bg-white">
+          <View className="px-5 py-4 border-b border-[#F0F0F0] flex-row items-center gap-4">
+             <TouchableOpacity onPress={() => setReviewsModalVisible(false)}>
+                <X size={24} color="#222222" />
+             </TouchableOpacity>
+             <View className="flex-1 bg-[#F7F7F7] flex-row items-center px-4 py-2 rounded-full">
+                <Search size={18} color="#717171" />
+                <TextInput 
+                  placeholder="Search reviews" 
+                  className="flex-1 ml-2 font-[Figtree-Regular] text-[14px]"
+                  value={searchReview}
+                  onChangeText={setSearchReview}
+                />
+             </View>
+          </View>
+          
+          <ScrollView className="p-6">
+             <View className="flex-row items-center gap-2 mb-6">
+                <Star size={24} color="#222222" fill="#222222" />
+                <ThemedText className="text-[32px] font-[Figtree-Bold] text-[#222222]">{property.rating}</ThemedText>
+                <ThemedText className="text-[14px] font-[Figtree-Regular] text-[#717171] mt-3">· {property.reviewsCount} reviews</ThemedText>
+             </View>
+
+             {avgScores && (
+               <View className="mb-8">
+                  <ScoreBar label="Cleanliness" score={avgScores.cleanliness} />
+                  <ScoreBar label="Accuracy" score={avgScores.accuracy} />
+                  <ScoreBar label="Communication" score={avgScores.communication} />
+                  <ScoreBar label="Location" score={avgScores.location} />
+                  <ScoreBar label="Check-in" score={avgScores.checkin} />
+                  <ScoreBar label="Value" score={avgScores.value} />
+               </View>
+             )}
+
+             <View className="gap-8">
+                {filteredReviews.length > 0 ? filteredReviews.map((review: Review) => (
+                   <View key={review.id} className="border-b border-[#F0F0F0] pb-8">
+                      <View className="flex-row items-center gap-4 mb-4">
+                         <Image source={{ uri: review.userImage || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=100&q=80' }} className="w-12 h-12 rounded-full" />
+                         <View>
+                            <ThemedText className="text-[16px] font-[Figtree-Bold] text-[#222222]">{review.user}</ThemedText>
+                            <ThemedText className="text-[13px] font-[Figtree-Regular] text-[#717171]">{review.date}</ThemedText>
+                         </View>
+                      </View>
+                      <ThemedText className="text-[16px] font-[Figtree-Regular] text-[#484848] leading-6">{review.comment}</ThemedText>
+                   </View>
+                )) : (
+                  <View className="items-center py-20">
+                     <ThemedText className="text-[18px] font-[Figtree-Bold] text-[#222222]">No reviews found</ThemedText>
+                     <ThemedText className="text-[14px] font-[Figtree-Regular] text-[#717171] mt-1 text-center">We couldn't find any reviews matching "{searchReview}"</ThemedText>
+                  </View>
+                )}
+             </View>
+             <View className="h-20" />
+          </ScrollView>
+        </SafeAreaView>
+      </Modal>
+
+      {/* 5. Report Listing Modal (Flow) */}
+      <Modal visible={reportModalVisible} animationType="slide" transparent>
+        <View className="flex-1 bg-black/50 justify-end">
+          <View className="bg-white rounded-t-[28px] p-6 h-[60%]">
+             <View className="flex-row justify-between items-center mb-6">
+                <TouchableOpacity onPress={() => { if(reportStep > 1) setReportStep(1); else setReportModalVisible(false); }}>
+                   {reportStep > 1 ? <ChevronLeft size={24} /> : <X size={24} />}
+                </TouchableOpacity>
+                <ThemedText className="text-[16px] font-[Figtree-Bold]">Report this listing</ThemedText>
+                <View className="w-6" />
+             </View>
+
+             {reportStep === 1 ? (
+               <View>
+                  <ThemedText className="text-[20px] font-[Figtree-Bold] text-[#222222] mb-4">Why are you reporting this listing?</ThemedText>
+                  <View className="gap-1">
+                     {['It\'s inaccurate or incorrect', 'It\'s not a real place to stay', 'It\'s offensive', 'Something else'].map((reason: string) => (
+                        <TouchableOpacity key={reason} onPress={() => setReportStep(2)} className="py-4 border-b border-[#F0F0F0] flex-row justify-between items-center">
+                           <ThemedText className="text-[16px] font-[Figtree-Regular] text-[#222222]">{reason}</ThemedText>
+                           <ChevronRight size={18} color="#717171" />
+                        </TouchableOpacity>
+                     ))}
+                  </View>
+               </View>
+             ) : (
+               <View className="items-center py-10">
+                  <View className="bg-green-100 p-4 rounded-full mb-6">
+                     <Check size={40} color="#008A05" />
+                  </View>
+                  <ThemedText className="text-[22px] font-[Figtree-Bold] text-[#222222] text-center">Thanks for letting us know</ThemedText>
+                  <ThemedText className="text-[16px] font-[Figtree-Regular] text-[#717171] text-center mt-2">Your feedback helps us keep the Airbnb community safe.</ThemedText>
+                  <TouchableOpacity onPress={() => setReportModalVisible(false)} className="mt-8 bg-[#222222] px-8 py-3 rounded-xl">
+                     <ThemedText className="text-white font-[Figtree-Bold]">Done</ThemedText>
+                  </TouchableOpacity>
+               </View>
+             )}
+          </View>
+        </View>
+      </Modal>
+
     </View>
   );
 }
-

@@ -1,24 +1,64 @@
+/**
+ * @file signup.tsx
+ * @description Signup screen with comprehensive validation and API integration.
+ * Features:
+ * - Form handling with react-hook-form and zod.
+ * - Supports name, email, username, phone, password, and bio.
+ * - Role is defaulted to GUEST as per the API requirements.
+ * - Real-time validation and error handling from the backend.
+ */
+
 import React, { useState } from 'react';
 import { View, StyleSheet, TouchableOpacity, TextInput, SafeAreaView, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
-import { ChevronLeft } from '@/components/icons';
+import { ChevronLeft, Eye, EyeOff } from '@/components/icons';
 import { ThemedText } from '@/components/themed-text';
 import { useAuth } from '@/hooks/use-auth';
+import { useForm, Controller } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
+
+// Validation Schema
+const signupSchema = z.object({
+  name: z.string().min(2, 'Name must be at least 2 characters'),
+  email: z.string().email('Invalid email address'),
+  username: z.string().min(3, 'Username must be at least 3 characters'),
+  phone: z.string().min(10, 'Please enter a valid phone number'),
+  password: z.string().min(6, 'Password must be at least 6 characters'),
+  bio: z.string().optional(),
+});
+
+type SignupForm = z.infer<typeof signupSchema>;
 
 export default function SignupScreen() {
   const router = useRouter();
-  const { signup, isLoading } = useAuth();
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const { register: signup, isLoading } = useAuth();
+  const [showPassword, setShowPassword] = useState(false);
+  const [serverError, setServerError] = useState<string | null>(null);
 
-  const handleSignup = async () => {
-    if (!name || !email || !password) return;
+  const { control, handleSubmit, formState: { errors } } = useForm<SignupForm>({
+    resolver: zodResolver(signupSchema),
+    defaultValues: {
+      name: '',
+      email: '',
+      username: '',
+      phone: '',
+      password: '',
+      bio: '',
+    },
+  });
+
+  const onSignupSubmit = async (data: SignupForm) => {
+    setServerError(null);
     try {
-      await signup(name, email, password);
-      router.replace('/(tabs)');
-    } catch (error) {
-      console.error(error);
+      // API expects role and potentially bio
+      await signup({ 
+        ...data, 
+        role: 'GUEST',
+        bio: data.bio || 'New traveler on Airbnb' 
+      });
+    } catch (error: any) {
+      setServerError(error.response?.data?.message || 'Failed to create account. Please try again.');
     }
   };
 
@@ -34,41 +74,120 @@ export default function SignupScreen() {
           </TouchableOpacity>
         </View>
 
-        <ScrollView contentContainerStyle={styles.content}>
+        <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
           <ThemedText style={styles.title}>Finish signing up</ThemedText>
           
           <View style={styles.form}>
+            {serverError && (
+              <View style={styles.errorBanner}>
+                <ThemedText style={styles.errorText}>{serverError}</ThemedText>
+              </View>
+            )}
+
+            {/* Full Name */}
             <View style={styles.inputContainer}>
               <ThemedText style={styles.label}>Full name</ThemedText>
-              <TextInput
-                style={styles.input}
-                placeholder="First and last name"
-                value={name}
-                onChangeText={setName}
+              <Controller
+                control={control}
+                name="name"
+                render={({ field: { onChange, onBlur, value } }) => (
+                  <TextInput
+                    style={[styles.input, errors.name && styles.inputError]}
+                    placeholder="First and last name"
+                    onBlur={onBlur}
+                    onChangeText={onChange}
+                    value={value}
+                  />
+                )}
               />
+              {errors.name && <ThemedText style={styles.fieldErrorText}>{errors.name.message}</ThemedText>}
             </View>
 
+            {/* Email */}
             <View style={styles.inputContainer}>
               <ThemedText style={styles.label}>Email</ThemedText>
-              <TextInput
-                style={styles.input}
-                placeholder="Enter your email"
-                value={email}
-                onChangeText={setEmail}
-                autoCapitalize="none"
-                keyboardType="email-address"
+              <Controller
+                control={control}
+                name="email"
+                render={({ field: { onChange, onBlur, value } }) => (
+                  <TextInput
+                    style={[styles.input, errors.email && styles.inputError]}
+                    placeholder="Enter your email"
+                    onBlur={onBlur}
+                    onChangeText={onChange}
+                    value={value}
+                    autoCapitalize="none"
+                    keyboardType="email-address"
+                  />
+                )}
               />
+              {errors.email && <ThemedText style={styles.fieldErrorText}>{errors.email.message}</ThemedText>}
             </View>
 
+            {/* Username */}
+            <View style={styles.inputContainer}>
+              <ThemedText style={styles.label}>Username</ThemedText>
+              <Controller
+                control={control}
+                name="username"
+                render={({ field: { onChange, onBlur, value } }) => (
+                  <TextInput
+                    style={[styles.input, errors.username && styles.inputError]}
+                    placeholder="Choose a username"
+                    onBlur={onBlur}
+                    onChangeText={onChange}
+                    value={value}
+                    autoCapitalize="none"
+                  />
+                )}
+              />
+              {errors.username && <ThemedText style={styles.fieldErrorText}>{errors.username.message}</ThemedText>}
+            </View>
+
+            {/* Phone */}
+            <View style={styles.inputContainer}>
+              <ThemedText style={styles.label}>Phone Number</ThemedText>
+              <Controller
+                control={control}
+                name="phone"
+                render={({ field: { onChange, onBlur, value } }) => (
+                  <TextInput
+                    style={[styles.input, errors.phone && styles.inputError]}
+                    placeholder="+250..."
+                    onBlur={onBlur}
+                    onChangeText={onChange}
+                    value={value}
+                    keyboardType="phone-pad"
+                  />
+                )}
+              />
+              {errors.phone && <ThemedText style={styles.fieldErrorText}>{errors.phone.message}</ThemedText>}
+            </View>
+
+            {/* Password */}
             <View style={styles.inputContainer}>
               <ThemedText style={styles.label}>Password</ThemedText>
-              <TextInput
-                style={styles.input}
-                placeholder="Create a password"
-                value={password}
-                onChangeText={setPassword}
-                secureTextEntry
-              />
+              <View style={styles.passwordWrapper}>
+                <Controller
+                  control={control}
+                  name="password"
+                  render={({ field: { onChange, onBlur, value } }) => (
+                    <TextInput
+                      style={[styles.input, { flex: 1, borderBottomWidth: 0 }, errors.password && styles.inputError]}
+                      placeholder="Create a password"
+                      onBlur={onBlur}
+                      onChangeText={onChange}
+                      value={value}
+                      secureTextEntry={!showPassword}
+                    />
+                  )}
+                />
+                <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
+                  {showPassword ? <EyeOff size={20} color="#717171" /> : <Eye size={20} color="#717171" />}
+                </TouchableOpacity>
+              </View>
+              <View style={[styles.border, errors.password && { backgroundColor: '#FF385C' }]} />
+              {errors.password && <ThemedText style={styles.fieldErrorText}>{errors.password.message}</ThemedText>}
             </View>
 
             <ThemedText style={styles.policyText}>
@@ -76,9 +195,9 @@ export default function SignupScreen() {
             </ThemedText>
 
             <TouchableOpacity 
-              style={[styles.signupButton, (!name || !email || !password || isLoading) && styles.disabledButton]}
-              onPress={handleSignup}
-              disabled={!name || !email || !password || isLoading}
+              style={[styles.signupButton, isLoading && styles.disabledButton]}
+              onPress={handleSubmit(onSignupSubmit)}
+              disabled={isLoading}
             >
               <ThemedText style={styles.signupButtonText}>
                 {isLoading ? 'Creating account...' : 'Agree and continue'}
@@ -117,6 +236,25 @@ const styles = StyleSheet.create({
   form: {
     width: '100%',
   },
+  errorBanner: {
+    backgroundColor: '#FFF0F0',
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: '#FF385C',
+  },
+  errorText: {
+    color: '#FF385C',
+    fontSize: 14,
+    fontFamily: 'Figtree-Medium',
+  },
+  fieldErrorText: {
+    color: '#FF385C',
+    fontSize: 12,
+    fontFamily: 'Figtree-Regular',
+    marginTop: 4,
+  },
   inputContainer: {
     marginBottom: 24,
   },
@@ -133,6 +271,18 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderBottomWidth: 1,
     borderBottomColor: '#DDDDDD',
+  },
+  inputError: {
+    borderBottomColor: '#FF385C',
+  },
+  passwordWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  border: {
+    height: 1,
+    backgroundColor: '#DDDDDD',
+    marginTop: -1,
   },
   policyText: {
     fontSize: 12,
@@ -154,7 +304,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingVertical: 14,
     alignItems: 'center',
-    marginBottom: 24,
+    marginBottom: 40,
   },
   disabledButton: {
     backgroundColor: '#FFB3C1',

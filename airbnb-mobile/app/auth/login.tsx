@@ -1,24 +1,52 @@
+/**
+ * @file login.tsx
+ * @description Login screen with validation and API integration.
+ * Features:
+ * - Form handling using react-hook-form and zod validation.
+ * - Integration with useAuth for authentication logic.
+ * - Visual feedback for loading and error states.
+ * - Navigation to Signup and Reset Password.
+ */
+
 import React, { useState } from 'react';
 import { View, StyleSheet, TouchableOpacity, TextInput, SafeAreaView, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
-import { ChevronLeft, Mail, Lock, Eye, EyeOff } from '@/components/icons';
+import { ChevronLeft, Eye, EyeOff } from '@/components/icons';
 import { ThemedText } from '@/components/themed-text';
 import { useAuth } from '@/hooks/use-auth';
+import { useForm, Controller } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
+
+// Validation Schema
+const loginSchema = z.object({
+  email: z.string().email('Please enter a valid email address'),
+  password: z.string().min(6, 'Password must be at least 6 characters'),
+});
+
+type LoginForm = z.infer<typeof loginSchema>;
 
 export default function LoginScreen() {
   const router = useRouter();
-  const { login, isLoading } = useAuth();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const { login, isLoading, loginWithGoogle } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
+  const [serverError, setServerError] = useState<string | null>(null);
 
-  const handleLogin = async () => {
-    if (!email || !password) return;
+  const { control, handleSubmit, formState: { errors } } = useForm<LoginForm>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: {
+      email: '',
+      password: '',
+    },
+  });
+
+  const onLoginSubmit = async (data: LoginForm) => {
+    setServerError(null);
     try {
-      await login(email, password);
-      router.replace('/(tabs)');
-    } catch (error) {
-      console.error(error);
+      await login(data);
+    } catch (error: any) {
+      // Covers: our GUEST-only gate (error.message) + API errors (error.response?.data?.message)
+      setServerError(error.message || error.response?.data?.message || 'Invalid email or password. Please try again.');
     }
   };
 
@@ -38,33 +66,58 @@ export default function LoginScreen() {
           <ThemedText style={styles.title}>Log in to Airbnb</ThemedText>
           
           <View style={styles.form}>
+            {/* Server Error Message */}
+            {serverError && (
+              <View style={styles.errorBanner}>
+                <ThemedText style={styles.errorText}>{serverError}</ThemedText>
+              </View>
+            )}
+
+            {/* Email Field */}
             <View style={styles.inputContainer}>
               <ThemedText style={styles.label}>Email</ThemedText>
-              <TextInput
-                style={styles.input}
-                placeholder="Enter your email"
-                value={email}
-                onChangeText={setEmail}
-                autoCapitalize="none"
-                keyboardType="email-address"
+              <Controller
+                control={control}
+                name="email"
+                render={({ field: { onChange, onBlur, value } }) => (
+                  <TextInput
+                    style={[styles.input, errors.email && styles.inputError]}
+                    placeholder="Enter your email"
+                    onBlur={onBlur}
+                    onChangeText={onChange}
+                    value={value}
+                    autoCapitalize="none"
+                    keyboardType="email-address"
+                  />
+                )}
               />
+              {errors.email && <ThemedText style={styles.fieldErrorText}>{errors.email.message}</ThemedText>}
             </View>
 
+            {/* Password Field */}
             <View style={styles.inputContainer}>
               <ThemedText style={styles.label}>Password</ThemedText>
               <View style={styles.passwordWrapper}>
-                <TextInput
-                  style={[styles.input, { flex: 1, borderBottomWidth: 0 }]}
-                  placeholder="Enter your password"
-                  value={password}
-                  onChangeText={setPassword}
-                  secureTextEntry={!showPassword}
+                <Controller
+                  control={control}
+                  name="password"
+                  render={({ field: { onChange, onBlur, value } }) => (
+                    <TextInput
+                      style={[styles.input, { flex: 1, borderBottomWidth: 0 }, errors.password && styles.inputError]}
+                      placeholder="Enter your password"
+                      onBlur={onBlur}
+                      onChangeText={onChange}
+                      value={value}
+                      secureTextEntry={!showPassword}
+                    />
+                  )}
                 />
                 <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
                   {showPassword ? <EyeOff size={20} color="#717171" /> : <Eye size={20} color="#717171" />}
                 </TouchableOpacity>
               </View>
-              <View style={styles.border} />
+              <View style={[styles.border, errors.password && { backgroundColor: '#FF385C' }]} />
+              {errors.password && <ThemedText style={styles.fieldErrorText}>{errors.password.message}</ThemedText>}
             </View>
 
             <TouchableOpacity style={styles.forgotPassword}>
@@ -72,9 +125,9 @@ export default function LoginScreen() {
             </TouchableOpacity>
 
             <TouchableOpacity 
-              style={[styles.loginButton, (!email || !password || isLoading) && styles.disabledButton]}
-              onPress={handleLogin}
-              disabled={!email || !password || isLoading}
+              style={[styles.loginButton, isLoading && styles.disabledButton]}
+              onPress={handleSubmit(onLoginSubmit)}
+              disabled={isLoading}
             >
               <ThemedText style={styles.loginButtonText}>
                 {isLoading ? 'Logging in...' : 'Continue'}
@@ -87,7 +140,7 @@ export default function LoginScreen() {
               <View style={styles.divider} />
             </View>
 
-            <TouchableOpacity style={styles.socialButton}>
+            <TouchableOpacity style={styles.socialButton} onPress={loginWithGoogle}>
                <ThemedText style={styles.socialButtonText}>Continue with Google</ThemedText>
             </TouchableOpacity>
 
@@ -132,6 +185,25 @@ const styles = StyleSheet.create({
   form: {
     width: '100%',
   },
+  errorBanner: {
+    backgroundColor: '#FFF0F0',
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: '#FF385C',
+  },
+  errorText: {
+    color: '#FF385C',
+    fontSize: 14,
+    fontFamily: 'Figtree-Medium',
+  },
+  fieldErrorText: {
+    color: '#FF385C',
+    fontSize: 12,
+    fontFamily: 'Figtree-Regular',
+    marginTop: 4,
+  },
   inputContainer: {
     marginBottom: 24,
   },
@@ -148,6 +220,9 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderBottomWidth: 1,
     borderBottomColor: '#DDDDDD',
+  },
+  inputError: {
+    borderBottomColor: '#FF385C',
   },
   passwordWrapper: {
     flexDirection: 'row',

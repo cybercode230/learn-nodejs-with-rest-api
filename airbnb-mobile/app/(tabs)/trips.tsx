@@ -1,10 +1,10 @@
-import React, { useMemo } from 'react';
-import { View, ScrollView, TouchableOpacity, Dimensions } from 'react-native';
+import React from 'react';
+import { View, FlatList, TouchableOpacity, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
 import { ms } from 'react-native-size-matters';
 import { useRouter } from 'expo-router';
-import { Map, Calendar, ChevronRight, Star } from '@/components/icons';
+import { Calendar, Star } from '@/components/icons';
 import { ThemedText } from '@/components/themed-text';
 import { useReservations, Reservation } from '@/hooks/use-reservations';
 import { useAuth } from '@/hooks/use-auth';
@@ -13,16 +13,63 @@ import { useListings } from '@/hooks/use-listings';
 const { width } = Dimensions.get('window');
 
 /**
- * TripsScreen — premium trips management experience.
- *
- * Sections:
- *  1. Bold page header
- *  2. Upcoming reservations — Play Store horizontal 2-row grid
- *  3. Where you've been — Airbnb-style listing cards
- *  4. Recommended nearby — listings matching past stay locations
+ * Google Play Store Style Trip Card
  */
+function TripCard({ item, onPress }: { item: any, onPress: () => void }) {
+  return (
+    <TouchableOpacity
+      activeOpacity={0.7}
+      className="flex-row items-start mb-8 px-6"
+      onPress={onPress}
+    >
+      {/* Column 1: Image (Strict Square) */}
+      <Image
+        source={{ uri: item.image || item.images?.[0] }}
+        style={{ width: ms(100), height: ms(100), borderRadius: 12 }}
+        contentFit="cover"
+        transition={200}
+      />
+      
+      {/* Column 2: Text details */}
+      <View className="flex-1 ml-4 py-1">
+        <View className="flex-row justify-between items-start">
+          <ThemedText className="text-[16px] font-[Figtree-Bold] text-[#222222] flex-1 mr-2" numberOfLines={1}>
+            {item.name}
+          </ThemedText>
+          <View className="flex-row items-center gap-1 bg-[#F7F7F7] px-1.5 py-0.5 rounded-md">
+            <Star size={10} color="#222222" fill="#222222" />
+            <ThemedText className="text-[11px] font-[Figtree-Bold] text-[#222222]">
+              {item.rating || '4.9'}
+            </ThemedText>
+          </View>
+        </View>
+        
+        <ThemedText className="text-[14px] font-[Figtree-Regular] text-[#717171] mt-1" numberOfLines={1}>
+          {item.location}
+        </ThemedText>
+        
+        <ThemedText className="text-[13px] font-[Figtree-Regular] text-[#717171] mt-1">
+          {item.dates || 'May 15 - 20, 2024'}
+        </ThemedText>
+        
+        <ThemedText className="text-[13px] font-[Figtree-SemiBold] text-[#222222] mt-3">
+          ${item.price || item.totalPrice || '120'} total
+        </ThemedText>
+      </View>
+    </TouchableOpacity>
+  );
+}
+
+type SectionItem = 
+  | { type: 'header'; title: string }
+  | { type: 'section_title'; title: string }
+  | { type: 'trip'; data: Reservation }
+  | { type: 'empty_upcoming' }
+  | { type: 'recommendations' }
+  | { type: 'footer' };
+
 export default function TripsScreen() {
-  const { reservations, loading } = useReservations();
+  const { reservations } = useReservations();
   const { user } = useAuth();
   const { allListings } = useListings();
   const router = useRouter();
@@ -30,32 +77,6 @@ export default function TripsScreen() {
   const upcomingReservations = reservations.filter(r => r.status === 'upcoming');
   const pastReservations = reservations.filter(r => r.status === 'finished');
 
-  // 2-row column chunks for horizontal Play Store grid
-  const chunkedUpcoming: Reservation[][] = [];
-  for (let i = 0; i < upcomingReservations.length; i += 2) {
-    chunkedUpcoming.push(upcomingReservations.slice(i, i + 2));
-  }
-
-  /**
-   * Derive recommended listings:
-   * — find listings whose location contains any word from past/upcoming stays
-   * — exclude listings already booked
-   */
-  const recommendedListings = useMemo(() => {
-    const bookedIds = new Set(reservations.map(r => r.listingId));
-    const locationWords = reservations
-      .map(r => r.location.split(',')[0].trim().toLowerCase())
-      .filter(Boolean);
-
-    return allListings
-      .filter(l => {
-        if (bookedIds.has(l.id)) return false;
-        return locationWords.some(word => l.location.toLowerCase().includes(word));
-      })
-      .slice(0, 6);
-  }, [allListings, reservations]);
-
-  // ── Not logged in ────────────────────────────────────────────
   if (!user) {
     return (
       <SafeAreaView className="flex-1 bg-white">
@@ -63,254 +84,111 @@ export default function TripsScreen() {
           <View className="w-20 h-20 rounded-full bg-[#F7F7F7] items-center justify-center mb-5">
             <Calendar size={ms(48)} color="#717171" />
           </View>
-          <ThemedText className="text-[22px] font-figtree-bold text-[#222222] text-center">
+          <ThemedText type="title" className="text-center text-[#222222]">
             Log in to see your trips
           </ThemedText>
-          <ThemedText className="text-[15px] text-[#717171] text-center mt-2 leading-5">
+          <ThemedText className="text-[15px] text-[#717171] text-center mt-2 leading-5 font-[Figtree-Regular]">
             You can find your reservations here once you've logged in.
           </ThemedText>
           <TouchableOpacity
-            className="mt-6 bg-[#FF385C] px-8 py-4 rounded-xl w-full items-center"
+            className="mt-8 bg-[#FF385C] px-8 py-4 rounded-xl w-full items-center"
             onPress={() => router.push('/auth/login')}
           >
-            <ThemedText className="text-white text-[16px] font-figtree-bold">Log in</ThemedText>
+            <ThemedText className="text-white text-[16px] font-[Figtree-Bold]">Log in</ThemedText>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
     );
   }
 
-  // ── Upcoming card (horizontal grid) ──────────────────────────
-  const UpcomingCard = ({ item }: { item: Reservation }) => (
-    <TouchableOpacity
-      className="bg-white rounded-2xl overflow-hidden border border-[#EBEBEB]"
-      style={{ width: width * 0.78, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 8, elevation: 3 }}
-      onPress={() => router.push(`/listing/${item.listingId}`)}
-    >
-      <Image
-        source={{ uri: item.image }}
-        className="w-full"
-        style={{ height: ms(140) }}
-        contentFit="cover"
-        transition={200}
-      />
-      {/* Status pill */}
-      <View className="absolute top-3 left-3 bg-white/90 px-2.5 py-1 rounded-full">
-        <ThemedText className="text-[11px] font-figtree-bold text-[#222222]">Upcoming</ThemedText>
-      </View>
-      <View className="p-4">
-        <ThemedText className="text-[11px] font-figtree-bold text-[#717171] uppercase tracking-widest" numberOfLines={1}>
-          {item.location}
-        </ThemedText>
-        <ThemedText className="text-[16px] font-figtree-semibold text-[#222222] mt-1" numberOfLines={1}>
-          {item.name}
-        </ThemedText>
-        <View className="flex-row items-center gap-1.5 mt-2">
-          <Calendar size={ms(12)} color="#FF385C" />
-          <ThemedText className="text-[13px] font-figtree text-[#717171]">
-            {item.checkIn} → {item.checkOut}
-          </ThemedText>
-        </View>
-      </View>
-    </TouchableOpacity>
+  const renderSectionHeader = (title: string) => (
+    <View className="px-6 mt-10 mb-6">
+      <ThemedText type="heading" className="text-[#222222]">{title}</ThemedText>
+    </View>
   );
 
-  // ── Past stay card (wishlist-style full card) ─────────────────
-  const PastCard = ({ item }: { item: Reservation }) => (
-    <TouchableOpacity
-      className="flex-row bg-white rounded-2xl overflow-hidden mb-4 border border-[#EBEBEB]"
-      style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 6, elevation: 2 }}
-      onPress={() => router.push(`/listing/${item.listingId}`)}
-    >
-      <Image
-        source={{ uri: item.image }}
-        style={{ width: ms(110), height: ms(110) }}
-        contentFit="cover"
-      />
-      <View className="flex-1 p-4 justify-between">
-        <View>
-          <ThemedText className="text-[11px] font-figtree-bold text-[#717171] uppercase" numberOfLines={1}>
-            {item.location}
-          </ThemedText>
-          <ThemedText className="text-[15px] font-figtree-semibold text-[#222222] mt-0.5" numberOfLines={2}>
-            {item.name}
-          </ThemedText>
-          <ThemedText className="text-[13px] font-figtree text-[#717171] mt-1">
-            {item.checkIn} – {item.checkOut} · {item.guests} guest{item.guests !== 1 ? 's' : ''}
-          </ThemedText>
-        </View>
-        <View className="flex-row items-center gap-1 mt-2">
-          <View className="bg-[#F7F7F7] px-2.5 py-1 rounded-full">
-            <ThemedText className="text-[12px] font-figtree-semibold text-[#222222]">
-              ${item.totalPrice} total
-            </ThemedText>
-          </View>
-        </View>
-      </View>
-      <View className="justify-center pr-4">
-        <ChevronRight size={ms(18)} color="#AAAAAA" />
-      </View>
-    </TouchableOpacity>
-  );
-
-  // ── Recommended listing card ──────────────────────────────────
-  const RecommendedCard = ({ item }: { item: any }) => (
-    <TouchableOpacity
-      className="bg-white rounded-2xl overflow-hidden mr-4 border border-[#EBEBEB]"
-      style={{ width: width * 0.58, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.07, shadowRadius: 6, elevation: 2 }}
-      onPress={() => router.push(`/listing/${item.id}`)}
-    >
-      <Image
-        source={{ uri: item.image }}
-        className="w-full"
-        style={{ height: ms(130) }}
-        contentFit="cover"
-        transition={200}
-      />
-      <View className="p-3">
-        <ThemedText className="text-[11px] font-figtree-bold text-[#717171] uppercase" numberOfLines={1}>
-          {item.location}
-        </ThemedText>
-        <ThemedText className="text-[14px] font-figtree-semibold text-[#222222] mt-0.5" numberOfLines={1}>
-          {item.name}
-        </ThemedText>
-        <View className="flex-row items-center gap-1 mt-1.5">
-          <Star size={ms(11)} color="#222222" fill="#222222" />
-          <ThemedText className="text-[12px] font-figtree-semibold text-[#222222]">{item.rating}</ThemedText>
-          <ThemedText className="text-[12px] font-figtree text-[#717171]">({item.reviewsCount})</ThemedText>
-        </View>
-        <ThemedText className="text-[13px] font-figtree-bold text-[#222222] mt-1">
-          <ThemedText className="font-figtree-bold">${item.price}</ThemedText>
-          <ThemedText className="font-figtree text-[#717171]"> night</ThemedText>
-        </ThemedText>
-      </View>
-    </TouchableOpacity>
-  );
+  const sections: SectionItem[] = [
+    { type: 'header', title: 'Trips' },
+    { type: 'section_title', title: 'Upcoming' },
+    ...upcomingReservations.map(r => ({ type: 'trip' as const, data: r })),
+    ...(upcomingReservations.length === 0 ? [{ type: 'empty_upcoming' as const }] : []),
+    ...(pastReservations.length > 0 ? [{ type: 'section_title' as const, title: "Where you've been" }] : []),
+    ...pastReservations.map(r => ({ type: 'trip' as const, data: r })),
+    { type: 'section_title', title: 'Inspired by your wishlists' },
+    { type: 'recommendations' },
+    { type: 'footer' }
+  ];
 
   return (
     <SafeAreaView className="flex-1 bg-white">
-      <ScrollView showsVerticalScrollIndicator={false}>
-
-        {/* ── PAGE HEADER ────────────────────────────────────── */}
-        <View className="px-6 pt-8 pb-2">
-          <ThemedText type='title' className="font-bold text-[#222222] leading-tight">Trips</ThemedText>
-          <ThemedText className="text-[15px] font-figtree text-[#717171] mt-1">
-            {reservations.length > 0
-              ? `${reservations.length} reservation${reservations.length !== 1 ? 's' : ''}`
-              : 'Your travel history lives here'}
-          </ThemedText>
-        </View>
-
-        {/* ── UPCOMING RESERVATIONS ──────────────────────────── */}
-        {upcomingReservations.length > 0 ? (
-          <View className="mt-6">
-            {/* Category-link style section header */}
-            <View className="flex-row items-center justify-between px-6 mb-4">
-              <View className="flex-row items-center gap-2">
-                <View className="w-1 h-5 rounded-full bg-[#FF385C]" />
-                <ThemedText className="text-[20px] font-figtree-bold text-[#222222]">
-                  Upcoming
-                </ThemedText>
-              </View>
-              <TouchableOpacity className="flex-row items-center gap-1">
-                <ThemedText className="text-[13px] font-figtree-semibold text-[#717171]">See all</ThemedText>
-                <ChevronRight size={ms(14)} color="#717171" />
-              </TouchableOpacity>
-            </View>
-
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={{ paddingLeft: ms(24), paddingRight: ms(16), paddingBottom: ms(8), gap: ms(14) }}
-              snapToInterval={width * 0.78 + ms(14)}
-              decelerationRate="fast"
-            >
-              {chunkedUpcoming.map((pair, idx) => (
-                <View key={idx} style={{ gap: ms(14) }}>
-                  {pair.map(item => <UpcomingCard key={item.id} item={item} />)}
+      <FlatList
+        data={sections}
+        keyExtractor={(item, index) => index.toString()}
+        showsVerticalScrollIndicator={false}
+        renderItem={({ item }) => {
+          switch (item.type) {
+            case 'header':
+              return (
+                <View className="px-6 pt-10 pb-4">
+                  <ThemedText type="title" className="text-[#222222]">{item.title}</ThemedText>
                 </View>
-              ))}
-            </ScrollView>
-          </View>
-        ) : (
-          <View className="mx-6 mt-6 bg-[#F7F7F7] rounded-2xl p-8 items-center">
-            <ThemedText className="text-[18px] font-figtree-bold text-[#222222] text-center">
-              No trips booked… yet!
-            </ThemedText>
-            <ThemedText className="text-[14px] font-figtree text-[#717171] text-center mt-2 leading-5">
-              Time to dust off your bags and start planning your next adventure.
-            </ThemedText>
-            <TouchableOpacity
-              className="mt-5 bg-[#222222] px-6 py-3 rounded-xl"
-              onPress={() => router.push('/(tabs)')}
-            >
-              <ThemedText className="text-white text-[14px] font-figtree-bold">Start exploring</ThemedText>
-            </TouchableOpacity>
-          </View>
-        )}
-
-        {/* ── WHERE YOU'VE BEEN ──────────────────────────────── */}
-        <View className="mt-8">
-          <View className="flex-row items-center justify-between px-6 mb-4">
-            <View className="flex-row items-center gap-2">
-              <View className="w-1 h-5 rounded-full bg-[#222222]" />
-              <ThemedText className="text-[20px] font-figtree-bold text-[#222222]">
-                Where you've been
-              </ThemedText>
-            </View>
-          </View>
-
-          {reservations.length === 0 ? (
-            <View className="px-6">
-              <ThemedText className="text-[14px] font-figtree text-[#717171]">
-                Your completed stays will appear here.
-              </ThemedText>
-            </View>
-          ) : (
-            <View className="px-6">
-              {reservations.map(res => (
-                <PastCard key={res.id} item={res} />
-              ))}
-
-              <TouchableOpacity
-                className="py-3.5 items-center border border-[#DDDDDD] rounded-xl mb-2"
-                onPress={() => {}}
-              >
-                <ThemedText className="text-[14px] font-figtree-semibold text-[#222222]">See all stays</ThemedText>
-              </TouchableOpacity>
-            </View>
-          )}
-        </View>
-
-        {/* ── RECOMMENDED NEARBY ─────────────────────────────── */}
-        {recommendedListings.length > 0 && (
-          <View className="mt-8">
-            <View className="px-6 mb-1">
-              <View className="flex-row items-center gap-2 mb-1">
-                <View className="w-1 h-5 rounded-full bg-[#FF385C]" />
-                <ThemedText className="text-[20px] font-figtree-bold text-[#222222]">
-                  Recommended nearby
-                </ThemedText>
-              </View>
-              <ThemedText className="text-[13px] font-figtree text-[#717171]">
-                More places in areas you've stayed
-              </ThemedText>
-            </View>
-
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={{ paddingLeft: ms(24), paddingRight: ms(16), paddingTop: ms(14), paddingBottom: ms(8) }}
-            >
-              {recommendedListings.map(item => (
-                <RecommendedCard key={item.id} item={item} />
-              ))}
-            </ScrollView>
-          </View>
-        )}
-
-        <View className="h-28" />
-      </ScrollView>
+              );
+            case 'section_title':
+              return renderSectionHeader(item.title);
+            case 'trip':
+              return <TripCard item={item.data} onPress={() => router.push(`/listing/${item.data.listingId}`)} />;
+            case 'empty_upcoming':
+              return (
+                <View className="mx-6 bg-[#F7F7F7] rounded-3xl p-10 items-center border border-[#EBEBEB]">
+                  <ThemedText className="text-[18px] font-[Figtree-Bold] text-[#222222] text-center">
+                    No trips booked… yet!
+                  </ThemedText>
+                  <ThemedText className="text-[14px] text-[#717171] text-center mt-2 mb-6 font-[Figtree-Regular]">
+                    Time to dust off your bags and start planning your next adventure.
+                  </ThemedText>
+                  <TouchableOpacity
+                    className="bg-[#222222] px-8 py-3 rounded-xl"
+                    onPress={() => router.push('/(tabs)')}
+                  >
+                    <ThemedText className="text-white font-[Figtree-Bold]">Start exploring</ThemedText>
+                  </TouchableOpacity>
+                </View>
+              );
+            case 'recommendations':
+              return (
+                <FlatList
+                  horizontal
+                  data={allListings.slice(0, 8)}
+                  keyExtractor={(l) => l.id}
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={{ paddingLeft: 24, paddingRight: 12 }}
+                  renderItem={({ item: listing }) => (
+                    <TouchableOpacity 
+                      className="mr-5 w-[160px]"
+                      onPress={() => router.push(`/listing/${listing.id}`)}
+                    >
+                      <Image 
+                        source={{ uri: listing.images[0] }} 
+                        style={{ width: ms(160), height: ms(160), borderRadius: 16 }} 
+                        transition={200}
+                      />
+                      <View className="mt-3">
+                         <ThemedText className="text-[14px] font-[Figtree-Bold] text-[#222222]">${listing.price} night</ThemedText>
+                         <ThemedText className="text-[13px] font-[Figtree-Regular] text-[#717171] mt-1" numberOfLines={1}>
+                           {listing.name}
+                         </ThemedText>
+                      </View>
+                    </TouchableOpacity>
+                  )}
+                />
+              );
+            case 'footer':
+              return <View className="h-20" />;
+            default:
+              return null;
+          }
+        }}
+      />
     </SafeAreaView>
   );
 }

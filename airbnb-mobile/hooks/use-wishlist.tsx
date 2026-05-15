@@ -7,10 +7,12 @@ export interface WishlistItem {
   name: string;
   location: string;
   image: string;
+  images?: string[];
   price: number;
   rating: number;
   savedAt: string; // ISO Date
   dates: string;
+  coordinates?: { latitude: number, longitude: number };
 }
 
 export interface WishlistCategory {
@@ -78,11 +80,13 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
         listingId: listing.id,
         name: listing.name,
         location: listing.location,
-        image: listing.image,
+        image: listing.images?.[0] || listing.image,
+        images: listing.images,
         price: listing.price,
         rating: listing.rating,
         savedAt: new Date().toISOString(),
         dates: listing.dates || 'Any dates',
+        coordinates: listing.coordinates,
       };
 
       if (categoryExists) {
