@@ -1,0 +1,244 @@
+{
+  "data": [
+    {
+      "id": "d9ca726302aaffb70d3325e98f081610",
+      "title": "kagugu villa ",
+      "description": "kagugu villa house for rent in one night which has there some features there.",
+      "location": " Kagugu,Rwanda",
+      "pricePerNight": 100,
+      "guests": 2,
+      "amenities": [
+        "WiFi",
+        "Kitchen",
+        "Parking"
+      ],
+      "rating": null,
+      "createdAt": "2026-05-16T19:10:39.262Z",
+      "hostId": "d69642322d00b8d5a97a951bd5758e0e",
+      "updatedAt": "2026-05-16T19:10:39.262Z",
+      "type": "VILLA",
+      "host": {
+        "name": "John Doe",
+        "avatar": "https://res.cloudinary.com/dc3xf2utp/image/upload/v1778772612/airbnb/avatars/nq9v9hopevficwybhwjp.jpg"
+      },
+      "_count": {
+        "bookings": 2
+      }
+    },
+    {
+      "id": "856063cba5465a3271a012c28d8d0e63",
+      "title": "Luxury Modern Villa with Pool & City View in Kigali",
+      "description": "Experience comfort and luxury in this beautiful modern villa located in the heart of Kigali. The property offers spacious bedrooms, a private swimming pool, fast WiFi, free parking, and a relaxing city view balcony. Perfect for families, business travelers, couples, or group vacations.\n\nGuests can enjoy a fully equipped kitchen, smart TV, air conditioning, coffee maker, and a peaceful neighborhood close to restaurants, shopping centers, and major attractions in Kigali.\n\nWhether you are visiting for business or leisure, this villa provides a comfortable and memorable stay with everything you need.",
+      "location": "Kigali, Rwanda",
+      "pricePerNight": 100,
+      "guests": 1000,
+      "amenities": [
+        "WiFi",
+        "Pool",
+        "Air Conditioning",
+        "Gym",
+        "Coffee Maker",
+        "Parking",
+        "Kitchen",
+        "TV"
+      ],
+      "rating": null,
+      "createdAt": "2026-05-14T15:09:49.872Z",
+      "hostId": "d69642322d00b8d5a97a951bd5758e0e",
+      "updatedAt": "2026-05-14T15:09:49.872Z",
+      "type": "VILLA",
+      "host": {
+        "name": "John Doe",
+        "avatar": "https://res.cloudinary.com/dc3xf2utp/image/upload/v1778772612/airbnb/avatars/nq9v9hopevficwybhwjp.jpg"
+      },
+      "_count": {
+        "bookings": 3
+      }
+    },
+    {
+      "id": "7cbcb9162dbac08751b209e616655bc2",
+      "title": "City View Apartment",
+      "description": "A modern apartment with panoramic views of Addis Ababa.",
+      "location": "Addis Ababa, Ethiopia",
+      "pricePerNight": 85,
+      "guests": 2,
+      "amenities": [
+        "WiFi",
+        "Elevator",
+        "Kitchen",
+        "Security"
+      ],
+      "rating": null,
+      "createdAt": "2026-05-06T14:43:24.269Z",
+      "hostId": "d69642322d00b8d5a97a951bd5758e0e",
+      "updatedAt": "2026-05-06T14:43:24.269Z",
+      "type": "APARTMENT",
+      "host": {
+        "name": "John Doe",
+        "avatar": "https://res.cloudinary.com/dc3xf2utp/image/upload/v1778772612/airbnb/avatars/nq9v9hopevficwybhwjp.jpg"
+      },
+      "_count": {
+        "bookings": 1
+      }
+    },
+    {
+      "id": "2d633fc31561ef91ed2cb10400932bdc",
+      "title": "Safari Wooden Cabin",
+      "description": "Located in the heart of Arusha, Tanzania, the Safari Wooden Cabin offers a unique and immersive experience for travelers seeking to connect with nature. This charming cabin is designed to provide a cozy and intimate atmosphere, perfect for couples or small groups of up to three guests. With its rustic wooden exterior and warm interior, the cabin exudes a sense of warmth and hospitality, making it an ideal retreat for those looking to escape the hustle and bustle of city life.\n\nThe cabin is equipped with a range of amenities to ensure a comfortable and enjoyable stay. A crackling fireplace provides a warm and inviting focal point, perfect for relaxing on chilly evenings. High-speed WiFi connectivity keeps guests connected to the outside world, while a delicious breakfast is included each morning to start the day off right. For added convenience, parking is also available on site, making it easy to explore the surrounding area. Whether you're looking to venture into the nearby wilderness or simply unwind in a peaceful setting, the Safari Wooden Cabin has everything you need.\n\nAt $150 USD per night, the Safari Wooden Cabin offers exceptional value for a truly unique and unforgettable experience. With its stunning natural surroundings and comfortable amenities, this cabin is the perfect base for exploring the beauty of Tanzania. From wildlife safaris to hiking and cultural excursions, there's no shortage of exciting activities to discover in and around Arusha. So why not immerse yourself in the natural beauty of Africa and book your stay at the Safari Wooden Cabin today? With its warm hospitality and stunning setting, you're sure to create memories that will last a lifetime.",
+      "location": "Arusha, Tanzania",
+      "pricePerNight": 150,
+      "guests": 3,
+      "amenities": [
+        "Fireplace",
+        "WiFi",
+        "Breakfast Included",
+        "Parking"
+      ],
+      "rating": null,
+      "createdAt": "2026-05-06T14:43:14.977Z",
+      "hostId": "d69642322d00b8d5a97a951bd5758e0e",
+      "updatedAt": "2026-05-14T15:43:52.510Z",
+      "type": "CABIN",
+      "host": {
+        "name": "John Doe",
+        "avatar": "https://res.cloudinary.com/dc3xf2utp/image/upload/v1778772612/airbnb/avatars/nq9v9hopevficwybhwjp.jpg"
+      },
+      "_count": {
+        "bookings": 0
+      }
+    },
+    {
+      "id": "a7c066fad5b2982a301d64274bd1897b",
+      "title": "Beachfront Zanzibar Villa",
+      "description": "A luxury villa right on the beach with stunning ocean views.",
+      "location": "Zanzibar, Tanzania",
+      "pricePerNight": 280,
+      "guests": 6,
+      "amenities": [
+        "WiFi",
+        "Pool",
+        "Beach Access",
+        "Air Conditioning"
+      ],
+      "rating": null,
+      "createdAt": "2026-05-06T14:42:56.733Z",
+      "hostId": "d69642322d00b8d5a97a951bd5758e0e",
+      "updatedAt": "2026-05-06T14:42:56.733Z",
+      "type": "VILLA",
+      "host": {
+        "name": "John Doe",
+        "avatar": "https://res.cloudinary.com/dc3xf2utp/image/upload/v1778772612/airbnb/avatars/nq9v9hopevficwybhwjp.jpg"
+      },
+      "_count": {
+        "bookings": 1
+      }
+    },
+    {
+      "id": "1ff5e56d0d3be27995441e56f075a8b5",
+      "title": "Comfortable Family House",
+      "description": "A peaceful house in Kampala perfect for families and long stays.",
+      "location": "Kampala, Uganda",
+      "pricePerNight": 110,
+      "guests": 5,
+      "amenities": [
+        "WiFi",
+        "Garden",
+        "Parking",
+        "Kitchen"
+      ],
+      "rating": null,
+      "createdAt": "2026-05-06T14:42:50.301Z",
+      "hostId": "d69642322d00b8d5a97a951bd5758e0e",
+      "updatedAt": "2026-05-06T14:42:50.301Z",
+      "type": "HOUSE",
+      "host": {
+        "name": "John Doe",
+        "avatar": "https://res.cloudinary.com/dc3xf2utp/image/upload/v1778772612/airbnb/avatars/nq9v9hopevficwybhwjp.jpg"
+      },
+      "_count": {
+        "bookings": 2
+      }
+    },
+    {
+      "id": "2a4860f07789c37a03e9559bed44b60a",
+      "title": "Hill View House",
+      "description": "Located in the picturesque town of Rwamagana, Hill View House is a charming retreat that offers the perfect blend of comfort and tranquility. This beautifully appointed house is designed to accommodate up to 5 guests, making it an ideal choice for families, friends, or business travelers seeking a relaxing getaway. With its stunning views of the surrounding hills, Hill View House is the perfect destination for those looking to unwind and reconnect with nature.\n\nThe house is equipped with all the modern amenities you need to make your stay comfortable and enjoyable. Stay connected with family and friends back home with our fast and reliable WiFi, or simply relax and take in the breathtaking views from the balcony. For your convenience, we also offer secure parking facilities, ensuring that your vehicle is safe and secure throughout your stay. Whether you're looking to explore the local area or simply relax in the comfort of your own space, Hill View House has everything you need to make your stay unforgettable.\n\nAt $100 USD per night, Hill View House offers exceptional value for money. Our competitive pricing, combined with our commitment to providing exceptional customer service, makes us the perfect choice for travelers seeking a high-quality accommodation experience. So why wait? Book your stay at Hill View House today and experience the beauty and tranquility of Rwamagana for yourself. With its unique blend of natural beauty, modern amenities, and warm hospitality, Hill View House is the perfect destination for your next getaway.",
+      "location": "Rwamagana",
+      "pricePerNight": 100,
+      "guests": 5,
+      "amenities": [
+        "WiFi",
+        "Parking",
+        "Balcony View"
+      ],
+      "rating": null,
+      "createdAt": "2026-04-30T12:46:50.627Z",
+      "hostId": "0d7b35f95d22fbdd7f702bb6a01aec88",
+      "updatedAt": "2026-04-30T13:13:52.521Z",
+      "type": "HOUSE",
+      "host": {
+        "name": "cyuzuzojosue",
+        "avatar": "https://res.cloudinary.com/dc3xf2utp/image/upload/v1778231869/airbnb/avatars/oalemvaeha6komr0ew3s.jpg"
+      },
+      "_count": {
+        "bookings": 2
+      }
+    },
+    {
+      "id": "e6459c3fdc161fa1e9caea168f45a80f",
+      "title": "Lake View Family House",
+      "description": "Comfortable house overlooking Lake Kivu.",
+      "location": "Rubavu - Gisenyi",
+      "pricePerNight": 180,
+      "guests": 6,
+      "amenities": [
+        "WiFi",
+        "Lake View",
+        "Parking"
+      ],
+      "rating": null,
+      "createdAt": "2026-04-30T12:46:38.892Z",
+      "hostId": "0d7b35f95d22fbdd7f702bb6a01aec88",
+      "updatedAt": "2026-04-30T12:46:38.892Z",
+      "type": "HOUSE",
+      "host": {
+        "name": "cyuzuzojosue",
+        "avatar": "https://res.cloudinary.com/dc3xf2utp/image/upload/v1778231869/airbnb/avatars/oalemvaeha6komr0ew3s.jpg"
+      },
+      "_count": {
+        "bookings": 0
+      }
+    },
+    {
+      "id": "8d034a6a62f3beed95aaa1c56e7f073e",
+      "title": "Nobleza hotel",
+      "description": "A beautiful villa with ocean views.",
+      "location": "kicukiro",
+      "pricePerNight": 350,
+      "guests": 6,
+      "amenities": [
+        "WiFi",
+        "Pool",
+        "Beach Access"
+      ],
+      "rating": null,
+      "createdAt": "2026-04-28T12:07:39.340Z",
+      "hostId": "d69642322d00b8d5a97a951bd5758e0e",
+      "updatedAt": "2026-04-28T12:07:39.340Z",
+      "type": "HOUSE",
+      "host": {
+        "name": "John Doe",
+        "avatar": "https://res.cloudinary.com/dc3xf2utp/image/upload/v1778772612/airbnb/avatars/nq9v9hopevficwybhwjp.jpg"
+      },
+      "_count": {
+        "bookings": 2
+      }
+    }
+  ],
+  "meta": {
+    "total": 9,
+    "page": 1,
+    "limit": 10,
+    "totalPages": 1
+  }
+}
