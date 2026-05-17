@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Globe, Menu, User, Home, Settings, HelpCircle, LogOut } from 'lucide-react';
+import { User, Home, Settings, HelpCircle, LogOut } from 'lucide-react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useSearchState } from '../../../contexts/SearchContext';
@@ -72,10 +72,12 @@ const Navbar: React.FC = () => {
           {/* Logo Section */}
           <div className="flex flex-col items-start min-w-[140px]">
             <Link to="/" onClick={() => setIsSearchExpanded(false)} className="flex items-center gap-2 text-airbnb hover:opacity-90 transition-all group">
-              <div className="bg-airbnb p-1.5 rounded-lg text-white group-hover:scale-110 transition-transform" onClick={logoOnClick}>
-                <Home size={22} strokeWidth={2.5} />
-              </div>
-              <span className={`text-2xl font-black tracking-tighter transition-all ${scrolled ? 'scale-90 origin-left' : ''}`}>airbnb</span>
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center text-airbnb" onClick={logoOnClick}>
+                  <img src="./logo.svg" alt="airb application logo"  className='flex-1'/>
+                </div>
+                <span className={`text-xl transition-all ${scrolled ? 'scale-90 origin-left' : ''}`}>airbnb</span>
+              </div>             
             </Link>
           </div>
 
@@ -119,20 +121,20 @@ const Navbar: React.FC = () => {
           {/* Right Menu Section */}
           <div className="flex items-center gap-2 min-w-[140px] justify-end">
             <Link to={user ? '/dashboard' : '/register'} className="hidden md:block">
-              <Button variant="ghost" size="sm" className="rounded-full font-bold">
-                {user ? 'Dashboard' : 'Airbnb your home'}
+              <Button variant="ghost" size="sm" className="rounded-full font-nomal">
+                {user ? 'Dashboard' : 'Start listing as Host'}
               </Button>
             </Link>
             
-            <Button variant="ghost" size="icon" className="rounded-full hidden sm:flex">
+            {/* <Button variant="ghost" size="icon" className="rounded-full hidden sm:flex">
               <Globe size={18} />
-            </Button>
+            </Button> */}
 
             {/* User Menu Dropdown */}
             <Dropdown
               trigger={
-                <div className="flex items-center gap-3 border border-gray-200 rounded-full p-1.5 pl-3 hover:shadow-lg transition-all cursor-pointer bg-white">
-                  <Menu size={18} className="text-gray-600" />
+                <div className="flex items-center gap-3 rounded-full p-1.5 pl-3 hover:transition-all cursor-pointer bg-white">
+                  {/* <Menu size={18} className="text-gray-600" /> */}
                   <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-gray-100 to-gray-200 flex items-center justify-center overflow-hidden border border-gray-100 shadow-inner">
                     {user?.avatar ? (
                       <img src={user.avatar} alt={user.name} className="w-full h-full object-cover" />
@@ -147,9 +149,9 @@ const Navbar: React.FC = () => {
               <div className="py-2">
                 {user ? (
                   <>
-                    <div className="px-5 py-4 border-b border-gray-50 bg-gray-50/50">
-                      <p className="text-sm font-bold text-gray-900">{user.name}</p>
-                      <p className="text-xs text-gray-500 mt-0.5">{user.email}</p>
+                    <div className="px-5 py-4 border-b border-gray-50 bg-gray-50/50">                      
+                      <p className="text-sm text-gray-900">{user.email}</p>   
+                      <p className="text-xs font-normal text-gray-500 mt-0.5">{user.role}</p>
                     </div>
                     <div className="py-2">
                       <DropdownLink to="/dashboard" icon={<Home size={16} />} label="Dashboard" />
@@ -175,8 +177,7 @@ const Navbar: React.FC = () => {
                       <Link to="/register" className="block px-5 py-3 text-sm hover:bg-gray-50">Sign up</Link>
                     </div>
                     <div className="border-t border-gray-100 py-2">
-                      <DropdownLink to="/host" icon={<Home size={16} />} label="Airbnb your home" />
-                      <DropdownLink to="/help" icon={<HelpCircle size={16} />} label="Help Center" />
+                      <DropdownLink to="/dashboard/help" icon={<HelpCircle size={16} />} label="Help Center" />
                     </div>
                   </>
                 )}

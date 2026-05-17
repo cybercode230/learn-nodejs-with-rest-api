@@ -43,10 +43,10 @@ const ForgotPasswordPage: React.FC = () => {
         initial={{ opacity: 0, scale: 0.98 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.4 }}
-        className="w-full max-w-5xl h-[600px] bg-white rounded-xl shadow-2xl overflow-hidden grid md:grid-cols-2 border border-gray-100"
+        className="w-full max-w-5xl h-[500px] bg-white rounded-xl shadow-2xl overflow-hidden grid md:grid-cols-2 border border-gray-100"
       >
         {/* Left Side: Branding */}
-        <div className="relative hidden md:flex flex-col justify-between p-8 bg-gradient-to-br from-airbnb via-airbnb/90 to-pink-600 text-white overflow-hidden">
+        <div className="relative hidden md:flex flex-col justify-between p-8 bg-transparent text-black/80 overflow-hidden">
           <div className="absolute top-0 right-0 -mr-20 -mt-20 w-80 h-80 bg-white/10 rounded-full blur-3xl" />
           <div className="absolute bottom-0 left-0 -ml-20 -mb-20 w-64 h-64 bg-white/10 rounded-full blur-3xl" />
           
@@ -54,36 +54,38 @@ const ForgotPasswordPage: React.FC = () => {
             <Link to="/" className="inline-block mb-8">
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center text-airbnb">
-                  <CheckCircle2 className="w-4 h-4" />
+                  <img src="./logo.svg" alt="airb application logo"  className='flex-1'/>
                 </div>
-                <span className="text-xl font-black tracking-tight">airbnb</span>
+                <span className="text-xl text-airbnb">airbnb</span>
               </div>
             </Link>
 
-            <h1 className="text-3xl font-black mb-4 leading-tight">Reset your<br />Password</h1>
-            <p className="text-sm font-medium text-white/80 max-w-[200px]">
+            <h1 className="text-3xl mb-4 leading-tight">Reset your Password</h1>
+            <p className="text-sm font-medium text-black/60 max-w-[300px]">
               Don't worry, we'll help you get back into your account in no time.
             </p>
           </div>
 
-          <div className="relative z-10 pt-6 border-t border-white/20">
-            <p className="text-white/70 text-xs font-medium">
+          {/* <div className="relative z-10 pt-6 border-t border-white/20">
+            <p className="text-b;ack/70 text-xs font-medium">
               Secure and verified account recovery
             </p>
-          </div>
+          </div> */}
         </div>
 
         {/* Right Side: Form */}
         <div className="p-6 md:p-8 lg:p-10 flex flex-col justify-center overflow-y-auto custom-scrollbar">
           <div className="md:hidden flex justify-center mb-6">
-            <div className="flex items-center gap-2 text-airbnb">
-              <CheckCircle2 className="w-6 h-6" />
-              <span className="text-xl font-black tracking-tight text-gray-900">airbnb</span>
-            </div>
+            <div className="flex items-center gap-2">
+                <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center text-airbnb">
+                  <img src="./logo.svg" alt="airb application logo"  className='flex-1'/>
+                </div>
+                <span className="text-xl text-airbnb">airbnb</span>
+              </div>
           </div>
 
           <div className="mb-6">
-            <h2 className="text-xl font-black text-gray-900 mb-1">Recover Access</h2>
+            <h2 className="text-xl text-black/80 mb-1">Recover Access</h2>
             <p className="text-xs text-gray-500 font-medium">Enter your email for reset instructions</p>
           </div>
 
@@ -122,7 +124,7 @@ const ForgotPasswordPage: React.FC = () => {
                 )}
 
                 <div className="space-y-1.5">
-                  <Label htmlFor="email" className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">
+                  <Label htmlFor="email" className="text-[12px] text-black/80 ml-1">
                     Email Address
                   </Label>
                   <Input
@@ -141,7 +143,7 @@ const ForgotPasswordPage: React.FC = () => {
 
                 <Button
                   type="submit"
-                  className="w-full py-2.5 rounded-lg text-sm font-black bg-airbnb hover:bg-airbnb/90 text-white mt-2 h-auto"
+                  className="w-full py-3 rounded-lg text-sm font-black bg-airbnb hover:bg-airbnb/90 text-white mt-2 h-auto"
                   isLoading={isLoading}
                   disabled={!formik.isValid || formik.isSubmitting}
                   rightIcon={<ArrowRight size={16} strokeWidth={3} />}
@@ -151,9 +153,8 @@ const ForgotPasswordPage: React.FC = () => {
 
                 <Link
                   to="/login"
-                  className="flex items-center justify-center gap-2 text-xs font-bold text-gray-400 hover:text-airbnb transition-colors mt-6"
-                >
-                  <ArrowLeft size={14} strokeWidth={3} />
+                  className="flex items-start justify-start gap-1 text-sm text-airbnb/80 hover:text-airbnb transition-colors mt-6"
+                >                  
                   <span>Return to Sign In</span>
                 </Link>
               </form>

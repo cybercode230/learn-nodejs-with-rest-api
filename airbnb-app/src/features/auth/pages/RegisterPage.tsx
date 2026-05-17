@@ -8,12 +8,12 @@ import {
   Mail, 
   Lock, 
   Phone, 
-  ArrowRight, 
-  Home, 
-  Compass, 
+  ArrowRight,   
+  TableProperties,
   CheckCircle2,
   Eye,
-  EyeOff
+  EyeOff,
+  UsersIcon
 } from 'lucide-react';
 
 import { registerSchema } from '../schemas/register.schema';
@@ -55,14 +55,14 @@ const RegisterPage: React.FC = () => {
       id: 'GUEST',
       title: 'Guest',
       description: 'Discover unique places.',
-      icon: <Compass size={18} />,
+      icon: <UsersIcon size={18} />,
       color: 'bg-blue-500'
     },
     {
       id: 'HOST',
       title: 'Host',
       description: 'Start earning today.',
-      icon: <Home size={18} />,
+      icon: <TableProperties size={18} />,
       color: 'bg-airbnb'
     }
   ];
@@ -73,36 +73,36 @@ const RegisterPage: React.FC = () => {
         initial={{ opacity: 0, scale: 0.98 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.4 }}
-        className="w-full max-w-5xl h-[600px] bg-white rounded-xl shadow-2xl overflow-hidden grid md:grid-cols-2 border border-gray-100"
+        className="w-full max-w-5xl h-[500px] bg-white rounded-xl shadow-2xl overflow-hidden grid md:grid-cols-2 border border-gray-100"
       >
         {/* Left Side: Branding & Role */}
-        <div className="relative hidden md:flex flex-col justify-between p-8 bg-gradient-to-br from-airbnb via-airbnb/90 to-pink-600 text-white overflow-hidden">
+        <div className="relative hidden md:flex flex-col justify-between p-8 bg-transparent text-white overflow-hidden">
           <div className="absolute top-0 right-0 -mr-20 -mt-20 w-80 h-80 bg-white/10 rounded-full blur-3xl" />
           <div className="absolute bottom-0 left-0 -ml-20 -mb-20 w-64 h-64 bg-white/10 rounded-full blur-3xl" />
           
           <div className="relative z-10">
             <Link to="/" className="inline-block mb-8">
-              <div className="flex items-center gap-2">
+              < div className="flex items-center gap-2">
                 <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center text-airbnb">
-                  <CheckCircle2 className="w-4 h-4" />
+                  <img src="./logo.svg" alt="airb application logo"  className='flex-1'/>
                 </div>
-                <span className="text-xl font-black tracking-tight">airbnb</span>
+                <span className="text-xl text-airbnb">airbnb</span>
               </div>
             </Link>
 
-            <h1 className="text-3xl font-black mb-6 leading-tight">Join our<br />Community</h1>
+            <h1 className="text-3xl mb-6 text-black/80 leading-tight">Join us, Make<br /> money with quick uploads</h1>
             
             <div className="space-y-3">
-              <p className="text-xs font-black uppercase tracking-widest text-white/50 mb-2">Select your role</p>
+              <p className="text-xs text-black/50 mb-2">Select your role to start process</p>
               {roles.map((role) => (
                 <button
                   key={role.id}
                   type="button"
                   onClick={() => formik.setFieldValue('role', role.id)}
-                  className={`w-full p-4 rounded-xl border-2 transition-all flex items-center gap-4 text-left ${
+                  className={`w-full p-2 rounded-xl transition-all flex items-center gap-4 text-start border border-gray-200 text-black/80 ${
                     formik.values.role === role.id 
-                      ? 'bg-white text-gray-900 border-white shadow-lg' 
-                      : 'bg-white/10 border-white/20 text-white hover:bg-white/20'
+                      ? 'border border-gray-400' 
+                      : 'bg-transparent text-black/80 hover:bg-white/20'
                   }`}
                 >
                   <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${
@@ -112,7 +112,7 @@ const RegisterPage: React.FC = () => {
                   </div>
                   <div>
                     <h3 className="text-sm font-black">{role.title}</h3>
-                    <p className={`text-[10px] font-medium ${formik.values.role === role.id ? 'text-gray-500' : 'text-white/70'}`}>
+                    <p className={`text-[10px] font-medium ${formik.values.role === role.id ? 'text-gray-500' : 'text-black/80'}`}>
                       {role.description}
                     </p>
                   </div>
@@ -132,20 +132,21 @@ const RegisterPage: React.FC = () => {
         </div>
 
         {/* Right Side: Form */}
-        <div className="p-6 md:p-8 lg:p-10 flex flex-col justify-center overflow-y-auto custom-scrollbar">
+        <div className="p-6 md:p-8 lg:p-10 flex flex-col justify-center overflow-y-auto custom-scrollbar ">
           <div className="md:hidden flex justify-center mb-6">
-            <div className="flex items-center gap-2 text-airbnb">
-              <CheckCircle2 className="w-6 h-6" />
-              <span className="text-xl font-black tracking-tight text-gray-900">airbnb</span>
-            </div>
+            < div className="flex items-center gap-2">
+                <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center text-airbnb">
+                  <img src="./logo.svg" alt="airb application logo"  className='flex-1'/>
+                </div>
+                <span className="text-xl text-airbnb">airbnb</span>
+              </div>
           </div>
 
-          <div className="mb-6">
-            <h2 className="text-xl font-black text-gray-900 mb-1">Create Account</h2>
-            <p className="text-xs text-gray-500 font-medium">Join thousands of hosts and guests</p>
+          <div className="mb-5">
+            <h2 className="text-xl mb-1 text-black/80 leading-tight">Identification</h2>            
           </div>
 
-          <form onSubmit={formik.handleSubmit} className="space-y-4">
+          <form onSubmit={formik.handleSubmit} className="space-y-2">
             <AnimatePresence mode="wait">
               {error && (
                 <motion.div 
@@ -161,7 +162,7 @@ const RegisterPage: React.FC = () => {
 
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label htmlFor="name" className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">Full Name</Label>
+                <Label htmlFor="name" className="text-[14px]  text-black/80 ml-1">Full Name</Label>
                 <Input
                   id="name"
                   name="name"
@@ -176,7 +177,7 @@ const RegisterPage: React.FC = () => {
               </div>
 
               <div className="space-y-1.5">
-                <Label htmlFor="username" className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">Username</Label>
+                <Label htmlFor="username" className="text-[14px]  text-black/80 ml-1">Username</Label>
                 <Input
                   id="username"
                   name="username"
@@ -193,7 +194,7 @@ const RegisterPage: React.FC = () => {
 
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label htmlFor="email" className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">Email</Label>
+                <Label htmlFor="email" className="text-[14px]  text-black/80 ml-1">Email</Label>
                 <Input
                   id="email"
                   name="email"
@@ -209,7 +210,7 @@ const RegisterPage: React.FC = () => {
               </div>
 
               <div className="space-y-1.5">
-                <Label htmlFor="phone" className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">Phone</Label>
+                <Label htmlFor="phone" className="text-[14px]  text-black/80 ml-1">Phone</Label>
                 <Input
                   id="phone"
                   name="phone"
@@ -225,7 +226,7 @@ const RegisterPage: React.FC = () => {
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="password"  className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">Password</Label>
+              <Label htmlFor="password"  className="text-[14px]  text-black/80 ml-1">Password</Label>
               <div className="relative">
                 <Input
                   id="password"
@@ -258,7 +259,7 @@ const RegisterPage: React.FC = () => {
                       return (
                         <div 
                           key={step} 
-                          className={`h-1 flex-1 rounded-full transition-all duration-500 ${
+                          className={`h-1.5 w-14 rounded-full transition-all duration-500 ${
                             step <= strength 
                               ? strength <= 2 ? 'bg-amber-500' : 'bg-emerald-500'
                               : 'bg-gray-100'
@@ -267,7 +268,7 @@ const RegisterPage: React.FC = () => {
                       );
                     })}
                   </div>
-                  <p className="text-[9px] font-bold text-gray-400 uppercase tracking-tight">
+                  <p className="text-[9px] text-black/80">
                     {formik.values.password.length < 8 ? 'Weak (min 8 chars)' : 'Strong password'}
                   </p>
                 </div>
@@ -277,7 +278,7 @@ const RegisterPage: React.FC = () => {
 
             <Button
               type="submit"
-              className="w-full py-2.5 rounded-lg text-sm font-black bg-airbnb hover:bg-airbnb/90 text-white mt-2 h-auto"
+              className="w-full py-3 rounded-lg text-sm font-black bg-airbnb hover:bg-airbnb/90 text-white mt-2 h-auto"
               isLoading={isLoading}
               disabled={!formik.isValid || formik.isSubmitting}
               rightIcon={<ArrowRight size={16} strokeWidth={3} />}
@@ -287,9 +288,9 @@ const RegisterPage: React.FC = () => {
           </form>
 
 
-          <p className="mt-6 text-center text-[10px] text-gray-500 font-medium">
+          <p className="mt-6 text-start text-sm text-gray-600 font-medium">
             Already have an account?{' '}
-            <Link to="/login" className="text-airbnb font-black hover:underline ml-1">
+            <Link to="/login" className="text-airbnb font-medium hover:underline ml-1">
               Sign In
             </Link>
           </p>

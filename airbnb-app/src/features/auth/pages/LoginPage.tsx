@@ -3,11 +3,11 @@ import { Link } from 'react-router-dom';
 import { useFormik } from 'formik';
 import { toFormikValidationSchema } from 'zod-formik-adapter';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 import { 
   Mail, 
   Lock, 
   ArrowRight, 
-  CheckCircle2, 
   ShieldCheck, 
   Clock, 
   BadgeDollarSign,
@@ -49,6 +49,7 @@ const LoginPage: React.FC = () => {
     { icon: <Clock className="w-4 h-4" />, text: "24/7 Support" },
     { icon: <BadgeDollarSign className="w-4 h-4" />, text: "Money-back Guarantee" }
   ];
+  const navigate = useNavigate();
 
   return (
     <AuthLayout>
@@ -56,10 +57,11 @@ const LoginPage: React.FC = () => {
         initial={{ opacity: 0, scale: 0.98 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.4 }}
-        className="w-full max-w-5xl h-[600px] bg-white rounded-xl shadow-2xl overflow-hidden grid md:grid-cols-2 border border-gray-100"
+        className="w-full max-w-5xl h-[500px] bg-white rounded-xl shadow-2xl overflow-hidden grid md:grid-cols-2 border border-gray-100"
       >
         {/* Left Side: Branding */}
-        <div className="relative hidden md:flex flex-col justify-between p-8 bg-gradient-to-br from-airbnb via-airbnb/90 to-pink-600 text-white overflow-hidden">
+        {/* <div className="relative hidden md:flex flex-col justify-between p-8 bg-gradient-to-br from-airbnb via-airbnb/90 to-pink-600 text-white overflow-hidden"> */}
+        <div className="relative hidden md:flex flex-col justify-between p-8 bg-transparent text-gray-900 overflow-hidden">
           <div className="absolute top-0 right-0 -mr-20 -mt-20 w-80 h-80 bg-white/10 rounded-full blur-3xl" />
           <div className="absolute bottom-0 left-0 -ml-20 -mb-20 w-64 h-64 bg-white/10 rounded-full blur-3xl" />
           
@@ -67,9 +69,9 @@ const LoginPage: React.FC = () => {
             <Link to="/" className="inline-block mb-8">
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center text-airbnb">
-                  <CheckCircle2 className="w-4 h-4" />
+                  <img src="./logo.svg" alt="airb application logo"  className='flex-1'/>
                 </div>
-                <span className="text-xl font-black tracking-tight">airbnb</span>
+                <span className="text-xl text-airbnb">airbnb</span>
               </div>
             </Link>
 
@@ -77,9 +79,9 @@ const LoginPage: React.FC = () => {
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.2 }}
-              className="text-3xl font-black mb-4 leading-tight"
+              className="text-3xl  mb-4 text-black/80 leading-tight"
             >
-              Welcome<br />Back
+              Welcome  Back To Your <br /> Virtual Space
             </motion.h1>
             
             <motion.div 
@@ -89,7 +91,7 @@ const LoginPage: React.FC = () => {
               className="space-y-3"
             >
               {features.map((feature, index) => (
-                <div key={index} className="flex items-center gap-2 text-white/90 text-sm font-medium">
+                <div key={index} className="flex items-center gap-2 text-black/90 text-sm font-medium">
                   <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center">
                     {feature.icon}
                   </div>
@@ -99,9 +101,9 @@ const LoginPage: React.FC = () => {
             </motion.div>
           </div>
 
-          <div className="relative z-10 pt-6 border-t border-white/20">
-            <p className="text-white/70 text-xs font-medium">
-              Join thousands of hosts and guests
+          <div className="relative z-10 pt-6 border-t border-black/20">
+            <p className="text-blue-500 text-xs font-medium cursor-pointer hover: transition-all" onClick={()=> navigate("/")}>
+              Return to a home page
             </p>
           </div>
         </div>
@@ -109,15 +111,16 @@ const LoginPage: React.FC = () => {
         {/* Right Side: Form */}
         <div className="p-6 md:p-8 lg:p-10 flex flex-col justify-center overflow-y-auto custom-scrollbar">
           <div className="md:hidden flex justify-center mb-6">
-            <div className="flex items-center gap-2 text-airbnb">
-              <CheckCircle2 className="w-6 h-6" />
-              <span className="text-xl font-black tracking-tight text-gray-900">airbnb</span>
-            </div>
+            < div className="flex items-center gap-2">
+                <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center text-airbnb">
+                  <img src="./logo.svg" alt="airb application logo"  className='flex-1'/>
+                </div>
+                <span className="text-xl text-airbnb">airbnb</span>
+              </div>
           </div>
 
           <div className="mb-6">
-            <h2 className="text-xl font-black text-gray-900 mb-1">Sign In</h2>
-            <p className="text-xs text-gray-500 font-medium">Enter your credentials to access your account</p>
+            <h2 className="text-xl text-black/80 mb-1">Get in space</h2>
           </div>
 
           <form onSubmit={formik.handleSubmit} className="space-y-4">
@@ -135,7 +138,7 @@ const LoginPage: React.FC = () => {
             </AnimatePresence>
 
             <div className="space-y-1.5">
-              <Label htmlFor="email" className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">
+              <Label htmlFor="email" className="text-[14px]  text-black/80 ml-1">
                 Email Address
               </Label>
               <Input
@@ -154,10 +157,10 @@ const LoginPage: React.FC = () => {
 
             <div className="space-y-1.5">
               <div className="flex justify-between items-center px-1">
-                <Label htmlFor="password" className="text-[10px] font-black uppercase tracking-widest text-gray-400">
+                <Label htmlFor="password" className="text-[14px]  text-black/80 ml-1">
                   Password
                 </Label>
-                <Link to="/forgot-password" className="text-[10px] font-bold text-airbnb hover:underline">
+                <Link to="/forgot-password" className="text-[12px] text-airbnb hover:underline">
                   Forgot password?
                 </Link>
               </div>
@@ -186,7 +189,7 @@ const LoginPage: React.FC = () => {
 
             <Button
               type="submit"
-              className="w-full py-2.5 rounded-lg text-sm font-black bg-airbnb hover:bg-airbnb/90 text-white mt-2 h-auto"
+              className="w-full py-3 rounded-lg text-xm font-black bg-airbnb hover:bg-airbnb/90 text-white mt-2 h-auto"
               isLoading={isLoading}
               disabled={!formik.isValid || formik.isSubmitting}
               rightIcon={<ArrowRight size={16} strokeWidth={3} />}
@@ -196,9 +199,9 @@ const LoginPage: React.FC = () => {
           </form>
 
 
-          <p className="mt-6 text-center text-xs text-gray-500 font-medium">
-            New to airbnb?{' '}
-            <Link to="/register" className="text-airbnb font-black hover:underline ml-1">
+          <p className="mt-6 text-start text-sm text-gray-600 font-medium">
+            I don't have an account{' '}
+            <Link to="/register" className="text-airbnb font-medium hover:underline ml-1">
               Create account
             </Link>
           </p>

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Star, Archive, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Star, Heart, ChevronLeft, ChevronRight } from 'lucide-react';
 import type { Listing } from '../../../shared/types';
 import { Link, useNavigate } from 'react-router-dom';
 import { useListings } from '../../../contexts/ListingContext';
@@ -110,7 +110,7 @@ const ListingCard: React.FC<ListingCardProps> = ({ listing }) => {
             className="absolute top-3 right-3 p-2 rounded-full transition-all z-10 active:scale-90" 
             onClick={handleFavoriteClick}
           >
-            <Archive 
+            <Heart 
               size={20} 
               className={isSaved ? 'fill-airbnb text-airbnb' : 'text-white/90 stroke-[2px] drop-shadow-md'} 
             />

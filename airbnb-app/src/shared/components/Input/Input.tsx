@@ -20,7 +20,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
           <input
             ref={ref}
             className={`
-              w-full py-3.5 bg-gray-50 border rounded-xl outline-none transition-all duration-200
+              w-full py-3.5 bg-gray-50 border rounded-[10px] outline-none transition-all duration-200
               ${leftIcon ? 'pl-12' : 'px-4'} 
               ${rightIcon ? 'pr-12' : 'px-4'}
               ${error 
