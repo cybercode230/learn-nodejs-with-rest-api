@@ -1,5 +1,6 @@
 /// <reference types="jest" />
 import request from "supertest";
+import { describe, beforeEach, it, expect } from "@jest/globals";
 import app from "../src/index.js";
 import { getPrismaClient } from "./setup.js";
 

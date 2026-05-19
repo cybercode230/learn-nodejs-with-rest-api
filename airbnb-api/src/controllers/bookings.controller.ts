@@ -9,6 +9,7 @@ import { BookingService } from "../services/booking.service.js";
 import { BookingStatus, Role } from "@prisma/client";
 import type { AuthRequest } from "../middlewares/auth.middleware.js";
 import prisma from "../config/prisma.js";
+import { NotificationService } from "../services/notification.service.js";
 
 /**
  * @swagger
@@ -113,6 +114,53 @@ export const createBooking = async (req: AuthRequest, res: Response, next: NextF
       ...bodyWithoutGuestId,
       guestId: req.userId
     });
+
+    // Notify guest & host in the background
+    try {
+      const listing = await prisma.listing.findUnique({
+        where: { id: newBooking.listingId },
+        select: { hostId: true, title: true }
+      });
+      const guest = await prisma.user.findUnique({
+        where: { id: req.userId },
+        select: { name: true }
+      });
+
+      const paymentMethod = req.body.paymentMethod || "Credit Card";
+      const paymentLabel = paymentMethod === "momo" ? "Mobile Money (MOMO)" : paymentMethod === "paypal" ? "PayPal" : "Credit Card";
+
+      if (listing) {
+        // Send notification to host: "New Booking Request"
+        const checkInDate = new Date(req.body.checkIn).toLocaleDateString();
+        const checkOutDate = new Date(req.body.checkOut).toLocaleDateString();
+        await NotificationService.sendNotification(listing.hostId, {
+          title: "New Booking Request",
+          body: `${guest?.name || "A guest"} wants to book "${listing.title}" for ${checkInDate} – ${checkOutDate}`,
+          type: "host_booking_request",
+          data: {
+            bookingId: newBooking.id,
+            listingTitle: listing.title,
+            route: "HostBookingDetail",
+          },
+          channelId: "bookings"
+        });
+      }
+
+      // Send notification to guest: "Booking Requested"
+      await NotificationService.sendNotification(req.userId as string, {
+        title: "Booking Requested ⏳",
+        body: `Your booking for "${listing?.title || "listing"}" is pending host approval.`,
+        type: "guest_booking_requested",
+        data: {
+          bookingId: newBooking.id,
+          route: "BookingDetail",
+        },
+        channelId: "bookings"
+      });
+    } catch (err) {
+      console.error("Failed to send booking creation push notifications:", err);
+    }
+
     res.status(201).json(newBooking);
   } catch (error) {
     if ((error as Error).message === "BOOKING_CONFLICT") {
@@ -172,6 +220,59 @@ export const updateBookingStatus = async (req: AuthRequest, res: Response, next:
       return res.status(400).json({ message: "Invalid status value" });
     }
     const updatedBooking = await BookingService.updateBookingStatus(id, status as BookingStatus);
+
+    // Send push notification to guest in the background
+    try {
+      const bookingDetails = await prisma.booking.findUnique({
+        where: { id: updatedBooking.id },
+        include: {
+          listing: { select: { title: true } }
+        }
+      });
+
+      if (bookingDetails) {
+        if (status === BookingStatus.CONFIRMED) {
+          const checkIn = new Date(bookingDetails.checkIn).toLocaleDateString();
+          const checkOut = new Date(bookingDetails.checkOut).toLocaleDateString();
+          await NotificationService.sendNotification(bookingDetails.guestId, {
+            title: "Booking Confirmed ✓",
+            body: `Your stay at "${bookingDetails.listing.title}" is confirmed for ${checkIn} – ${checkOut}`,
+            type: "booking_confirmed",
+            data: {
+              bookingId: updatedBooking.id,
+              route: "BookingDetail",
+            },
+            channelId: "bookings"
+          });
+        } else if (status === BookingStatus.CANCELLED) {
+          await NotificationService.sendNotification(bookingDetails.guestId, {
+            title: "Booking Cancelled",
+            body: `Your booking at "${bookingDetails.listing.title}" has been cancelled`,
+            type: "booking_cancelled",
+            data: {
+              bookingId: updatedBooking.id,
+              route: "BookingDetail",
+            },
+            channelId: "bookings"
+          });
+        } else {
+          const statusLabel = status;
+          await NotificationService.sendNotification(bookingDetails.guestId, {
+            title: `Booking Update: ${statusLabel}`,
+            body: `Your booking for "${bookingDetails.listing.title}" has been ${status.toLowerCase()}.`,
+            type: "guest_booking_update",
+            data: {
+              bookingId: updatedBooking.id,
+              route: "BookingDetail",
+            },
+            channelId: "bookings"
+          });
+        }
+      }
+    } catch (err) {
+      console.error("Failed to send booking status update notification:", err);
+    }
+
     res.json(updatedBooking);
   } catch (error) { next(error); }
 };
@@ -199,8 +300,50 @@ export const updateBookingStatus = async (req: AuthRequest, res: Response, next:
 export const deleteBooking = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const id = req.params["id"] as string;
+
+    // Fetch booking details before cancellation for notifications
+    const bookingDetails = await prisma.booking.findUnique({
+      where: { id },
+      include: {
+        listing: { select: { hostId: true, title: true } },
+        guest: { select: { name: true } }
+      }
+    });
+
     // cancelBooking performs: existence check, ownership check, already-cancelled guard, soft update + email
     const cancelled = await BookingService.cancelBooking(id, req.userId as string);
+
+    // Notify guest & host in the background
+    try {
+      if (bookingDetails) {
+        // Notify host: "Guest cancelled"
+        await NotificationService.sendNotification(bookingDetails.listing.hostId, {
+          title: "Booking Cancelled",
+          body: `${bookingDetails.guest?.name || "A guest"} cancelled their booking at "${bookingDetails.listing.title}"`,
+          type: "host_booking_cancellation",
+          data: {
+            bookingId: id,
+            route: "HostBookingDetail",
+          },
+          channelId: "bookings"
+        });
+
+        // Notify guest: "Booking Cancelled"
+        await NotificationService.sendNotification(req.userId as string, {
+          title: "Booking Cancelled ❌",
+          body: `Your reservation for "${bookingDetails.listing.title}" has been successfully cancelled.`,
+          type: "guest_booking_cancellation",
+          data: {
+            bookingId: id,
+            route: "BookingDetail",
+          },
+          channelId: "bookings"
+        });
+      }
+    } catch (err) {
+      console.error("Failed to send booking cancellation notifications:", err);
+    }
+
     res.json({ message: "Booking cancelled successfully", booking: cancelled });
   } catch (error) {
     if ((error as Error).message === "BOOKING_NOT_FOUND") {

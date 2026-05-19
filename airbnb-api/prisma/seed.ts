@@ -1,8 +1,9 @@
 import "dotenv/config";
-import { PrismaClient } from "../src/generated/prisma/index.js";
+import { PrismaClient } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import pg from "pg";
 import bcrypt from "bcrypt";
+import { listingsData } from "./seedsListing.js";
 
 const connectionString = `${process.env["DATABASE_URL"]}`;
 const pool = new pg.Pool({ connectionString });
@@ -20,50 +21,41 @@ async function main() {
   await prisma.listing.deleteMany();
   await prisma.user.deleteMany();
 
-  const hashedPassword = await bcrypt.hash("password123", 10);
+  // Common password for all seeded accounts
+  const hashedPassword = await bcrypt.hash("cyber@123", 10);
 
   // 2. Create users (1 admin, 2 hosts, 3 guests)
   console.log("👤 Creating users...");
-  
+
+  // Admin user (also acts as Host 2)
   const admin = await prisma.user.create({
     data: {
-      id: "usr_admin",
-      name: "Super Admin",
-      email: "admin@airbnb.rw",
-      username: "admin",
+      id: "0d7b35f95d22fbdd7f702bb6a01aec88",
+      name: "Cyuzuzo Josue",
+      email: "cyuzuzojosue230@gmail.com",
+      username: "cyuzuzojosue",
       phone: "+250780000000",
       password: hashedPassword,
       role: "ADMIN",
-      bio: "Global system administrator.",
+      avatar: "https://res.cloudinary.com/dc3xf2utp/image/upload/v1778231869/airbnb/avatars/oalemvaeha6komr0ew3s.jpg",
     },
   });
 
+  // Host 1: John Doe
   const host1 = await prisma.user.create({
     data: {
-      id: "usr_host1",
-      name: "Jean Bosco",
-      email: "bosco@example.rw",
-      username: "bosco_host",
+      id: "d69642322d00b8d5a97a951bd5758e0e",
+      name: "John Doe",
+      email: "john.doe@example.com",
+      username: "johndoe",
       phone: "+250780000001",
       password: hashedPassword,
       role: "HOST",
-      bio: "Local host in Gisenyi.",
+      avatar: "https://res.cloudinary.com/dc3xf2utp/image/upload/v1778772612/airbnb/avatars/nq9v9hopevficwybhwjp.jpg",
     },
   });
 
-  const host2 = await prisma.user.create({
-    data: {
-      id: "usr_host2",
-      name: "Sonia Uwase",
-      email: "uwase@example.rw",
-      username: "sonia_host",
-      phone: "+250780000002",
-      password: hashedPassword,
-      role: "HOST",
-      bio: "Boutique hotel owner in Kigali.",
-    },
-  });
-
+  // Guest 1
   const guest1 = await prisma.user.create({
     data: {
       id: "usr_guest1",
@@ -76,6 +68,7 @@ async function main() {
     },
   });
 
+  // Guest 2
   const guest2 = await prisma.user.create({
     data: {
       id: "usr_guest2",
@@ -88,6 +81,7 @@ async function main() {
     },
   });
 
+  // Guest 3
   const guest3 = await prisma.user.create({
     data: {
       id: "usr_guest3",
@@ -100,68 +94,70 @@ async function main() {
     },
   });
 
-  // 3. Create listings (4 listings - APARTMENT, HOUSE, VILLA, CABIN)
+  // 3. Create listings from seedsListing.ts
   console.log("🏠 Creating listings...");
-  const listing1 = await prisma.listing.create({
-    data: {
-      id: "lst_apt1",
-      title: "Cozy Apartment in Kigali Height",
-      description: "Modern apartment with a city view.",
-      location: "Kimihurura, Kigali",
-      pricePerNight: 85,
-      guests: 2,
-      type: "APARTMENT",
-      amenities: ["WiFi", "Gym", "Kitchen", "AC"],
-      hostId: host2.id,
-    },
-  });
+  
+  const typePhotos: Record<string, string[]> = {
+    APARTMENT: [
+      "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1493809842364-78817add7ffb?auto=format&fit=crop&w=800&q=80"
+    ],
+    HOUSE: [
+      "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=800&q=80"
+    ],
+    VILLA: [
+      "https://images.unsplash.com/photo-1613490493576-7fde63acd811?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1613977257363-707ba9348227?auto=format&fit=crop&w=800&q=80"
+    ],
+    CABIN: [
+      "https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1510798831971-661eb04b3739?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1449034446853-66c86144b0ad?auto=format&fit=crop&w=800&q=80"
+    ]
+  };
 
-  const listing2 = await prisma.listing.create({
-    data: {
-      id: "lst_house1",
-      title: "Spacious House near Lake Kivu",
-      description: "Perfect for family vacations.",
-      location: "Rubavu, Gisenyi",
-      pricePerNight: 150,
-      guests: 6,
-      type: "HOUSE",
-      amenities: ["WiFi", "Lake View", "Fireplace", "Garden"],
-      hostId: host1.id,
-    },
-  });
+  for (const listing of listingsData) {
+    const { host, ...listingFields } = listing;
+    
+    await prisma.listing.create({
+      data: {
+        id: listingFields.id,
+        title: listingFields.title,
+        description: listingFields.description,
+        location: listingFields.location,
+        pricePerNight: listingFields.pricePerNight,
+        guests: listingFields.guests,
+        amenities: listingFields.amenities,
+        type: listingFields.type,
+        hostId: listingFields.hostId,
+        createdAt: new Date(listingFields.createdAt),
+        updatedAt: new Date(listingFields.updatedAt),
+        status: "APPROVED",
+      },
+    });
 
-  const listing3 = await prisma.listing.create({
-    data: {
-      id: "lst_villa1",
-      title: "Luxury Villa in Musanze",
-      description: "High-end villa near the Volcanoes National Park.",
-      location: "Musanze, Northern Province",
-      pricePerNight: 450,
-      guests: 8,
-      type: "VILLA",
-      amenities: ["Private Pool", "WiFi", "Chef", "Security"],
-      hostId: host2.id,
-    },
-  });
-
-  const listing4 = await prisma.listing.create({
-    data: {
-      id: "lst_cabin1",
-      title: "Mountain Cabin in Nyungwe",
-      description: "Authentic cabin experience in the forest.",
-      location: "Nyamagabe, Southern Province",
-      pricePerNight: 120,
-      guests: 4,
-      type: "CABIN",
-      amenities: ["Forest View", "Fireplace", "Breakfast", "Eco-friendly"],
-      hostId: host1.id,
-    },
-  });
+    // Create listing photos
+    const urls = typePhotos[listingFields.type] || typePhotos["APARTMENT"];
+    for (let i = 0; i < urls.length; i++) {
+      await prisma.listingPhoto.create({
+        data: {
+          id: `photo_${listingFields.id}_${i}`,
+          url: urls[i],
+          publicId: `public_id_${listingFields.id}_${i}`,
+          listingId: listingFields.id,
+        }
+      });
+    }
+  }
 
   // 4. Create bookings (3 bookings)
   console.log("📅 Creating bookings...");
   const today = new Date();
-  
+
   // Future dates
   const checkIn1 = new Date(today);
   checkIn1.setDate(today.getDate() + 10);
@@ -178,39 +174,42 @@ async function main() {
   const checkOut3 = new Date(checkIn3);
   checkOut3.setDate(checkIn3.getDate() + 2);
 
+  // Listing 7cbcb9162dbac08751b209e616655bc2 is 85 per night
   await prisma.booking.create({
     data: {
       id: "bk_1",
       checkIn: checkIn1,
       checkOut: checkOut1,
-      totalPrice: 5 * listing1.pricePerNight,
+      totalPrice: 5 * 85,
       status: "CONFIRMED",
       guestId: guest1.id,
-      listingId: listing1.id,
+      listingId: "7cbcb9162dbac08751b209e616655bc2",
     },
   });
 
+  // Listing 1ff5e56d0d3be27995441e56f075a8b5 is 110 per night
   await prisma.booking.create({
     data: {
       id: "bk_2",
       checkIn: checkIn2,
       checkOut: checkOut2,
-      totalPrice: 3 * listing2.pricePerNight,
+      totalPrice: 3 * 110,
       status: "PENDING",
       guestId: guest2.id,
-      listingId: listing2.id,
+      listingId: "1ff5e56d0d3be27995441e56f075a8b5",
     },
   });
 
+  // Listing 2d633fc31561ef91ed2cb10400932bdc is 150 per night
   await prisma.booking.create({
     data: {
       id: "bk_3",
       checkIn: checkIn3,
       checkOut: checkOut3,
-      totalPrice: 2 * listing4.pricePerNight,
+      totalPrice: 2 * 150,
       status: "CONFIRMED",
       guestId: guest3.id,
-      listingId: listing4.id,
+      listingId: "2d633fc31561ef91ed2cb10400932bdc",
     },
   });
 
@@ -224,4 +223,5 @@ main()
   })
   .finally(async () => {
     await prisma.$disconnect();
+    pool.end();
   });

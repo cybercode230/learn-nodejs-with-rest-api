@@ -8,6 +8,7 @@ import { type Request, type Response, type NextFunction } from "express";
 import { AuthService } from "../services/auth.service.js";
 import type { AuthRequest } from "../middlewares/auth.middleware.js";
 import prisma from "../config/prisma.js";
+import { NotificationService } from "../services/notification.service.js";
 
 /**
  * @swagger
@@ -44,6 +45,14 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
     const user = await AuthService.register(req.body);
     // Respond with a 201 Created status and the newly created user object
     res.status(201).json(user);
+
+    // Notify admins of new user registration (fire-and-forget)
+    NotificationService.sendToAdmins({
+      title: "New User Registered 👤",
+      body: `${req.body.name} (${req.body.email}) just created a new ${req.body.role || "GUEST"} profile`,
+      type: "admin_new_user",
+      data: { userName: req.body.name, userEmail: req.body.email },
+    }).catch(err => console.error("Failed to send admin registration notification:", err));
   } catch (error) {
     // Pass any errors (e.g., validation, database constraints) to the error handler
     next(error);

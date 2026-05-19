@@ -26,6 +26,12 @@ model User {
   profile          Profile?
   searchHistory    SearchHistory[] @relation("UserSearchHistory")
   status           UserStatus @default(ACTIVE)
+  pushTokens       PushToken[]
+  sentMessages     Message[] @relation("SentMessages")
+  receivedMessages Message[] @relation("ReceivedMessages")
+  notifications    Notification[]
+  savedListings    SavedListing[]
+  reports          Report[]
 
   @@index([name])
   @@index([email])
@@ -71,6 +77,7 @@ model Listing {
   createdAt     DateTime       @default(now())
   hostId        String
   updatedAt     DateTime       @updatedAt
+  status        ListingStatus  @default(PENDING)
   type          ListingType
   bookings      Booking[]
   // When a listing is deleted, cascade-delete all its photos and reviews
@@ -78,6 +85,8 @@ model Listing {
   reviews       Review[]       @relation("ListingReviews")
   host          User           @relation("HostListings", fields: [hostId], references: [id], onDelete: Cascade)
   tags          Tag[]          @relation("ListingToTag")
+  savedBy       SavedListing[]
+  reports       Report[]
 
   @@index([id])
   @@index([hostId])
@@ -164,4 +173,79 @@ enum UserStatus {
   ACTIVE
   SUSPENDED
   DEACTIVATED
+}
+
+model PushToken {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+model Message {
+  id         String   @id @default(uuid())
+  content    String
+  senderId   String
+  receiverId String
+  listingId  String?  // Optional listing context
+  createdAt  DateTime @default(now())
+
+  sender     User     @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver   User     @relation("ReceivedMessages", fields: [receiverId], references: [id], onDelete: Cascade)
+
+  @@index([senderId])
+  @@index([receiverId])
+}
+
+enum ListingStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  title     String
+  body      String
+  type      String
+  isRead    Boolean  @default(false)
+  data      Json?
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([isRead])
+}
+
+model SavedListing {
+  id        String   @id @default(uuid())
+  userId    String
+  listingId String
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  listing   Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, listingId])
+  @@index([userId])
+  @@index([listingId])
+}
+
+model Report {
+  id        String   @id @default(uuid())
+  userId    String
+  listingId String
+  reason    String
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  listing   Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([listingId])
 }

@@ -17,6 +17,8 @@ import morgan from "morgan";
 import compression from "compression";
 import rateLimit from "express-rate-limit";
 import cors from "cors";
+import { initSocketServer } from "./config/socket.js";
+import { initSchedulers } from "./jobs/reminder.scheduler.js";
 
 // Initialize the Express application instance
 const app = express();
@@ -93,11 +95,15 @@ export const startServer = async () => {
   await connectDB();
 
   // Start listening on the designated port
-  // return app.listen(PORT, "192.168.1.176", () => {
-  return app.listen(PORT, () => {
-    logger.info(`🚀 Server is running on http://localhost:${PORT}`);
-    logger.info(`📖 Swagger docs available at http://localhost:${PORT}/api-docs`);
+  const IP_ADDRESS = process.env["IP_ADDRESS"] || "localhost";
+  const server = app.listen(PORT, "0.0.0.0", () => {
+    logger.info(`🚀 Server is running on http://localhost:${PORT} (Network: http://${IP_ADDRESS}:${PORT})`);
+    logger.info(`📖 Swagger docs available at http://${IP_ADDRESS}:${PORT}/api-docs`);
   });
+
+  initSocketServer(server);
+  initSchedulers();
+  return server;
 };
 
 // Start the server automatically if we are not in a test environment

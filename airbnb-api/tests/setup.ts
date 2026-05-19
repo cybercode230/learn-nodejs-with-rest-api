@@ -1,7 +1,8 @@
 /// <reference types="jest" />
 import dotenv from "dotenv";
 dotenv.config({ path: ".env.test" });
-import { PrismaClient } from "../src/generated/prisma/index.js";
+import { beforeAll, afterAll } from "@jest/globals";
+import { PrismaClient } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import pg from "pg";
 import { execSync } from "child_process";

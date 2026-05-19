@@ -9,6 +9,7 @@ import { generateId } from "../utils/idGenerator.js";
 import { ListingType, Prisma } from "@prisma/client";
 import { createListingSchema, updateListingSchema } from "../dtos/index.js";
 import { cleanObject } from "../utils/cleanObject.js";
+import { NotificationService } from "./notification.service.js";
 
 export class ListingService {
   static async getAllListings(filters: {
@@ -19,7 +20,7 @@ export class ListingService {
     take?: number;
   }) {
     // Initialize an empty query condition object
-    const where: Prisma.ListingWhereInput = {};
+    const where: Prisma.ListingWhereInput = { status: "APPROVED" };
 
     // Add location search filter (case-insensitive substring match) if provided
     if (filters.location) {
@@ -53,6 +54,7 @@ export class ListingService {
             avatar: true
           }
         },
+        photos: true,
         _count: {
           select: { bookings: true }
         }
@@ -85,7 +87,7 @@ export class ListingService {
     take?: number;
   }) {
     // Build the Prisma where clause dynamically based on provided filters
-    const where: Prisma.ListingWhereInput = {};
+    const where: Prisma.ListingWhereInput = { status: "APPROVED" };
 
     if (filters.location) {
       where.location = { contains: filters.location, mode: "insensitive" };
@@ -116,6 +118,7 @@ export class ListingService {
         where,
         include: {
           host: { select: { name: true, avatar: true } },
+          photos: true,
           _count: { select: { bookings: true } }
         },
         orderBy: { createdAt: "desc" },
@@ -173,6 +176,26 @@ export class ListingService {
   static async updateListing(id: string, rawData: any) {
     // Validate the incoming data against the update schema
     const validatedData = updateListingSchema.parse(rawData);
+
+    // Check if price dropped
+    if (validatedData.pricePerNight !== undefined) {
+      const existingListing = await prisma.listing.findUnique({ where: { id } });
+      if (existingListing && validatedData.pricePerNight < existingListing.pricePerNight) {
+        // Find users who saved this listing
+        const savedListings = await prisma.savedListing.findMany({ where: { listingId: id } });
+        
+        // Notify them asynchronously
+        Promise.all(savedListings.map((sl: { userId: string }) => 
+          NotificationService.sendNotification(sl.userId, {
+            title: "Price drop on your wishlist 💸",
+            body: `"${existingListing.title}" dropped from $${existingListing.pricePerNight} to $${validatedData.pricePerNight}/night`,
+            type: "price_drop",
+            data: { listingId: id, route: "ListingDetail" },
+            channelId: "promotions"
+          })
+        )).catch(err => console.error("Error sending price drop notifications:", err));
+      }
+    }
 
     // Update the targeted listing using cleanObject to remove undefined properties
     return prisma.listing.update({
@@ -272,6 +295,17 @@ export class ListingService {
       where: { userId },
       orderBy: { createdAt: "desc" },
       take: 10
+    });
+  }
+
+  static async getHostListings(hostId: string) {
+    return prisma.listing.findMany({
+      where: { hostId },
+      include: {
+        photos: true,
+        _count: { select: { bookings: true } }
+      },
+      orderBy: { createdAt: "desc" }
     });
   }
 }

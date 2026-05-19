@@ -14,7 +14,9 @@ import {
   searchListings,
   getListingStats,
   saveSearchHistory,
-  getSearchHistory
+  getSearchHistory,
+  getHostListings,
+  reportListing
 } from "../../controllers/listings.controller.js";
 import { authenticate, requireHost } from "../../middlewares/auth.middleware.js";
 import { cacheResponse } from "../../middlewares/cache.middleware.js";
@@ -37,6 +39,9 @@ router.get("/history", authenticate, getSearchHistory);
 // Public route to view all listings (supports filters), cached for 60 seconds
 router.get("/", cacheResponse(60), getAllListings);
 
+// Host-specific listings route
+router.get("/host", authenticate, getHostListings);
+
 // Public route to view details of a specific property, cached for 5 minutes
 router.get("/:id", cacheResponse(300), getListingById);
 
@@ -44,5 +49,8 @@ router.get("/:id", cacheResponse(300), getListingById);
 router.post("/", authenticate, requireHost, createListing);
 router.put("/:id", authenticate, requireHost, updateListing);
 router.delete("/:id", authenticate, requireHost, deleteListing);
+
+// Report a listing (any authenticated user)
+router.post("/:id/report", authenticate, reportListing);
 
 export default router;

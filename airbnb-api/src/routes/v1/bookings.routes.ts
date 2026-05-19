@@ -16,8 +16,8 @@ import { requireGuest, requireHost, requireAdmin,allRolesCanDoIt } from "../../m
 
 const router = Router();
 
-// Admin-only route to view all platform bookings (paginated)
-router.get("/", requireAdmin,requireHost, getAllBookings);
+// Admin, Host, and Guest can view bookings (controller filters by role)
+router.get("/", allRolesCanDoIt, getAllBookings);
 
 // Fetch details for a specific booking (controller handles ownership check)
 router.get("/:id", getBookingById);

@@ -8,6 +8,8 @@ import type { Request, Response, NextFunction } from "express";
 import { ListingService } from "../services/listing.service.js";
 import { ListingType, Role } from "@prisma/client";
 import type { AuthRequest } from "../middlewares/auth.middleware.js";
+import prisma from "../config/prisma.js";
+import { NotificationService } from "../services/notification.service.js";
 
 /**
  * @swagger
@@ -276,4 +278,41 @@ export const getSearchHistory = async (req: AuthRequest, res: Response, next: Ne
     const history = await ListingService.getUserSearchHistory(req.userId!);
     res.json(history);
   } catch (error) { next(error); }
+};
+
+export const getHostListings = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const listings = await ListingService.getHostListings(req.userId!);
+    res.json(listings);
+  } catch (error) { next(error); }
+};
+
+export const reportListing = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const id = req.params["id"] as string;
+    const reason = req.body.reason as string;
+    if (!reason) return res.status(400).json({ message: "Reason is required" });
+
+    const listing = await prisma.listing.findUnique({ where: { id } });
+    if (!listing) return res.status(404).json({ message: "Listing not found" });
+
+    const report = await prisma.report.create({
+      data: {
+        userId: req.userId as string,
+        listingId: id,
+        reason,
+      }
+    });
+
+    await NotificationService.sendToAdmins({
+      title: "Listing Reported ⚠️",
+      body: `"${listing.title}" was reported for: ${reason}`,
+      type: "listing_reported",
+      data: { listingId: id, reportId: report.id, route: "ListingDetail" }
+    });
+
+    res.status(201).json({ message: "Listing reported successfully" });
+  } catch (error: any) { 
+    next(error); 
+  }
 };

@@ -14,7 +14,13 @@ import {
   getListingsByHost,
   getBookingsByGuest,
   getBookingsForHost,
-  getUserStats
+  getUserStats,
+  registerPushToken,
+  getChatMessages,
+  getChatUsers,
+  switchUserRole,
+  getNotificationPreferences,
+  updateNotificationPreferences
 } from "../../controllers/users.controller.js";
 import { authenticate, requireAdmin } from "../../middlewares/auth.middleware.js";
 
@@ -25,6 +31,14 @@ router.get("/stats", authenticate, requireAdmin, getUserStats);
 
 // Protected admin-only route to list all platform users (paginated)
 router.get("/", authenticate, requireAdmin, getAllUsers);
+
+// Specific routes that must precede /:id
+router.post("/push-token", authenticate, registerPushToken);
+router.get("/notification-preferences", authenticate, getNotificationPreferences);
+router.put("/notification-preferences", authenticate, updateNotificationPreferences);
+router.get("/chat-users", authenticate, getChatUsers);
+router.get("/messages/:otherUserId", authenticate, getChatMessages);
+router.put("/switch-role", authenticate, switchUserRole);
 
 // Protected route — get user details (requires auth)
 router.get("/:id", authenticate, getUserById);

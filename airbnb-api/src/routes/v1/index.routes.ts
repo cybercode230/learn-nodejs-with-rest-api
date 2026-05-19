@@ -13,6 +13,10 @@ import uploadRoutes from "./upload.routes.js";
 import profileRoutes from "./profile.routes.js";
 import reviewRoutes from "./reviews.routes.js";
 import aiRoutes from "./ai.routes.js";
+import messagesRoutes from "./messages.routes.js";
+import adminRoutes from "./admin.routes.js";
+import notificationsRoutes from "./notifications.routes.js";
+import wishlistsRoutes from "./wishlists.routes.js";
 import { authenticate } from "../../middlewares/auth.middleware.js";
 import { deleteReview } from "../../controllers/reviews.controller.js";
 
@@ -21,6 +25,15 @@ const router = Router();
 
 // ─── Auth (public + protected mixed — auth.routes.ts handles per-route middleware)
 router.use("/auth", authRoutes);
+
+// ─── Admin
+router.use("/admin", adminRoutes);
+
+// ─── Notifications
+router.use("/notifications", notificationsRoutes);
+
+// ─── Wishlists
+router.use("/wishlists", wishlistsRoutes);
 
 // ─── Listings (public reads, protected writes)
 // reviews are nested under /listings/:id/reviews
@@ -32,6 +45,9 @@ router.use("/users", userRoutes);
 
 // ─── Bookings (all protected — bookings.routes.ts handles role checks)
 router.use("/bookings", authenticate, bookingRoutes);
+
+// ─── Messages (all protected)
+router.use("/messages", authenticate, messagesRoutes);
 
 // ─── Upload (avatar and listing photos — paths are /users/:id/avatar and /listings/:id/photos)
 // Mount at root so the full paths /users/:id/avatar etc. are preserved

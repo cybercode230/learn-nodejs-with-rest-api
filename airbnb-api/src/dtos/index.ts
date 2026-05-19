@@ -5,7 +5,7 @@
  * Outcomes: Prevents invalid or malicious data from being processed and provides strong type inference for developers.
  */
 import { z } from "zod";
-import { Role, ListingType, BookingStatus } from "@prisma/client";
+import { Role, ListingType, BookingStatus, UserStatus } from "@prisma/client";
 
 // =======================
 // User Schemas
@@ -22,7 +22,9 @@ export const createUserSchema = z.object({
   bio: z.string().max(500).nullish(),
 });
 
-export const updateUserSchema = createUserSchema.partial();
+export const updateUserSchema = createUserSchema.partial().extend({
+  status: z.nativeEnum(UserStatus).optional(),
+});
 
 export const loginSchema = z.object({
   email: z.string().email("Invalid email format"),
