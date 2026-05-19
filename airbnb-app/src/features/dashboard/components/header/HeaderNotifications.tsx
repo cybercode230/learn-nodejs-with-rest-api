@@ -1,66 +1,18 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Bell, Calendar, DollarSign, Star } from 'lucide-react';
+import { Bell, Calendar, DollarSign, Star, MessageSquare } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link } from 'react-router-dom';
-
-interface Notification {
-  id: string;
-  type: 'booking' | 'message' | 'payout' | 'review';
-  title: string;
-  description: string;
-  time: string;
-  read: boolean;
-  link?: string;
-}
+import { useInbox } from '../../../../contexts/InboxContext';
 
 interface HeaderNotificationsProps {
-  unreadCount?: number;
-  onNotificationClick?: (notification: Notification) => void;
+  onNotificationClick?: (notification: any) => void;
 }
-
-const mockNotifications: Notification[] = [
-  {
-    id: '1',
-    type: 'booking',
-    title: 'New Booking Request',
-    description: 'John Doe wants to book Downtown Loft for 3 nights',
-    time: '5 min ago',
-    read: false,
-    link: '/dashboard/bookings'
-  },
-  {
-    id: '2',
-    type: 'message',
-    title: 'New Message from Guest',
-    description: 'Sarah asked about check-in time',
-    time: '1 hour ago',
-    read: false,
-    link: '/dashboard/messages'
-  },
-  {
-    id: '3',
-    type: 'payout',
-    title: 'Payout Processed',
-    description: '$480 has been sent to your bank account',
-    time: '2 hours ago',
-    read: true,
-    link: '/dashboard/wallet'
-  },
-  {
-    id: '4',
-    type: 'review',
-    title: 'New 5-Star Review',
-    description: 'James left a great review for Beach Cottage',
-    time: '1 day ago',
-    read: true,
-    link: '/dashboard/listings'
-  },
-];
 
 const getIcon = (type: string) => {
   switch(type) {
     case 'booking': return <Calendar size={14} className="text-blue-500" />;
-    case 'message': return <Bell size={14} className="text-purple-500" />;
+    case 'message':
+    case 'new_message': return <MessageSquare size={14} className="text-purple-500" />;
     case 'payout': return <DollarSign size={14} className="text-green-500" />;
     case 'review': return <Star size={14} className="text-amber-500" />;
     default: return <Bell size={14} />;
@@ -70,8 +22,8 @@ const getIcon = (type: string) => {
 const HeaderNotifications: React.FC<HeaderNotificationsProps> = ({   
   onNotificationClick 
 }) => {
+  const { notifications, markNotificationRead, markAllNotificationsRead } = useInbox();
   const [isOpen, setIsOpen] = useState(false);
-  const [notifications, setNotifications] = useState<Notification[]>(mockNotifications);
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -86,14 +38,16 @@ const HeaderNotifications: React.FC<HeaderNotificationsProps> = ({
 
   const unreadNotifications = notifications.filter(n => !n.read).length;
 
-  const markAsRead = (id: string) => {
-    setNotifications(prev => prev.map(n => 
-      n.id === id ? { ...n, read: true } : n
-    ));
-  };
-
-  const markAllAsRead = () => {
-    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+  const formatTime = (timestamp: string) => {
+    if (!timestamp) return '';
+    const date = new Date(timestamp);
+    const now = new Date();
+    const diff = now.getTime() - date.getTime();
+    const hours = diff / (1000 * 60 * 60);
+    
+    if (hours < 1) return `${Math.floor(diff / 60000)}m ago`;
+    if (hours < 24) return `${Math.floor(hours)}h ago`;
+    return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
   };
 
   return (
@@ -122,7 +76,7 @@ const HeaderNotifications: React.FC<HeaderNotificationsProps> = ({
               <h3 className="font-semibold text-gray-900">Notifications</h3>
               {unreadNotifications > 0 && (
                 <button 
-                  onClick={markAllAsRead}
+                  onClick={markAllNotificationsRead}
                   className="text-xs text-airbnb hover:underline"
                 >
                   Mark all as read
@@ -137,7 +91,7 @@ const HeaderNotifications: React.FC<HeaderNotificationsProps> = ({
                     key={notification.id}
                     to={notification.link || '#'}
                     onClick={() => {
-                      markAsRead(notification.id);
+                      markNotificationRead(notification.id);
                       onNotificationClick?.(notification);
                       setIsOpen(false);
                     }}
@@ -154,12 +108,12 @@ const HeaderNotifications: React.FC<HeaderNotificationsProps> = ({
                           <p className={`text-sm ${!notification.read ? 'font-semibold' : 'font-medium'} text-gray-900`}>
                             {notification.title}
                           </p>
-                          <span className="text-[10px] text-gray-400 whitespace-nowrap">
-                            {notification.time}
+                          <span className="text-[10px] text-gray-400 whitespace-nowrap ml-2">
+                            {formatTime(notification.timestamp)}
                           </span>
                         </div>
                         <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">
-                          {notification.description}
+                          {notification.body}
                         </p>
                       </div>
                     </div>

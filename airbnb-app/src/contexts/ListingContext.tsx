@@ -74,7 +74,7 @@ export const ListingProvider: React.FC<{ children: React.ReactNode }> = ({ child
     // If authenticated, sync history from server
     const syncHistory = async () => {
       try {
-        const response = await api.get(ENDPOINTS.LISTINGS.SEARCH + '/history');
+        const response = await api.get(ENDPOINTS.LISTINGS.HISTORY);
         if (response.data && response.data.length > 0) {
           // Merge or replace with server history
           setSearchHistory(response.data);
@@ -180,6 +180,21 @@ export const ListingProvider: React.FC<{ children: React.ReactNode }> = ({ child
       localStorage.setItem('searchHistory', JSON.stringify(updated));
       return updated;
     });
+
+    // 2. Post to backend if logged in
+    if (localStorage.getItem('token')) {
+      try {
+        await api.post(ENDPOINTS.LISTINGS.HISTORY, {
+          location: newFilters.location,
+          type: newFilters.type || undefined,
+          minPrice: newFilters.minPrice ? parseFloat(newFilters.minPrice) : undefined,
+          maxPrice: newFilters.maxPrice ? parseFloat(newFilters.maxPrice) : undefined,
+          guests: newFilters.guests ? parseInt(newFilters.guests) : undefined
+        });
+      } catch (error) {
+        console.error('Failed to sync search query to backend:', error);
+      }
+    }
   }, []);
 
   return (

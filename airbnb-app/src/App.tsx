@@ -14,6 +14,7 @@ import { AuthProvider } from './contexts/AuthContext';
 import { ListingProvider } from './contexts/ListingContext';
 import { SearchProvider } from './contexts/SearchContext';
 import { PaymentProvider } from './contexts/PaymentContext';
+import { InboxProvider } from './contexts/InboxContext';
 import { ProtectedRoute } from './shared/components';
 
 // Dashboard
@@ -37,10 +38,11 @@ function App() {
       <PaymentProvider>
         <ListingProvider>
           <SearchProvider>
-            <Router>
-              <Routes>
-                {/* Public / Guest routes */}
-                <Route element={<MainLayout />}>
+            <InboxProvider>
+              <Router>
+                <Routes>
+                  {/* Public / Guest routes */}
+                  <Route element={<MainLayout />}>
                   <Route path="/" element={<HomePage />} />
                   <Route path="/search-results" element={<SearchResultsPage />} />
                   <Route path="/listings/:id" element={<ListingDetailsPage />} />
@@ -124,10 +126,11 @@ function App() {
                 </Route>
               </Routes>
             </Router>
-          </SearchProvider>
-        </ListingProvider>
-      </PaymentProvider>
-    </AuthProvider>
+          </InboxProvider>
+        </SearchProvider>
+      </ListingProvider>
+    </PaymentProvider>
+  </AuthProvider>
   );
 }
 

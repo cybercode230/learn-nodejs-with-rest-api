@@ -6,37 +6,10 @@ import {
   Smile, Mic, Image, File, ArrowLeft, 
   MoreHorizontal, Volume2, Inbox
 } from 'lucide-react';
-
-interface Message {
-  id: string;
-  senderId: string;
-  receiverId: string;
-  content: string;
-  timestamp: string;
-  read: boolean;
-  delivered?: boolean;
-  type?: 'text' | 'image' | 'file' | 'voice';
-  mediaUrl?: string;
-}
-
-interface Conversation {
-  id: string;
-  guestName: string;
-  guestAvatar?: string;
-  guestId: string;
-  listingTitle: string;
-  listingId: string;
-  lastMessage: string;
-  lastMessageTime: string;
-  unreadCount: number;
-  messages: Message[];
-  rating?: number;
-  isOnline?: boolean;
-  lastSeen?: string;
-  typing?: boolean;
-}
+import { useInbox } from '../../../contexts/InboxContext';
 
 const DashboardMessages: React.FC = () => {
+  const { conversations, sendMessage, markConversationRead } = useInbox();
   const [selectedConversation, setSelectedConversation] = useState<string | null>(null);
   const [newMessage, setNewMessage] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
@@ -48,83 +21,6 @@ const DashboardMessages: React.FC = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  
-  // Mock conversations data with realistic data
-  const [conversations, setConversations] = useState<Conversation[]>([
-    {
-      id: '1',
-      guestName: 'Alice Martin',
-      guestId: 'guest1',
-      listingTitle: 'Downtown Luxury Loft',
-      listingId: 'listing1',
-      lastMessage: 'Thank you for the confirmation!',
-      lastMessageTime: '2026-05-14T10:30:00',
-      unreadCount: 2,
-      isOnline: true,
-      rating: 5,
-      typing: false,
-      messages: [
-        { id: 'm1', senderId: 'guest', receiverId: 'host', content: 'Hi, is the property available for May 10-14?', timestamp: '2026-05-10T09:00:00', read: true, delivered: true },
-        { id: 'm2', senderId: 'host', receiverId: 'guest', content: 'Yes, those dates are available! Would you like to proceed with booking?', timestamp: '2026-05-10T10:15:00', read: true, delivered: true },
-        { id: 'm3', senderId: 'guest', receiverId: 'host', content: 'Great! I would love to book it. Can you tell me more about the parking situation?', timestamp: '2026-05-10T10:30:00', read: true, delivered: true },
-        { id: 'm4', senderId: 'host', receiverId: 'guest', content: "We have free underground parking available. I've confirmed your booking. You'll receive the details shortly.", timestamp: '2026-05-10T11:00:00', read: true, delivered: true },
-        { id: 'm5', senderId: 'guest', receiverId: 'host', content: 'Perfect! Thank you so much for your help! 🙏', timestamp: '2026-05-14T10:30:00', read: false, delivered: true },
-      ]
-    },
-    {
-      id: '2',
-      guestName: 'James Okonkwo',
-      guestId: 'guest2',
-      listingTitle: 'Cozy Beach Cottage',
-      listingId: 'listing2',
-      lastMessage: "What's the check-in time?",
-      lastMessageTime: '2026-05-13T15:45:00',
-      unreadCount: 0,
-      isOnline: false,
-      lastSeen: '2026-05-14T08:30:00',
-      rating: 4,
-      typing: false,
-      messages: [
-        { id: 'm6', senderId: 'guest', receiverId: 'host', content: "What's the check-in time?", timestamp: '2026-05-13T15:45:00', read: true, delivered: true },
-        { id: 'm7', senderId: 'host', receiverId: 'guest', content: 'Check-in is at 3 PM, but early check-in can be arranged if available.', timestamp: '2026-05-13T16:00:00', read: true, delivered: true },
-      ]
-    },
-    {
-      id: '3',
-      guestName: 'Sofia Leclerc',
-      guestId: 'guest3',
-      listingTitle: 'Modern City Apartment',
-      listingId: 'listing3',
-      lastMessage: 'Is there parking available?',
-      lastMessageTime: '2026-05-12T09:20:00',
-      unreadCount: 1,
-      isOnline: true,
-      rating: 5,
-      typing: false,
-      messages: [
-        { id: 'm8', senderId: 'guest', receiverId: 'host', content: 'Is there parking available?', timestamp: '2026-05-12T09:20:00', read: false, delivered: true },
-      ]
-    },
-    {
-      id: '4',
-      guestName: 'Michael Chen',
-      guestId: 'guest4',
-      listingTitle: 'Mountain View Cabin',
-      listingId: 'listing4',
-      lastMessage: 'Thank you for the wonderful stay!',
-      lastMessageTime: '2026-05-11T14:20:00',
-      unreadCount: 0,
-      isOnline: false,
-      lastSeen: '2026-05-13T22:15:00',
-      rating: 5,
-      typing: false,
-      messages: [
-        { id: 'm9', senderId: 'guest', receiverId: 'host', content: 'The cabin was amazing! The views were breathtaking.', timestamp: '2026-05-11T12:00:00', read: true, delivered: true },
-        { id: 'm10', senderId: 'host', receiverId: 'guest', content: "So glad you enjoyed it! You're welcome back anytime!", timestamp: '2026-05-11T13:00:00', read: true, delivered: true },
-        { id: 'm11', senderId: 'guest', receiverId: 'host', content: 'Thank you for the wonderful stay!', timestamp: '2026-05-11T14:20:00', read: true, delivered: true },
-      ]
-    },
-  ]);
 
   // Scroll to bottom when messages change
   useEffect(() => {
@@ -143,76 +39,30 @@ const DashboardMessages: React.FC = () => {
   // Simulate guest typing indicator when host is typing
   useEffect(() => {
     if (selectedConversation && isTyping) {
-      // Clear existing timeout
       if (typingTimeout) clearTimeout(typingTimeout);
-      
-      // Set new timeout to stop typing indicator after 3 seconds of no typing
       const timeout = setTimeout(() => {
         setIsTyping(false);
       }, 3000);
       setTypingTimeout(timeout);
-      
-      // Simulate guest typing response (for demo)
-      const guestTypingTimer = setTimeout(() => {
-        const conv = conversations.find(c => c.id === selectedConversation);
-        if (conv && !conv.typing) {
-          setConversations(prev => prev.map(c =>
-            c.id === selectedConversation ? { ...c, typing: true } : c
-          ));
-          
-          // Stop guest typing after 3 seconds
-          setTimeout(() => {
-            setConversations(prev => prev.map(c =>
-              c.id === selectedConversation ? { ...c, typing: false } : c
-            ));
-          }, 3000);
-        }
-      }, 1000);
-      
-      return () => {
-        clearTimeout(timeout);
-        clearTimeout(guestTypingTimer);
-      };
+      return () => clearTimeout(timeout);
     }
-  }, [isTyping, selectedConversation, conversations, typingTimeout]);
+  }, [isTyping, selectedConversation, typingTimeout]);
 
   const filteredConversations = conversations.filter(conv =>
-    conv.guestName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    conv.listingTitle.toLowerCase().includes(searchTerm.toLowerCase())
+    conv.participantName.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const currentConversation = conversations.find(c => c.id === selectedConversation);
+  const currentConversation = conversations.find(c => c.participantId === selectedConversation);
 
   const handleSendMessage = () => {
-    if (!newMessage.trim() || !currentConversation) return;
-
-    const newMsg: Message = {
-      id: `m${Date.now()}`,
-      senderId: 'host',
-      receiverId: 'guest',
-      content: newMessage,
-      timestamp: new Date().toISOString(),
-      read: false,
-      delivered: true,
-    };
-
-    setConversations(prev => prev.map(conv =>
-      conv.id === selectedConversation
-        ? {
-            ...conv,
-            messages: [...conv.messages, newMsg],
-            lastMessage: newMessage,
-            lastMessageTime: new Date().toISOString(),
-            unreadCount: 0
-          }
-        : conv
-    ));
-
+    if (!newMessage.trim() || !selectedConversation) return;
+    sendMessage(selectedConversation, newMessage);
     setNewMessage('');
     setIsTyping(false);
   };
 
   const formatTime = (timestamp: string) => {
+    if (!timestamp) return '';
     const date = new Date(timestamp);
     const now = new Date();
     const diff = now.getTime() - date.getTime();
@@ -232,28 +82,9 @@ const DashboardMessages: React.FC = () => {
   };
 
   const formatMessageTime = (timestamp: string) => {
+    if (!timestamp) return '';
     const date = new Date(timestamp);
     return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  };
-
-  const formatLastSeen = (timestamp?: string) => {
-    if (!timestamp) return 'Offline';
-    const date = new Date(timestamp);
-    const now = new Date();
-    const diff = now.getTime() - date.getTime();
-    const hours = diff / (1000 * 60 * 60);
-    
-    if (hours < 24) {
-      return `Last seen today at ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
-    } else {
-      return `Last seen ${date.toLocaleDateString()}`;
-    }
-  };
-
-  const markAsRead = (conversationId: string) => {
-    setConversations(prev => prev.map(conv =>
-      conv.id === conversationId ? { ...conv, unreadCount: 0 } : conv
-    ));
   };
 
   const handleTyping = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -268,17 +99,6 @@ const DashboardMessages: React.FC = () => {
 
   const handleVoiceRecording = () => {
     setIsRecording(!isRecording);
-  };
-
-  // Get typing indicator text
-  const getTypingText = () => {
-    if (currentConversation?.typing) {
-      return `${currentConversation.guestName} is typing...`;
-    }
-    if (isTyping) {
-      return 'You are typing...';
-    }
-    return null;
   };
 
   return (
@@ -305,39 +125,32 @@ const DashboardMessages: React.FC = () => {
           {filteredConversations.length > 0 ? (
             filteredConversations.map((conv) => (
               <motion.button
-                key={conv.id}
+                key={conv.participantId}
                 onClick={() => {
-                  setSelectedConversation(conv.id);
-                  markAsRead(conv.id);
+                  setSelectedConversation(conv.participantId);
+                  markConversationRead(conv.participantId);
                 }}
                 className={`w-full p-3 flex items-start gap-3 hover:bg-gray-100 transition-colors ${
-                  selectedConversation === conv.id ? 'bg-gray-100' : ''
+                  selectedConversation === conv.participantId ? 'bg-gray-100' : ''
                 }`}
               >
                 {/* Avatar */}
                 <div className="relative">
                   <div className="w-12 h-12 rounded-full bg-gradient-to-br from-airbnb to-pink-500 flex items-center justify-center text-white font-semibold text-base shadow-sm">
-                    {conv.guestName[0]}
+                    {conv.participantName[0]}
                   </div>
-                  {conv.isOnline && (
-                    <div className="absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 rounded-full ring-2 ring-white" />
-                  )}
                 </div>
                 
                 {/* Content */}
                 <div className="flex-1 min-w-0 text-left">
                   <div className="flex items-center justify-between">
-                    <p className="font-medium text-gray-900 text-sm truncate">{conv.guestName}</p>
+                    <p className="font-medium text-gray-900 text-sm truncate">{conv.participantName}</p>
                     <p className="text-xs text-gray-400 whitespace-nowrap ml-2">{formatTime(conv.lastMessageTime)}</p>
                   </div>
-                  <p className="text-xs text-gray-500 truncate">{conv.listingTitle}</p>
+                  <p className="text-xs text-gray-500 truncate">Stay Conversation</p>
                   <div className="flex items-center justify-between mt-0.5">
                     <p className="text-xs text-gray-500 truncate flex-1">
-                      {conv.typing ? (
-                        <span className="text-airbnb italic">typing...</span>
-                      ) : (
-                        conv.lastMessage
-                      )}
+                      {conv.lastMessage}
                     </p>
                     {conv.unreadCount > 0 && (
                       <span className="ml-2 min-w-[18px] h-[18px] bg-airbnb text-white text-[10px] font-medium rounded-full flex items-center justify-center px-1">
@@ -372,23 +185,12 @@ const DashboardMessages: React.FC = () => {
             <div className="flex items-center gap-3 flex-1">
               <div className="relative">
                 <div className="w-10 h-10 rounded-full bg-gradient-to-br from-airbnb to-pink-500 flex items-center justify-center text-white font-semibold text-sm">
-                  {currentConversation.guestName[0]}
+                  {currentConversation.participantName[0]}
                 </div>
-                {currentConversation.isOnline && (
-                  <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 rounded-full ring-2 ring-white" />
-                )}
               </div>
               <div>
-                <p className="font-semibold text-gray-900 text-sm">{currentConversation.guestName}</p>
-                <p className="text-xs text-gray-500">
-                  {currentConversation.typing ? (
-                    <span className="text-airbnb">Typing...</span>
-                  ) : currentConversation.isOnline ? (
-                    'Online'
-                  ) : (
-                    formatLastSeen(currentConversation.lastSeen)
-                  )}
-                </p>
+                <p className="font-semibold text-gray-900 text-sm">{currentConversation.participantName}</p>
+                <p className="text-xs text-gray-500">Stay Guest/Host</p>
               </div>
             </div>
             
@@ -408,38 +210,39 @@ const DashboardMessages: React.FC = () => {
           {/* Messages Area */}
           <div className="flex-1 overflow-y-auto p-4 space-y-2 bg-gray-50">
             {currentConversation.messages.map((msg, idx) => {
-              const showAvatar = msg.senderId !== 'host' && 
-                (idx === 0 || currentConversation.messages[idx - 1]?.senderId !== 'guest');
+              const isMe = msg.senderId === 'me';
+              const showAvatar = !isMe && 
+                (idx === 0 || currentConversation.messages[idx - 1]?.senderId === 'me');
               
               return (
                 <div
                   key={msg.id}
-                  className={`flex ${msg.senderId === 'host' ? 'justify-end' : 'justify-start'}`}
+                  className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}
                 >
-                  <div className={`flex max-w-[75%] ${msg.senderId === 'host' ? 'flex-row-reverse' : ''}`}>
+                  <div className={`flex max-w-[75%] ${isMe ? 'flex-row-reverse' : ''}`}>
                     {/* Avatar for guest messages */}
-                    {msg.senderId !== 'host' && showAvatar && (
+                    {!isMe && showAvatar && (
                       <div className="w-8 h-8 rounded-full bg-gradient-to-br from-airbnb to-pink-500 flex items-center justify-center text-white text-xs font-semibold mr-2 flex-shrink-0 mt-1">
-                        {currentConversation.guestName[0]}
+                        {currentConversation.participantName[0]}
                       </div>
                     )}
-                    {msg.senderId !== 'host' && !showAvatar && (
+                    {!isMe && !showAvatar && (
                       <div className="w-8 mr-2 flex-shrink-0" />
                     )}
                     
-                    <div className={`flex flex-col ${msg.senderId === 'host' ? 'items-end' : 'items-start'}`}>
+                    <div className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
                       <div
                         className={`px-3 py-2 rounded-2xl text-sm ${
-                          msg.senderId === 'host'
+                          isMe
                             ? 'bg-airbnb text-white rounded-br-md'
                             : 'bg-white text-gray-900 rounded-bl-md shadow-sm'
                         }`}
                       >
-                        <p className="break-words whitespace-pre-wrap">{msg.content}</p>
+                        <p className="break-words whitespace-pre-wrap">{msg.text}</p>
                       </div>
-                      <div className={`flex items-center gap-1 mt-0.5 text-[10px] text-gray-400 ${msg.senderId === 'host' ? 'flex-row-reverse' : ''}`}>
+                      <div className={`flex items-center gap-1 mt-0.5 text-[10px] text-gray-400 ${isMe ? 'flex-row-reverse' : ''}`}>
                         <span>{formatMessageTime(msg.timestamp)}</span>
-                        {msg.senderId === 'host' && (
+                        {isMe && (
                           <CheckCheck size={10} className={msg.read ? 'text-airbnb' : 'text-gray-400'} />
                         )}
                       </div>
@@ -448,32 +251,8 @@ const DashboardMessages: React.FC = () => {
                 </div>
               );
             })}
-            
-            {/* Typing Indicator */}
-            {currentConversation.typing && (
-              <div className="flex justify-start">
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-airbnb to-pink-500" />
-                  <div className="bg-white rounded-2xl rounded-bl-md px-4 py-2 shadow-sm">
-                    <div className="flex gap-1">
-                      <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                      <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                      <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-            
             <div ref={messagesEndRef} />
           </div>
-
-          {/* Typing indicator in input area */}
-          {getTypingText() && (
-            <div className="px-4 py-1 text-xs text-gray-400 italic">
-              {getTypingText()}
-            </div>
-          )}
 
           {/* Message Input */}
           <div className="p-3 border-t border-gray-100 bg-white">
@@ -564,7 +343,7 @@ const DashboardMessages: React.FC = () => {
               <p>• Click on any chat to view conversation history</p>
               <p>• Send photos, files, and voice messages</p>
               <p>• Get real-time typing indicators</p>
-              <p>• Make voice or video calls to your guests</p>
+              <p>• Connect directly to WebSockets</p>
             </div>
           </div>
         </div>

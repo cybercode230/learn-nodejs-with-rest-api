@@ -54,5 +54,14 @@ export const ENDPOINTS = {
   REVIEWS: {
     BASE: '/reviews',
     BY_ID: (id: string) => `/reviews/${id}`,
+  },
+  MESSAGES: {
+    CONVERSATIONS: '/messages/conversations',
+    HISTORY: (participantId: string) => `/messages/${participantId}`,
+  },
+  NOTIFICATIONS: {
+    BASE: '/notifications',
+    READ_ALL: '/notifications/read-all',
+    READ: (id: string) => `/notifications/${id}/read`,
   }
 };

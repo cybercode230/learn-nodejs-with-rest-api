@@ -2,68 +2,24 @@ import React, { useState, useRef, useEffect } from 'react';
 import { MessageSquare, Send, ChevronRight, CheckCheck } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link } from 'react-router-dom';
-
-interface Message {
-  id: string;
-  senderId: string;
-  senderName: string;
-  content: string;
-  timestamp: string;
-  read: boolean;
-  avatar?: string;
-}
-
-interface Conversation {
-  id: string;
-  guestName: string;
-  guestAvatar?: string;
-  lastMessage: string;
-  lastMessageTime: string;
-  unreadCount: number;
-  messages: Message[];
-}
+import { useInbox } from '../../../../contexts/InboxContext';
 
 interface HeaderChatProps {
   unreadCount?: number;
 }
 
-const mockConversations: Conversation[] = [
-  {
-    id: '1',
-    guestName: 'Alice Martin',
-    lastMessage: 'Thank you for the confirmation!',
-    lastMessageTime: '2026-05-14T10:30:00',
-    unreadCount: 2,
-    messages: [
-      { id: '1', senderId: 'guest', senderName: 'Alice Martin', content: 'Hi, is the property available?', timestamp: '2026-05-14T10:00:00', read: false },
-      { id: '2', senderId: 'host', senderName: 'You', content: 'Yes, it is available!', timestamp: '2026-05-14T10:15:00', read: true },
-      { id: '3', senderId: 'guest', senderName: 'Alice Martin', content: 'Great! I would like to book.', timestamp: '2026-05-14T10:30:00', read: false },
-    ]
-  },
-  {
-    id: '2',
-    guestName: 'James Okonkwo',
-    lastMessage: "What's the check-in time?",
-    lastMessageTime: '2026-05-13T15:45:00',
-    unreadCount: 0,
-    messages: [
-      { id: '4', senderId: 'guest', senderName: 'James Okonkwo', content: "What's the check-in time?", timestamp: '2026-05-13T15:45:00', read: true },
-    ]
-  },
-];
-
 const HeaderChat: React.FC<HeaderChatProps> = () => {
+  const { conversations, sendMessage, markConversationRead } = useInbox();
   const [isOpen, setIsOpen] = useState(false);
-  const [selectedChat, setSelectedChat] = useState<Conversation | null>(null);
+  const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
   const [messageInput, setMessageInput] = useState('');
-  const [conversations, setConversations] = useState<Conversation[]>(mockConversations);
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
         setIsOpen(false);
-        setSelectedChat(null);
+        setSelectedChatId(null);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -72,48 +28,16 @@ const HeaderChat: React.FC<HeaderChatProps> = () => {
 
   const totalUnread = conversations.reduce((sum, c) => sum + c.unreadCount, 0);
 
+  const selectedChat = conversations.find(c => c.participantId === selectedChatId);
+
   const handleSendMessage = () => {
-    if (!messageInput.trim() || !selectedChat) return;
-
-    const newMessage: Message = {
-      id: Date.now().toString(),
-      senderId: 'host',
-      senderName: 'You',
-      content: messageInput,
-      timestamp: new Date().toISOString(),
-      read: true,
-    };
-
-    setConversations(prev => prev.map(conv => 
-      conv.id === selectedChat.id
-        ? {
-            ...conv,
-            messages: [...conv.messages, newMessage],
-            lastMessage: messageInput,
-            lastMessageTime: new Date().toISOString(),
-            unreadCount: 0,
-          }
-        : conv
-    ));
-
-    setSelectedChat(prev => prev ? {
-      ...prev,
-      messages: [...prev.messages, newMessage],
-      lastMessage: messageInput,
-      lastMessageTime: new Date().toISOString(),
-      unreadCount: 0,
-    } : null);
-
+    if (!messageInput.trim() || !selectedChatId) return;
+    sendMessage(selectedChatId, messageInput);
     setMessageInput('');
   };
 
-  const markAsRead = (convId: string) => {
-    setConversations(prev => prev.map(conv =>
-      conv.id === convId ? { ...conv, unreadCount: 0 } : conv
-    ));
-  };
-
   const formatTime = (timestamp: string) => {
+    if (!timestamp) return '';
     const date = new Date(timestamp);
     const now = new Date();
     const diff = now.getTime() - date.getTime();
@@ -129,7 +53,7 @@ const HeaderChat: React.FC<HeaderChatProps> = () => {
       <button
         onClick={() => {
           setIsOpen(!isOpen);
-          setSelectedChat(null);
+          setSelectedChatId(null);
         }}
         className="relative p-2 rounded-full hover:bg-gray-100 transition-colors text-gray-600"
         aria-label="Messages"
@@ -161,21 +85,21 @@ const HeaderChat: React.FC<HeaderChatProps> = () => {
                   {conversations.length > 0 ? (
                     conversations.map((conv) => (
                       <button
-                        key={conv.id}
+                        key={conv.participantId}
                         onClick={() => {
-                          setSelectedChat(conv);
-                          markAsRead(conv.id);
+                          setSelectedChatId(conv.participantId);
+                          markConversationRead(conv.participantId);
                         }}
                         className="w-full p-4 hover:bg-gray-50 transition-colors border-b border-gray-50 text-left"
                       >
                         <div className="flex gap-3">
                           <div className="w-10 h-10 rounded-full bg-gradient-to-br from-airbnb to-pink-500 flex items-center justify-center text-white font-semibold text-sm shrink-0">
-                            {conv.guestName[0]}
+                            {conv.participantName[0]}
                           </div>
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center justify-between">
-                              <p className="font-medium text-gray-900 text-sm">{conv.guestName}</p>
-                              <span className="text-[10px] text-gray-400">{formatTime(conv.lastMessageTime)}</span>
+                              <p className="font-medium text-gray-900 text-sm truncate">{conv.participantName}</p>
+                              <span className="text-[10px] text-gray-400 whitespace-nowrap ml-2">{formatTime(conv.lastMessageTime)}</span>
                             </div>
                             <p className="text-xs text-gray-500 truncate mt-0.5">{conv.lastMessage}</p>
                           </div>
@@ -205,45 +129,48 @@ const HeaderChat: React.FC<HeaderChatProps> = () => {
               <>
                 <div className="flex items-center gap-3 p-3 border-b border-gray-100 bg-gray-50">
                   <button
-                    onClick={() => setSelectedChat(null)}
+                    onClick={() => setSelectedChatId(null)}
                     className="p-1 rounded-lg hover:bg-gray-200 transition-colors"
                   >
                     <ChevronRight size={18} className="rotate-180" />
                   </button>
                   <div className="flex items-center gap-2">
                     <div className="w-8 h-8 rounded-full bg-gradient-to-br from-airbnb to-pink-500 flex items-center justify-center text-white font-semibold text-sm">
-                      {selectedChat.guestName[0]}
+                      {selectedChat.participantName[0]}
                     </div>
                     <div>
-                      <p className="font-medium text-gray-900 text-sm">{selectedChat.guestName}</p>
+                      <p className="font-medium text-gray-900 text-sm">{selectedChat.participantName}</p>
                       <p className="text-[10px] text-green-500">● Active now</p>
                     </div>
                   </div>
                 </div>
 
                 <div className="h-96 overflow-y-auto p-4 space-y-3">
-                  {selectedChat.messages.map((msg) => (
-                    <div
-                      key={msg.id}
-                      className={`flex ${msg.senderId === 'host' ? 'justify-end' : 'justify-start'}`}
-                    >
+                  {selectedChat.messages.map((msg) => {
+                    const isMe = msg.senderId === 'me';
+                    return (
                       <div
-                        className={`max-w-[80%] rounded-2xl px-3 py-2 ${
-                          msg.senderId === 'host'
-                            ? 'bg-airbnb text-white'
-                            : 'bg-gray-100 text-gray-900'
-                        }`}
+                        key={msg.id}
+                        className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}
                       >
-                        <p className="text-sm">{msg.content}</p>
-                        <div className={`text-[10px] mt-1 flex items-center gap-1 ${
-                          msg.senderId === 'host' ? 'text-white/70' : 'text-gray-400'
-                        }`}>
-                          {formatTime(msg.timestamp)}
-                          {msg.senderId === 'host' && <CheckCheck size={10} />}
+                        <div
+                          className={`max-w-[80%] rounded-2xl px-3 py-2 ${
+                            isMe
+                              ? 'bg-airbnb text-white'
+                              : 'bg-gray-100 text-gray-900'
+                          }`}
+                        >
+                          <p className="text-sm">{msg.text}</p>
+                          <div className={`text-[10px] mt-1 flex items-center gap-1 ${
+                            isMe ? 'text-white/70' : 'text-gray-400'
+                          }`}>
+                            {formatTime(msg.timestamp)}
+                            {isMe && <CheckCheck size={10} />}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
 
                 <div className="p-3 border-t border-gray-100 flex gap-2">
